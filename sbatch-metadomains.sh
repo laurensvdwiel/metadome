@@ -4,13 +4,13 @@
 #SBATCH --mail-type BEGIN,END,FAIL,TIME_LIMIT
 #SBATCH --mail-user fferraro@stanford.edu
 #SBATCH --nodes=1
-#SBATCH --account=smontgom
-#SBATCH --partition=batch
+#SBATCH --account=default
+#SBATCH --partition=interactive
 #SBATCH --requeue
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=120G
-#SBATCH --time=2:00:00
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=5:00:00
 
 usage ()
 {
@@ -67,7 +67,11 @@ echo " - Python"
 pixi run --manifest-path $PIXI_MANIFEST which python
 
 echo "Running pipeline..."
-pixi run --manifest-path $PIXI_MANIFEST python $PIXI_MANIFEST_DIR/metadomain_pipeline.py  --cores 64  --config $RUN_CONFIG --working_dir_path $PIXI_MANIFEST_DIR
+pixi run --manifest-path $PIXI_MANIFEST python $PIXI_MANIFEST_DIR/metadomain_pipeline.py  \
+--cores 64  \
+--config $RUN_CONFIG \
+--working_dir_path $PIXI_MANIFEST_DIR 
+--is_for_metadome True 
 
 # Check if DELETE_DATA is set to True and delete data folder if it is
 if [ "$CLEAN_UP" = "True" ] || [ "$CLEAN_UP" = "true" ]; then

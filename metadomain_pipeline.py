@@ -12,6 +12,7 @@ def parse_arguments():
         parser.add_argument("--config", required=True, default="config/paths.yaml", help="Path to yaml file containing information about files to download and save.")
         parser.add_argument("--cores", required=True, type=int, default=1, help="Number of available cores")
         parser.add_argument("--working_dir_path",required=True,  help="Path to directory containing the pixi.toml, this script and where analysis will be stored")
+        parser.add_argument("--is_for_metadome",required=False, default=False,  help="Boolean, set to true if you want to generate data for the MetaDome database (default=False)")
         return parser.parse_args()
 
 def setup_logging():
@@ -260,8 +261,11 @@ def step4(cfg, cores, pmf):
     return "Executed step 4"
 
 
-def step5(cfg, cores, pmf):
-    logging.info("Step 5: Finding genomic coordinates and computing possible SNVs...")
+def step5(cfg, cores, pmf, is_for_metadome):
+    if not is_for_metadome:
+        logging.info("Step 5: Finding genomic coordinates and computing possible SNVs...")
+    else:
+        logging.info("Step 5: Computing genomic, transcript, and protein mappings for MetaDome...")
     cfg5 = cfg["results"]["step5_single_snv"]
     raw  = cfg["raw"]["gencode"]
     scripts = cfg["scripts_dir"]
@@ -269,8 +273,10 @@ def step5(cfg, cores, pmf):
     # ensure output dir
     os.makedirs(cfg5["snv_tables_dir"], exist_ok=True)
 
+    script_to_run = 'Step5-single_snv_finder.py' if not is_for_metadome else 'MetaDomeStep5-single_snv_finder.py'
+    
     cmd = (
-        f"pixi run --manifest-path {pmf} python -u {os.path.join(scripts,'Step5-single_snv_finder.py')} "
+        f"pixi run --manifest-path {pmf} python -u {os.path.join(scripts,script_to_run)} "
         f"--gtf {raw['gtf']} "
         f"--genome_fa {cfg["raw"]['gencode']['genome_unc']} "
         f"--n_cores {cores} "
@@ -298,7 +304,7 @@ def step6(cfg, cores, pmf):
     return "Executed step 6"
 
 
-def step7(cfg, cores, pmf):
+def step7(cfg, cores, pmf, is_for_metadome):
     logging.info("Step 7: Merge files and prepare output file...")
     
     scripts = cfg['scripts_dir']
@@ -308,8 +314,10 @@ def step7(cfg, cores, pmf):
     final_output = cfg['results']['step7_finaloutput']['final_output']
     gencode_refseq = cfg['raw']['gencode']['gencode_refseq']
     
+    script_to_run = 'Step7-output_merge_reoder_columns.py' if not is_for_metadome else 'MetaDomeStep7-output_merge_reoder_columns.py'
+    
     cmd = (
-        f"pixi run --manifest-path {pmf} python {os.path.join(scripts,'Step7-output_merge_reoder_columns.py')} "
+        f"pixi run --manifest-path {pmf} python {os.path.join(scripts, script_to_run)} "
         f"--idmapper {idmapper} "
         f"--metaposition {metaposition} "
         f"--genomic_folder {genomic_folder} "
@@ -396,9 +404,9 @@ def main():
         ("step2", "Run metadomains script",               lambda: step2(cfg, args.cores, pmf)),
         ("step3", "Annotate with MANE & subset FASTA",    lambda: step3(cfg, pmf)),
         ("step4", "PFAM scan & parse",                    lambda: step4(cfg, args.cores, pmf)),
-        ("step5", "Single-SNV finder",                    lambda: step5(cfg, args.cores, pmf)),
+        ("step5", "Mapper calculator",                    lambda: step5(cfg, args.cores, pmf, args.is_for_metadome)),
         ("step6", "Convert Stockholm alignments",         lambda: step6(cfg, args.cores, pmf)),
-        ("step7", "Merge results",                        lambda: step7(cfg, args.cores, pmf)),
+        ("step7", "Merge results",                        lambda: step7(cfg, args.cores, pmf, args.is_for_metadome)),
     ]
 
     # 7) run (or skip) each step
