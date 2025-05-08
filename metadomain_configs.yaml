@@ -1,0 +1,83 @@
+## config/paths.yaml
+
+download_links:
+  gencode:
+    transcripts: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.pc_transcripts.fa.gz"
+    translations: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.pc_translations.fa.gz"
+    gtf: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.annotation.gtf.gz"
+    genome: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.p14.genome.fa.gz"
+    gencode_refseq: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.metadata.RefSeq.gz"
+  uniprot:
+    isoforms_fasta: "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot_varsplic.fasta.gz"
+    swissprot_fasta: "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
+  pfam:
+    hmm: "https://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam37.4/Pfam-A.hmm.gz"
+    hmm_dat: "https://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam37.4/Pfam-A.hmm.dat.gz"
+raw:
+  gencode:
+    transcripts: "data/raw/gencode/gencode.v45.pc_transcripts.fa.gz"
+    translations: "data/raw/gencode/gencode.v45.pc_translations.fa.gz"
+    gtf: "data/raw/gencode/gencode.v45.annotation.gtf.gz"
+    genome: "data/raw/gencode/GRCh38.p14.genome.fa.gz"
+    genome_unc: "data/raw/gencode/GRCh38.p14.genome.fa"
+    gencode_refseq: "data/raw/gencode/gencode.v45.metadata.RefSeq.gz"
+  uniprot:
+    isoforms_fasta: "data/raw/uniprot/uniprot_sprot_varsplic.fasta.gz"
+    swissprot_fasta: "data/raw/uniprot/uniprot_sprot.fasta.gz"
+  pfam:
+    hmm_gz: "data/raw/pfam/Pfam-A.hmm.gz"
+    hmm_dat_gz: "data/raw/pfam/Pfam-A.hmm.dat.gz"
+    hmm: "data/raw/pfam/Pfam-A.hmm"
+    hmm_dat: "data/raw/pfam/Pfam-A.hmm.dat"
+
+intermediate:
+  uniprot_combined_fasta: "data/intermediate/uniprot_combined.fasta"
+  uniprot_human_fasta: "data/intermediate/uniprot_combined.Human.fasta"
+  uniprot_ids: "data/intermediate/IDs.txt"
+  blast_db_dir: "data/intermediate/blast_db/blast_db"
+  blast_output: "data/intermediate/blast/gencodev45_uniprot2025_01.eval1e-5.tab"
+  pfam_scan_output: "data/results/step3_mane_annotation/pfam_scan_output.txt"
+
+results:
+  step1_mapping:
+    perfect_matches: "data/results/step1_mapping/gencodev45_uniprot2025_01.eval1e-5.perfectmatches.tab"
+  step2_checks:
+    pass_csv: "data/results/step2_checks/Gencode45-Uniprot2025_01-IDmapper-perfect_matches.csv"
+    fail_csv: "data/results/step2_checks/Gencode45-Uniprot2025_01-IDmapper-failed_matches.csv"
+  step3_mane_annotation:
+    matched_protein_fa: "data/results/step3_mane_annotation/gencode.v45.transcripts.matched.uniprot.fa"
+    output_csv: "data/results/step3_mane_annotation/gencodev45_uniprot2025_IDmapper_perfectmatches.MANE.csv"
+  step4_pfam:
+    output_pfamscan_file: "data/results/step4_pfam/pfam_scan_output.txt"
+    annotated_metadomains_dir: "data/results/step4_pfam/gencode_annotated_metadomains"
+  step5_single_snv:
+    snv_tables_dir: "data/results/step5_single_snv/single_SNVs_tables"
+  step6_metapositions:
+    metadomain_positions: "data/results/step6_metapositions/metadomain_positions.tsv"
+  step7_finaloutput:
+    final_output: "data/results/step7_final_output/Gencodev45-PFAM37.4-Uniprot2025_metapositions.tsv"
+
+scripts_dir: "scripts"
+logs_dir: "logs"
+src_dir: "src"
+pixi_file: "pixi.toml"
+
+output_directories:
+    logs_dir: "logs"
+    raw_gencode: "data/raw/gencode/"
+    raw_uniprot: "data/raw/uniprot/"
+    raw_pfam: "data/raw/pfam/"
+    intermediate_base:      "data/intermediate/"
+    intermediateblast:     "data/intermediate/blast/"
+    intermediateblastdb:   "data/intermediate/blast_db/"
+    intermediatepfam:      "data/intermediate/pfam/"
+    results_step1_mapping:          "data/results/step1_mapping/"
+    results_step2_checks:           "data/results/step2_checks/"
+    results_step3_mane_annotation:  "data/results/step3_mane_annotation/"
+    results_step4_pfam:             "data/results/step4_pfam/"
+    results_step5_single_snv:       "data/results/step5_single_snv/"
+    results_step6_metapositions:        "data/results/step6_metapositions/"
+    results_step7_final_output:        "data/results/step7_final_output/"
+
+
+state_file: "logs/.pipeline_state.json"
