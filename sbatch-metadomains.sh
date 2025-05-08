@@ -70,8 +70,9 @@ echo "Running pipeline..."
 pixi run --manifest-path $PIXI_MANIFEST python $PIXI_MANIFEST_DIR/metadomain_pipeline.py  \
 --cores 64  \
 --config $RUN_CONFIG \
---working_dir_path $PIXI_MANIFEST_DIR 
+--working_dir_path $PIXI_MANIFEST_DIR \
 --is_for_metadome True 
+
 
 # Check if DELETE_DATA is set to True and delete data folder if it is
 if [ "$CLEAN_UP" = "True" ] || [ "$CLEAN_UP" = "true" ]; then
