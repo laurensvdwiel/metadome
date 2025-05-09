@@ -86,9 +86,9 @@ Clone the repository and go into the project folder:
 
 ### Configuration
 
-Be sure to configure the correct file paths in the `volumes:` (at the \<ABSOLUTE PATH\>) to correspond with your data folders in the docker-compose.yml.
+Be sure to configure the correct file paths in the `.env` file (at the \<ABSOLUTE PATH\>) to correspond with your data folders.
 
-If you are attempting to recreate the underlying database (see First time set-up below), then be sure to create an empty folder specifically to contain the MetaDome mapping PostgreSQL database at `metadome_postgres_db:` in the `volumes:` section in the docker-compose.yml.
+If you are attempting to recreate the underlying database (see First time set-up below), then be sure to create an empty folder specifically to contain the MetaDome mapping PostgreSQL database at `METADOME_POSTGRES_DB_DIR` in the .env file.
 
 ### (Optional) Credentials configuration
 If you are planning to expose the MetaDome server to a public adress, please make sure you get the security in order.

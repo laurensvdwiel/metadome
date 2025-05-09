@@ -14,7 +14,7 @@ services:
             - db
             - celery
         volumes:
-            - .:/usr/src/app
+            - ${PWD}:/usr/src/app
             - data:/usr/data
             - clinvar:/usr/data/ClinVar
             - gencode:/usr/data/Gencode
@@ -39,7 +39,7 @@ services:
             - redis
             - rabbitmq
         volumes:
-            - .:/usr/src/app
+            - ${PWD}:/usr/src/app
             - data:/usr/data
             - clinvar:/usr/data/ClinVar
             - gencode:/usr/data/Gencode
@@ -52,6 +52,7 @@ services:
     db:
         restart: always
         image: postgres:10
+        platform: linux/arm64
         env_file:
            - metadome/database.env
         ports:
@@ -84,43 +85,43 @@ volumes:
    data:
       driver_opts:
         type: none
-        # Please set the 'device' here to a local folder you are okay with MetaDome to create additional files and folders
-        device: <ABSOLUTE PATH>
+        device: ${METADOME_DIR}
         o: bind
+      driver: local
    clinvar:
       driver_opts:
         type: none
-        # Please set the 'device' here to a local folder to where your ClinVar vcf is stored
-        device: <ABSOLUTE PATH>
+        device: ${CLINVAR_DIR}
         o: bind
+      driver: local
    gencode:
       driver_opts:
         type: none
-        # Please set the 'device' here to a local folder to where your Gencode files are stored
-        device: <ABSOLUTE PATH>
+        device: ${GENCODE_DIR}
         o: bind
+      driver: local
    gnomad:
       driver_opts:
         type: none
-        # Please set the 'device' here to a local folder to where your gnomAD vcf is stored
-        device: <ABSOLUTE PATH>
+        device: ${GNOMAD_DIR}
         o: bind
+      driver: local
    pfam:
       driver_opts:
         type: none
-        # Please set the 'device' here to a local folder to where your PFAM is located
-        device: <ABSOLUTE PATH>
+        device: ${PFAM_DIR}
         o: bind
+      driver: local
    uniprot:
       driver_opts:
         type: none
-        # Please set the 'device' here to a local folder to where your UniProt is located
-        device: <ABSOLUTE PATH>
+        device: ${UNIPROT_DIR}
         o: bind
+      driver: local
    metadome_postgres_db:
       driver_opts:
         type: none
-        # Please set the 'device' here to a local folder you are okay with MetaDome creating a postgres database
-        device: <ABSOLUTE PATH>
+        device: ${METADOME_POSTGRES_DB_DIR}
         o: bind
+      driver: local
    interpro_temp: # Do not change this, this should be the last line with nothing behind it.
