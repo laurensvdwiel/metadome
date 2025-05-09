@@ -56,6 +56,11 @@ results:
     metadomain_positions: "data/results/step6_metapositions/metadomain_positions.tsv"
   step7_finaloutput:
     final_output: "data/results/step7_final_output/Gencodev45-PFAM37.4-Uniprot2025_metapositions.tsv"
+  metadome_data_fields:
+    genome_build: "GRCh38.p14"
+    GENCODE_version: "Version45"
+    PFAM_version: "Version37.4"
+    source: "SwissProt"
 
 scripts_dir: "scripts"
 logs_dir: "logs"

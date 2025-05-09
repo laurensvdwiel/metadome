@@ -243,7 +243,7 @@ def step4(cfg, cores, pmf):
             f"--n_cores {cores} "
             f"--fasta_to_annotate {cfg3['matched_protein_fa']} "
             f"--output_file {cfg4['output_pfamscan_file']} "
-        )
+        ) 
         run_cmd(cmd, shell=True)
 
     logging.info("Parsing pfam_scan.pl results...")
@@ -313,6 +313,9 @@ def step7(cfg, cores, pmf, is_for_metadome):
     genomic_folder = cfg['results']['step5_single_snv']['snv_tables_dir']
     final_output = cfg['results']['step7_finaloutput']['final_output']
     gencode_refseq = cfg['raw']['gencode']['gencode_refseq']
+    uniprot_name = cfg['intermediate']['uniprot_ids']
+    pfamscan_output= cfg["results"]["step4_pfam"]['output_pfamscan_file']
+    metadome_annot = cfg['results']['metadome_data_fields']
     
     script_to_run = 'Step7-output_merge_reoder_columns.py' if not is_for_metadome else 'MetaDomeStep7-output_merge_reoder_columns.py'
     
@@ -322,7 +325,13 @@ def step7(cfg, cores, pmf, is_for_metadome):
         f"--metaposition {metaposition} "
         f"--genomic_folder {genomic_folder} "
         f"--output {final_output} "
+        f"--uniprot_name {uniprot_name} "
+        f"--pfamscan_output {pfamscan_output} "
         f"--n_cores {cores} "
+        f"--genome_build {metadome_annot['genome_build']} "
+        f"--source {metadome_annot['source']} "
+        f"--GENCODE_version {metadome_annot['GENCODE_version']} "
+        f"--PFAM_version {metadome_annot['PFAM_version']} "
         f"--refseq {gencode_refseq}"
         
     )
