@@ -197,7 +197,16 @@ def main():
                        'REF': 'base_pair',
                        'uniprot_AA': 'amino_acid_residue',
                        'PFAM_ID': 'ext_db_id'})
-
+        
+    int_cols = [
+        'chromosome_position','exon_number','cDNA_position',
+        'codon_base_pair_position','amino_acid_position',
+        'domain_length','PFAM_consensus_pos','uniprot_start','uniprot_stop'
+    ]
+    final[int_cols] = final[int_cols].astype('Int32')
+    
+    final.sort_values(['chromosome','chromosome_position'], inplace=True)
+    
     # Add duplicate columns
     final['uniprot_position'] = final['amino_acid_position']
     final['uniprot_residue'] = final['amino_acid_residue']

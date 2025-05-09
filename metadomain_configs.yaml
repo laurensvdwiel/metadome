@@ -55,7 +55,7 @@ results:
   step6_metapositions:
     metadomain_positions: "data/results/step6_metapositions/metadomain_positions.tsv"
   step7_finaloutput:
-    final_output: "data/results/step7_final_output/Gencodev45-PFAM37.4-Uniprot2025_metapositions.tsv"
+    final_output: "data/results/step7_final_output/Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
   metadome_data_fields:
     genome_build: "GRCh38.p14"
     GENCODE_version: "Version45"

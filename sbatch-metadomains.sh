@@ -9,8 +9,8 @@
 #SBATCH --requeue
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --mem=150G
-#SBATCH --time=00:10:00
+#SBATCH --mem=180G
+#SBATCH --time=01:00:00
 
 usage ()
 {

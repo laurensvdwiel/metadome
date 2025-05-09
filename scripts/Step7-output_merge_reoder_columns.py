@@ -86,25 +86,14 @@ def main():
     
     args = parse_arguments()
 
-    # Step 1: Load files
+    # Load files
     idmapper = load_idmapper(args.idmapper)
-    metaposition = load_metaposition(args.metaposition)
-
-    # Step 2: Merge these 
-    merged = pd.merge(metaposition, idmapper, on='ENSEMBL', how='outer')
-    del idmapper, metaposition
-    
-    # Step 3: Split ENSEMBL fields
-    merged = split_ensembl_fields(merged)
-
-    # Step 4: Add RefSeq
+    # Split ENSEMBL fields
+    idmapper = split_ensembl_fields(idmapper)
+    # Add RefSeq
     refseq = load_gencode_refseq(args.refseq)
-
-    merged = pd.merge(merged, refseq, on='ENSEMBL_TR', how="left")
+    merged = pd.merge(idmapper, refseq, on='ENSEMBL_TR', how="left")
     del refseq
-    # Step 5: Load relevant genomic coordinate files
-    merged['GeneSymbol'] = merged['GeneSymbol'].astype('category')
-    merged['PFAM_ID'] = merged['PFAM_ID'].astype('category')
 
     ensembl_tr_set = merged['ENSEMBL_TR'].dropna().unique()
     genomic_chunks = load_genomic_coordinates(args.genomic_folder, ensembl_tr_set, args.n_cores)
@@ -119,22 +108,25 @@ def main():
     )
     del merged, genomic
 
-    print(final.head())
-    # Step 7: Reorder columns
+    #  Add metaposition info
+    metaposition = load_metaposition(args.metaposition)
+    final = pd.merge(metaposition, final, on='ENSEMBL', how='outer')
+ 
+    # Reorder columns
     final = final[[
-        'chr', 'hg38', 'REF', 'ALT',  
+        'chr', 'hg38', 'REF', 'ALT', 'strand', 
         'GeneSymbol', 'ENSEMBL_TR', 'RefSeq', 'exon_number', 'uniprot_ac', 
         'uniprot_pos', 'uniprot_AA', 'PFAM_ID', 'range_id','PFAM_consensus_pos','MANE','GencodeBasic'
         
     ]]
 
-    # Step 8: Cast to integer the numeric columns and save
+    # Cast to integer the numeric columns and save
     final[["hg38", "uniprot_pos", "PFAM_consensus_pos"]] = final[["hg38", "uniprot_pos", "PFAM_consensus_pos"]].astype("Int64")
     
     print("Saving merged file...")
     final.to_csv(args.output, index=False)
     
-    # Step 10 collect stats about this release
+    #  Collect stats about this release
     # Calculate metrics
     print("Calculating stats of this release...")
     
@@ -142,12 +134,12 @@ def main():
     final = final[[
     'chr', 'hg38', 'REF', 'ALT',
     'GeneSymbol', 'ENSEMBL_TR', 'uniprot_ac',
-    'PFAM_ID', 'range_id', 'PFAM_consensus_pos']]
+    'PFAM_ID', 'range_id', 'PFAM_consensus_pos', ]]
 
     metrics_current_release = {
         "Protein-coding genes": final['GeneSymbol'].nunique(),
         "Unique ENSEMBL protein coding transcripts": final['ENSEMBL_TR'].nunique(),
-        "Unique Uniprot": final['uniprot_ac'].nunique(),
+        "Unique SwissProt": final['uniprot_ac'].nunique(),
         "Unique PFAM": final['PFAM_ID'].nunique(),
         "Chromosome to protein position mappings": len(final),
         "Unique chromosome positions": final[['chr', 'hg38', 'REF', 'ALT']].drop_duplicates().shape[0],
@@ -172,9 +164,50 @@ def main():
         "Average number of homologs per Pfam": final[final['PFAM_ID'].notna()]
             .drop_duplicates(subset=['PFAM_ID', 'ENSEMBL_TR', 'range_id'])
             .groupby('PFAM_ID').size().mean(),
-        "Average length of Pfam domains": final.dropna(subset=['PFAM_consensus_pos']).groupby(['ENSEMBL_TR', 'range_id'])['PFAM_consensus_pos'].max().mean()
-            
+        "Average length of Pfam domains": final.dropna(subset=['PFAM_consensus_pos'])
+            .groupby(['ENSEMBL_TR', 'range_id'])['PFAM_consensus_pos'].max().mean()
     }
+
+    # Subset for basic gencode to compare with initial metadome
+    final_basic = final[final['GencodeBasic']]
+
+    metrics_current_release.update({
+        "Protein-coding genes (GencodeBasic)": final_basic['GeneSymbol'].nunique(),
+        "Unique ENSEMBL protein coding transcripts (GencodeBasic)": final_basic['ENSEMBL_TR'].nunique(),
+        "Unique SwissProt (GencodeBasic)": final_basic['uniprot_ac'].nunique(),
+        "Unique PFAM (GencodeBasic)": final_basic['PFAM_ID'].nunique(),
+        "Chromosome to protein position mappings (GencodeBasic)": len(final_basic),
+        "Unique chromosome positions (GencodeBasic)":
+            final_basic[['chr', 'hg38', 'REF', 'ALT']].drop_duplicates().shape[0],
+        "Chromosome to protein position mappings with PFAM (GencodeBasic)":
+            final_basic[final_basic['PFAM_ID'].notna()].shape[0],
+        "Pfam protein domain regions (GencodeBasic)":
+            final_basic[['ENSEMBL_TR', 'range_id']].drop_duplicates().shape[0],
+        "Unique ENSEMBL sequences with at least one Pfam domain annotated (GencodeBasic)":
+            final_basic.loc[final_basic['PFAM_ID'].notna(), 'ENSEMBL_TR'].nunique(),
+        "Unique ENSEMBL sequences with at least two Pfam domain annotated (GencodeBasic)":
+            final_basic[final_basic['PFAM_ID'].notna()]
+                .drop_duplicates(subset=['ENSEMBL_TR', 'range_id'])
+                .groupby('ENSEMBL_TR')
+                .filter(lambda x: len(x) >= 2)['ENSEMBL_TR']
+                .nunique(),
+        "Unique SwissProt sequences with at least one Pfam domain annotated (GencodeBasic)":
+            final_basic.loc[final_basic['PFAM_ID'].notna(), 'uniprot_ac'].nunique(),
+        "Unique SwissProt sequences with at least two Pfam domain annotated (GencodeBasic)":
+            final_basic[final_basic['PFAM_ID'].notna()]
+                .drop_duplicates(subset=['uniprot_ac', 'range_id'])
+                .groupby('uniprot_ac')
+                .filter(lambda x: len(x) >= 2)['uniprot_ac']
+                .nunique(),
+        "Average number of homologs per Pfam (GencodeBasic)":
+            final_basic[final_basic['PFAM_ID'].notna()]
+                .drop_duplicates(subset=['PFAM_ID', 'ENSEMBL_TR', 'range_id'])
+                .groupby('PFAM_ID').size().mean(),
+        "Average length of Pfam domains (GencodeBasic)":
+            final_basic.dropna(subset=['PFAM_consensus_pos'])
+                .groupby(['ENSEMBL_TR', 'range_id'])['PFAM_consensus_pos'].max().mean()
+    })
+
 
     pd.DataFrame(list(metrics_current_release.items()), columns=['Stat', 'Counts']).to_csv(args.output + "stats", index=False)
 
