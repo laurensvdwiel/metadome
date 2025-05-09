@@ -132,6 +132,7 @@ def main():
     idmapper = split_ensembl_fields(idmapper)
     metaposition = load_metaposition(args.metaposition)
     # Add positions
+    metaposition['uniprot_pos'] = metaposition['uniprot_pos'] - 1
     metaposition['uniprot_start'] = metaposition.groupby(['ENSEMBL', 'PFAM_ID', 'range_id'])['uniprot_pos'].transform('min')
     metaposition['uniprot_stop'] = metaposition.groupby(['ENSEMBL', 'PFAM_ID', 'range_id'])['uniprot_pos'].transform('max')
     metaposition['domain_length'] = metaposition['uniprot_stop'] - metaposition['uniprot_start']
@@ -160,7 +161,10 @@ def main():
     )
     del merged, genomic
     
+    final['uniprot_pos'] = final['uniprot_pos'] -1 
+    
     final = final.merge(metaposition, on=['ENSEMBL', 'uniprot_AA', 'uniprot_pos'], how='outer')
+    del metaposition
     
     # Add overall info if a domain exists at all
     final['evaluated_interpro_domains'] = final.groupby('ENSEMBL_TR')['PFAM_ID'] \

@@ -192,7 +192,7 @@ def generate_codon_table(transcript_info):
             'hg38': genomic_pos,
             'REF': ref_base if strand == '+' else str(Seq(ref_base).reverse_complement()),
             'codon' : ref_codon,
-            'cDNA_position': str(codon_start + 1) + "-" + str(codon_end),
+            'cDNA_position': pos + 1,
             'codon_base_pair_position': pos - codon_start,
             'strand': strand,
             'RefAA': ref_aa,
