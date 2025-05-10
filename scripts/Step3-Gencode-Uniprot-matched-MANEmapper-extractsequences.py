@@ -16,7 +16,6 @@ def parse_arguments():
 
 
 def parse_fasta(fasta_file, protein_ids):
-    # Check if file is gzipped
     if fasta_file.endswith('.gz'):
         with gzip.open(fasta_file, 'rt') as handle:  # 'rt' mode for text reading from gzip
             filtered_protein_seqs = (record for record in SeqIO.parse(handle, "fasta") 

@@ -87,10 +87,6 @@ def step0(cfg, cores, pmf):
     # Decompress the genome since it's apparently the wrong format
     cmd = f"pixi run --manifest-path {pmf} bgzip -d {genome}"
     run_cmd(cmd, shell=True)
-    # need to compress
-    #genome_no_gz = genome.removesuffix(".gz")
-    #cmd = f"micromamba run bgzip -@ {cores} {genome_no_gz}"
-    #run_cmd(cmd, shell=True)
 
     cmd = f"wget --no-verbose -O {refseq} {refseq_link}"
     run_cmd(cmd, shell=True)
@@ -122,20 +118,16 @@ def step1(cfg, cores, pmf):
     inter = cfg["intermediate"]
     res1 = cfg["results"]["step1_mapping"]
     logs = cfg["logs_dir"]
-    
-    # 1a) combine UniProt FASTAs
+
     logging.info("Combining Uniprot fasta files...")
     cmd = f"zcat {raw['uniprot']['isoforms_fasta']} {raw['uniprot']['swissprot_fasta']} > {inter['uniprot_combined_fasta']}"
     run_cmd(cmd, shell=True)
 
-    # 1b) grep human sequences
     logging.info("Extracting human proteins...")
     cmd = f"grep OX=9606 {inter['uniprot_combined_fasta']} | sed 's/^>//;s/ .*//' > {inter['uniprot_ids']}"
     run_cmd(cmd, shell=True)
     cmd = f"pixi run --manifest-path {pmf} seqkit grep -f {inter['uniprot_ids']} {inter['uniprot_combined_fasta']} > {inter['uniprot_human_fasta']}"
-    run_cmd(cmd, shell=True)
 
-    # 1c) make BLAST DB
     logging.info("Maing BLAST database with Uniprot human data...")
 
     cmd = (
@@ -150,8 +142,7 @@ def step1(cfg, cores, pmf):
         tmp_path = tmp_file.name
 
     run_cmd(f'pixi run --manifest-path {pmf} bgzip -d -c {raw["gencode"]["translations"]} > {tmp_path}', shell=True)
-    
-    # 1d) blastp
+
     logging.info("Blasting Gencode sequences to the Uniprot ones...")
     
     cmd = (
@@ -169,7 +160,6 @@ def step1(cfg, cores, pmf):
     if os.path.exists(tmp_path):
         os.remove(tmp_path)
 
-    # 1e) extract perfect matches
     logging.info("Extracting perfect matches...")
 
     cmd = (
@@ -232,8 +222,7 @@ def step4(cfg, cores, pmf):
     logs = cfg["logs_dir"]
 
     pfam_dir = os.path.dirname(raw["hmm"])
-    # 5a) pfam_scan.pl
-    # Longest step so better to skip it if possible
+
     logging.info("Running pfam_scan.pl...")
     if not os.path.exists(cfg4['output_pfamscan_file']): 
         cmd = (
@@ -247,7 +236,7 @@ def step4(cfg, cores, pmf):
         run_cmd(cmd, shell=True)
 
     logging.info("Parsing pfam_scan.pl results...")
-    # 5b) parse pfam_scan results
+
     cmd = (
         f"pixi run --manifest-path {pmf} python -u {os.path.join(scripts,'Step4b-metadomains.py')} "
         f"--pfamscan {cfg4['output_pfamscan_file']} "
@@ -340,7 +329,7 @@ def step7(cfg, cores, pmf, is_for_metadome):
     return "Executed step 7"
 
 def main():
-    # 1) parse args
+
     args = parse_arguments()
     
     # Find the pixi manifest
@@ -351,7 +340,7 @@ def main():
     setup_logging()
 
     
-    # 2) load config
+    # Load config
     cfg = load_config(args.config)
     
     # 3) create all output directories up-front
@@ -359,7 +348,7 @@ def main():
         os.makedirs(path, exist_ok=True)
         logging.debug(f"Created directory for {name}: {path}")
 
-    # 4) checkpointing setup
+    # Checkpointing setup
     state_file = cfg.get("state_file", ".pipeline_state.json")
     if os.path.exists(state_file):
         with open(state_file) as sf:
@@ -368,8 +357,7 @@ def main():
     else:
         completed = set()
 
-    # 5) validate that previously completed steps actually have outputs;
-    #    if not, drop them so they get re-run
+    # Validate that previously completed steps actually have outputs
     expected_outputs = {
         "step0": [
             cfg["raw"]["gencode"]["translations"],
@@ -406,7 +394,7 @@ def main():
             logging.warning(f"Outputs for {step} missing ({missing}); will re-run that step")
             completed.remove(step)
 
-    # 6) define pipeline steps
+    # Pipeline steps
     steps = [
         ("step0", "Download & prepare inputs",            lambda: step0(cfg, args.cores, pmf)),
         ("step1", "SwissProt id mapping & filtering",     lambda: step1(cfg, args.cores, pmf)),
@@ -418,7 +406,7 @@ def main():
         ("step7", "Merge results",                        lambda: step7(cfg, args.cores, pmf, args.is_for_metadome)),
     ]
 
-    # 7) run (or skip) each step
+    # Run what needed
     for name, desc, func in steps:
         if name in completed:
             logging.info(f"=== Skipping {desc} ({name}) — already completed ===")
@@ -427,7 +415,7 @@ def main():
         logging.info(f"=== Step {name[-1]}: {desc} ===")
         func()
 
-        # record success immediately
+        # record completion
         completed.add(name)
         with open(state_file, "w") as sf:
             json.dump({"completed": list(completed)}, sf)

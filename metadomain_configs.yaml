@@ -29,6 +29,7 @@ raw:
     hmm_dat_gz: "data/raw/pfam/Pfam-A.hmm.dat.gz"
     hmm: "data/raw/pfam/Pfam-A.hmm"
     hmm_dat: "data/raw/pfam/Pfam-A.hmm.dat"
+    pfam_interpro: "data/raw/pfam/interpro-pfam.tsv"
 
 intermediate:
   uniprot_combined_fasta: "data/intermediate/uniprot_combined.fasta"

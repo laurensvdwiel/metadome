@@ -14,15 +14,21 @@ def parse_arguments():
     parser.add_argument("--metaposition", required=True)
     parser.add_argument("--genomic_folder", required=True)
     parser.add_argument("--refseq", required=True)
-    parser.add_argument("--uniprot_name", required=False)
-    parser.add_argument("--pfamscan_output", required=False)
-    parser.add_argument("--genome_build", required=False, default=None)
-    parser.add_argument("--PFAM_version", required=False, default=None)
-    parser.add_argument("--source", required=False, default=None)
-    parser.add_argument("--GENCODE_version", required=False, default=None)
+    parser.add_argument("--uniprot_name", required=True)
+    parser.add_argument("--pfamscan_output", required=True)
+    parser.add_argument("--genome_build", required=True)
+    parser.add_argument("--PFAM_version", required=True)
+    parser.add_argument("--PFAM_interpro", required=False, default=None)
+    parser.add_argument("--source", required=True, default=None)
+    parser.add_argument("--GENCODE_version", required=True, default=None)
     parser.add_argument("--output", required=True)
     parser.add_argument('--n_cores', type=int, default=None, help='Number of CPU cores to use')
     return parser.parse_args()
+
+def load_pfam_to_interpro(path):
+    return pd.read_csv(path, 
+                       usecols=['Accession', 'Integrated Into'], 
+                       dtype=str).rename(columns={'Accession': 'PFAM_ID', 'Integrated Into': 'interpro_id'})
 
 def load_idmapper(path):
     return pd.read_csv(path, 
@@ -55,7 +61,6 @@ def parse_pfamscan(pfamscan_path):
     with open(pfamscan_path, 'r') as f:
         lines = f.read().splitlines()
 
-    # Drop blank & comment lines
     data_lines = [l for l in lines if l and not l.startswith('#')]
 
     cols = [
@@ -142,6 +147,10 @@ def main():
     metaposition = pd.merge(metaposition, pfam_names, on='PFAM_ID', how='right')
     del pfam_names
     
+    # Add pfam-interpro mappings
+    interpro = load_pfam_to_interpro(args.PFAM_interpro)
+    metaposition = pd.merge(metaposition, interpro, on="PFAM_ID", how='left')
+    
     # Add RefSeq
     refseq = load_gencode_refseq(args.refseq)
     merged = pd.merge(idmapper, refseq, on='ENSEMBL_TR', how="left")
@@ -175,9 +184,7 @@ def main():
     final['PFAM_version'] = args.PFAM_version
     final['GENCODE_version'] = args.GENCODE_version
     final['source'] = args.source
-    
-    final['interpro_id'] = final['PFAM_ID']
-    
+        
     # # Reorder columns
     final = final[[
         'chr', 'hg38', 'REF', 'strand',

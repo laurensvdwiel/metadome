@@ -20,8 +20,10 @@ This pipeline was initially built using:
 - `Pfam-A.hmm`
 - `Pfam-A.hmm.dat`
 
+In case you want to generate the data to run the MetaDome webserber, you also need to manually download the `interpro-pfam.tsv` from [here](https://www.ebi.ac.uk/interpro/entry/pfam/#table) and place it in `data/raw/pfam`.
 
-But you can update the download links in `metadomain_configs.yaml` and the name of the output file by modifying:  
+
+You can define the download links in `metadomain_configs.yaml` and the name of the output file by modifying:  
 
 ```yaml
 download_links:
@@ -66,18 +68,6 @@ pixi install
 ---
 
 ## Running the pipeline 
-
-You can then run the pipeline with the example command in `sbatch-metadomains.sh`
-```bash
-This scripts builds and annotate protein MetaDomains starting from Gencode, Uniprot, and PFAM input data.
-
-Usage : sbatch-metadomains.sh -s <pixi.toml> -c <config> -r <clean-up> -t <int> -g <memory>
-           -s Path to directory containing the manifest, the script, and where the analysis will be run.
-           -c config.yaml that specifies inputs URLS to download the data from
-           -r Boolean to specify to remove intermediate files at the end (default=False, alternative True)
-```
-
-Otherwise you can run directly the python script 
 ```bash
 pixi run python metadomain_pipeline.py  -h 
 usage: metadomain_pipeline.py [-h] --config CONFIG --cores CORES --working_dir_path WORKING_DIR_PATH
@@ -85,10 +75,11 @@ usage: metadomain_pipeline.py [-h] --config CONFIG --cores CORES --working_dir_p
 Complete pipeline to identify protein domains and create annotation files
 
 options:
-  -h, --help            show this help message and exit
+  -h, --help            Show this help message and exit
   --config CONFIG       Path to yaml file containing information about files to download and save.
   --cores CORES         Number of available cores
   --working_dir_path WORKING_DIR_PATH
                         Path to directory containing the pixi.toml, this script and where analysis will be stored
+  --is_for_metadome     Boolean, set to True if you want to generate data for the MetaDome database (default=False)
 ```
 
