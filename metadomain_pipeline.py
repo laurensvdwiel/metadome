@@ -325,8 +325,7 @@ def step7(cfg, cores, pmf, mode):
             f"--metaposition {metaposition} "
             f"--genomic_folder {cfg['results']['step5_single_snv']['snv_tables_dir']} "
             f"--output {cfg['results']['step7_finaloutput']['final_output']} "
-            f"--uniprot_name {uniprot_name} "
-            f"--pfamscan_output {pfamscan_output} "
+            f"--refseq {gencode_refseq} "
             f"--n_cores {cores}"
         )
         run_cmd(cmd, shell=True)
@@ -415,11 +414,29 @@ def main():
             cfg["results"]["step3_mane_annotation"]["matched_protein_fa"],
         ],
         "step4": [cfg["results"]["step4_pfam"]["output_pfamscan_file"]],
-        "step5": [cfg["results"]["step5_single_snv"]["snv_tables_dir"]],
-        "step6": [cfg["results"]["step6_metapositions"]["metadomain_positions"]],
-        "step7": [cfg["results"]["step7_finaloutput"]["final_output"]],
+        "step6": [cfg["results"]["step6_metapositions"]["metadomain_positions"]]
     }
 
+    # Validate outputs from the two modes
+    expected_outputs.setdefault("step5", [])
+    expected_outputs.setdefault("step7", [])
+
+    if args.mode in ("variants", "both"):
+        expected_outputs["step5"].append(
+            cfg["results"]["step5_single_snv"]["snv_tables_dir"]
+        )
+        expected_outputs["step7"].append(
+            cfg["results"]["step7_finaloutput"]["final_output"]
+        )
+    
+    if args.mode in ("metadome", "both"):
+        expected_outputs["step5"].append(
+            cfg["results"]["step5_single_snv"]["snv_tables_dir_metadome"]
+        )
+        expected_outputs["step7"].append(
+            cfg["results"]["step7_finaloutput"]["final_output_metadome"]
+        )
+        
     for step in list(completed):
         missing = [p for p in expected_outputs.get(step, []) if not os.path.exists(p)]
         if missing:

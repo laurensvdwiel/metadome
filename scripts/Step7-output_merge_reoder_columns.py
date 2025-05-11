@@ -14,7 +14,7 @@ def parse_arguments():
     parser.add_argument("--metaposition", required=True)
     parser.add_argument("--genomic_folder", required=True)
     parser.add_argument("--refseq", required=True)
-    parser.add_argument("--output", reqßuired=True)
+    parser.add_argument("--output", required=True)
     parser.add_argument('--n_cores', type=int, default=None, help='Number of CPU cores to use')
     return parser.parse_args()
 
@@ -23,7 +23,7 @@ def load_idmapper(path):
         'qseqid': 'ENSEMBL', 'sseqid': 'uniprot_ac'})
 
 def load_metaposition(path):
-    return pd.read_csv(path, sep='\t', dtype={
+    df = pd.read_csv(path, sep='\t', dtype={
         'transcript_id': 'category',
         'domain_id': 'category',
         'range_id': 'category',
@@ -41,6 +41,8 @@ def load_metaposition(path):
         'sequence_aa': 'uniprot_AA',
         'position_in_domain_consensus': 'PFAM_consensus_pos'
     })
+    df['ENSEMBL_TR']  = df['ENSEMBL'].str.split('|', expand=True)[1]
+    return df
 
 
 def load_gencode_refseq(path):
@@ -61,11 +63,11 @@ def _load_single_coordinate(folder, tr):
     if os.path.isfile(file_path):
         df = pd.read_csv(file_path, sep='\t', dtype={
             'chr': 'category', 'hg38': 'Int32', 'REF': 'category', 'ALT': 'category',
-            'transcriptID': 'string', 'RefAA': 'string', 'AAindex': 'Int32',
+            'transcriptID': 'string', 'RefAA': 'string', 'AAindex': 'Int32','strand': 'category',
             'MANE': 'category', 'GencodeBasic': 'category', 'exon_number': 'Int16'
         }, usecols=lambda c: c in {
             'chr', 'hg38', 'REF', 'ALT', 'transcriptID', 'RefAA', 'AAindex',
-            'MANE', 'GencodeBasic', 'exon_number'
+            'MANE', 'GencodeBasic', 'exon_number', 'strand'
         })
         return df.rename(columns={
             'transcriptID': 'ENSEMBL_TR',
@@ -94,23 +96,35 @@ def main():
     refseq = load_gencode_refseq(args.refseq)
     merged = pd.merge(idmapper, refseq, on='ENSEMBL_TR', how="left")
     del refseq
-
+    
+    print(merged.columns)
     ensembl_tr_set = merged['ENSEMBL_TR'].dropna().unique()
     genomic_chunks = load_genomic_coordinates(args.genomic_folder, ensembl_tr_set, args.n_cores)
     genomic = pd.concat(genomic_chunks, ignore_index=True)
     del genomic_chunks
-    
+    print(genomic.columns)
+
     final = pd.merge(
-        merged,
         genomic,
-        on=['ENSEMBL_TR', 'uniprot_AA', 'uniprot_pos'],
-        how='right'
+        merged,
+        on=['ENSEMBL_TR'],
+        how='left'
     )
     del merged, genomic
-
+    print(final.columns)
+    
     #  Add metaposition info
     metaposition = load_metaposition(args.metaposition)
-    final = pd.merge(metaposition, final, on='ENSEMBL', how='outer')
+
+    print(metaposition.columns)
+    
+
+    final = pd.merge(
+        final,
+        metaposition,
+        on=['ENSEMBL_TR', 'uniprot_AA', 'uniprot_pos'],
+        how='outer'
+    )
  
     # Reorder columns
     final = final[[
