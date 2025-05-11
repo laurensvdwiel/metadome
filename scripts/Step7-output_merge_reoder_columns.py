@@ -14,7 +14,7 @@ def parse_arguments():
     parser.add_argument("--metaposition", required=True)
     parser.add_argument("--genomic_folder", required=True)
     parser.add_argument("--refseq", required=True)
-    parser.add_argument("--output", required=True)
+    parser.add_argument("--output", reqßuired=True)
     parser.add_argument('--n_cores', type=int, default=None, help='Number of CPU cores to use')
     return parser.parse_args()
 

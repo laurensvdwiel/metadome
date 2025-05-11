@@ -71,7 +71,7 @@ pixi run --manifest-path $PIXI_MANIFEST python $PIXI_MANIFEST_DIR/metadomain_pip
 --cores 64  \
 --config $RUN_CONFIG \
 --working_dir_path $PIXI_MANIFEST_DIR \
---is_for_metadome True 
+--mode metadome 
 
 
 # Check if DELETE_DATA is set to True and delete data folder if it is

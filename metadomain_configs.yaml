@@ -53,10 +53,12 @@ results:
     annotated_metadomains_dir: "data/results/step4_pfam/gencode_annotated_metadomains"
   step5_single_snv:
     snv_tables_dir: "data/results/step5_single_snv/single_SNVs_tables"
+    snv_tables_dir_metadome: "data/results/step5_single_snv/metadome_single_SNVs_tables"
   step6_metapositions:
     metadomain_positions: "data/results/step6_metapositions/metadomain_positions.tsv"
   step7_finaloutput:
     final_output: "data/results/step7_final_output/Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
+    final_output_metadome: "data/results/step7_final_output/MetaDome_Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
   metadome_data_fields:
     genome_build: "GRCh38.p14"
     GENCODE_version: "Version45"

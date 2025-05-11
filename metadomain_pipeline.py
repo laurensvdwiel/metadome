@@ -12,8 +12,9 @@ def parse_arguments():
         parser.add_argument("--config", required=True, default="config/paths.yaml", help="Path to yaml file containing information about files to download and save.")
         parser.add_argument("--cores", required=True, type=int, default=1, help="Number of available cores")
         parser.add_argument("--working_dir_path",required=True,  help="Path to directory containing the pixi.toml, this script and where analysis will be stored")
-        parser.add_argument("--is_for_metadome",required=False, default=False,  help="Boolean, set to true if you want to generate data for the MetaDome database (default=False)")
+        parser.add_argument("--mode",required=True, choices=["variants", "metadome", "both"], default="variants",  help="Calculate file containing variant (variants), input files for MetaDome webserver (MetaDome) or both (both).")
         return parser.parse_args()
+
 
 def setup_logging():
     logging.basicConfig(
@@ -250,31 +251,43 @@ def step4(cfg, cores, pmf):
     return "Executed step 4"
 
 
-def step5(cfg, cores, pmf, is_for_metadome):
-    if not is_for_metadome:
-        logging.info("Step 5: Finding genomic coordinates and computing possible SNVs...")
-    else:
-        logging.info("Step 5: Computing genomic, transcript, and protein mappings for MetaDome...")
+def step5(cfg, cores, pmf, mode):
+    """Step 5: single-SNV finder, in variant, metadome, or both modes."""
     cfg5 = cfg["results"]["step5_single_snv"]
     raw  = cfg["raw"]["gencode"]
     scripts = cfg["scripts_dir"]
 
-    # ensure output dir
-    os.makedirs(cfg5["snv_tables_dir"], exist_ok=True)
+    def run_variant():
+        logging.info("Step 5 (variants): Finding genomic coordinates and computing possible SNVs...")
+        script = "Step5-single_snv_finder.py"
+        cmd = (
+            f"pixi run --manifest-path {pmf} python -u {os.path.join(scripts,script)} "
+            f"--gtf {raw['gtf']} "
+            f"--genome_fa {raw['genome_unc']} "
+            f"--n_cores {cores} "
+            f"--transcript_csv {cfg['results']['step3_mane_annotation']['output_csv']} "
+            f"--output_dir {cfg5['snv_tables_dir']}"
+        )
+        run_cmd(cmd, shell=True)
 
-    script_to_run = 'Step5-single_snv_finder.py' if not is_for_metadome else 'MetaDomeStep5-single_snv_finder.py'
-    
-    cmd = (
-        f"pixi run --manifest-path {pmf} python -u {os.path.join(scripts,script_to_run)} "
-        f"--gtf {raw['gtf']} "
-        f"--genome_fa {cfg["raw"]['gencode']['genome_unc']} "
-        f"--n_cores {cores} "
-        f"--transcript_csv {cfg['results']['step3_mane_annotation']['output_csv']} "
-        f"--output_dir {cfg5['snv_tables_dir']}"
-    )
-    run_cmd(cmd, shell=True)
-    
-    return "Executed step 5"
+    def run_metadome():
+        logging.info("Step 5 (MetaDome): Computing genomic, transcript, and protein mappings for MetaDome...")
+        script = "MetaDomeStep5-single_snv_finder.py"
+        cmd = (
+            f"pixi run --manifest-path {pmf} python -u {os.path.join(scripts,script)} "
+            f"--gtf {raw['gtf']} "
+            f"--genome_fa {raw['genome_unc']} "
+            f"--n_cores {cores} "
+            f"--transcript_csv {cfg['results']['step3_mane_annotation']['output_csv']} "
+            f"--output_dir {cfg5['snv_tables_dir_metadome']}"
+        )
+        run_cmd(cmd, shell=True)
+
+    if mode in ("variants", "both"):
+        run_variant()
+    if mode in ("metadome", "both"):
+        run_metadome()
+
 
 
 def step6(cfg, cores, pmf):
@@ -293,39 +306,58 @@ def step6(cfg, cores, pmf):
     return "Executed step 6"
 
 
-def step7(cfg, cores, pmf, is_for_metadome):
-    logging.info("Step 7: Merge files and prepare output file...")
-    
+def step7(cfg, cores, pmf, mode):
+    """Step 7: merge outputs for variants, metadome, or both."""
     scripts = cfg['scripts_dir']
     idmapper = cfg['results']['step3_mane_annotation']['output_csv']
     metaposition = cfg['results']['step6_metapositions']['metadomain_positions']
-    genomic_folder = cfg['results']['step5_single_snv']['snv_tables_dir']
-    final_output = cfg['results']['step7_finaloutput']['final_output']
     gencode_refseq = cfg['raw']['gencode']['gencode_refseq']
+    pfam_interpro = cfg['raw']['pfam']['pfam_interpro']
     uniprot_name = cfg['intermediate']['uniprot_ids']
     pfamscan_output= cfg["results"]["step4_pfam"]['output_pfamscan_file']
     metadome_annot = cfg['results']['metadome_data_fields']
+
+    def run_variant():
+        script = f"Step7-output_merge_reoder_columns.py"
+        cmd = (
+            f"pixi run --manifest-path {pmf} python {os.path.join(scripts, script)} "
+            f"--idmapper {idmapper} "
+            f"--metaposition {metaposition} "
+            f"--genomic_folder {cfg['results']['step5_single_snv']['snv_tables_dir']} "
+            f"--output {cfg['results']['step7_finaloutput']['final_output']} "
+            f"--uniprot_name {uniprot_name} "
+            f"--pfamscan_output {pfamscan_output} "
+            f"--n_cores {cores}"
+        )
+        run_cmd(cmd, shell=True)
     
-    script_to_run = 'Step7-output_merge_reoder_columns.py' if not is_for_metadome else 'MetaDomeStep7-output_merge_reoder_columns.py'
-    
-    cmd = (
-        f"pixi run --manifest-path {pmf} python {os.path.join(scripts, script_to_run)} "
-        f"--idmapper {idmapper} "
-        f"--metaposition {metaposition} "
-        f"--genomic_folder {genomic_folder} "
-        f"--output {final_output} "
-        f"--uniprot_name {uniprot_name} "
-        f"--pfamscan_output {pfamscan_output} "
-        f"--n_cores {cores} "
-        f"--genome_build {metadome_annot['genome_build']} "
-        f"--source {metadome_annot['source']} "
-        f"--GENCODE_version {metadome_annot['GENCODE_version']} "
-        f"--PFAM_version {metadome_annot['PFAM_version']} "
-        f"--refseq {gencode_refseq}"
-        
-    )
-    run_cmd(cmd, shell=True)
-    
+    def run_metadome():
+        script = f"MetaDomeStep7-output_merge_reoder_columns.py"
+        cmd = (
+            f"pixi run --manifest-path {pmf} python {os.path.join(scripts, script)} "
+            f"--idmapper {idmapper} "
+            f"--metaposition {metaposition} "
+            f"--genomic_folder {cfg['results']['step5_single_snv']['snv_tables_dir_metadome']} "
+            f"--output {cfg['results']['step7_finaloutput']['final_output_metadome']} "
+            f"--uniprot_name {uniprot_name} "
+            f"--pfamscan_output {pfamscan_output} "
+            f"--n_cores {cores} "
+            f"--pfam_interpro {pfam_interpro} "
+            f"--genome_build {metadome_annot['genome_build']} "
+            f"--source {metadome_annot['source']} "
+            f"--GENCODE_version {metadome_annot['GENCODE_version']} "
+            f"--PFAM_version {metadome_annot['PFAM_version']} "
+            f"--refseq {gencode_refseq}"
+        )
+        run_cmd(cmd, shell=True)
+
+    if mode in ("variants", "both"):
+        logging.info("Step 7 (variants): merging variant SNV outputs...")
+        run_variant()
+    if mode in ("metadome", "both"):
+        logging.info("Step 7 (MetaDome): merging MetaDome outputs...")
+        run_metadome()
+
     return "Executed step 7"
 
 def main():
@@ -343,7 +375,7 @@ def main():
     # Load config
     cfg = load_config(args.config)
     
-    # 3) create all output directories up-front
+    # create all output directories up-front
     for name, path in cfg.get("output_directories", {}).items():
         os.makedirs(path, exist_ok=True)
         logging.debug(f"Created directory for {name}: {path}")
@@ -401,9 +433,9 @@ def main():
         ("step2", "Run metadomains script",               lambda: step2(cfg, args.cores, pmf)),
         ("step3", "Annotate with MANE & subset FASTA",    lambda: step3(cfg, pmf)),
         ("step4", "PFAM scan & parse",                    lambda: step4(cfg, args.cores, pmf)),
-        ("step5", "Mapper calculator",                    lambda: step5(cfg, args.cores, pmf, args.is_for_metadome)),
+        ("step5", "Mapper calculator",                    lambda: step5(cfg, args.cores, pmf, args.mode)),
         ("step6", "Convert Stockholm alignments",         lambda: step6(cfg, args.cores, pmf)),
-        ("step7", "Merge results",                        lambda: step7(cfg, args.cores, pmf, args.is_for_metadome)),
+        ("step7", "Merge results",                        lambda: step7(cfg, args.cores, pmf, args.mode)),
     ]
 
     # Run what needed

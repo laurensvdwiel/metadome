@@ -18,7 +18,7 @@ def parse_arguments():
     parser.add_argument("--pfamscan_output", required=True)
     parser.add_argument("--genome_build", required=True)
     parser.add_argument("--PFAM_version", required=True)
-    parser.add_argument("--PFAM_interpro", required=False, default=None)
+    parser.add_argument("--pfam_interpro", required=False, default=None)
     parser.add_argument("--source", required=True, default=None)
     parser.add_argument("--GENCODE_version", required=True, default=None)
     parser.add_argument("--output", required=True)
@@ -26,7 +26,7 @@ def parse_arguments():
     return parser.parse_args()
 
 def load_pfam_to_interpro(path):
-    return pd.read_csv(path, 
+    return pd.read_csv(path,  sep='\t',
                        usecols=['Accession', 'Integrated Into'], 
                        dtype=str).rename(columns={'Accession': 'PFAM_ID', 'Integrated Into': 'interpro_id'})
 
@@ -148,7 +148,7 @@ def main():
     del pfam_names
     
     # Add pfam-interpro mappings
-    interpro = load_pfam_to_interpro(args.PFAM_interpro)
+    interpro = load_pfam_to_interpro(args.pfam_interpro)
     metaposition = pd.merge(metaposition, interpro, on="PFAM_ID", how='left')
     
     # Add RefSeq
