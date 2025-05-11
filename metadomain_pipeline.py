@@ -359,6 +359,20 @@ def step7(cfg, cores, pmf, mode):
 
     return "Executed step 7"
 
+
+def step8(cfg, pmf):
+    logging.info("Step 8: Collecting stats about the metapositions...")
+    input_csv = cfg['results']['step7_finaloutput']['final_output']
+    scripts = cfg["scripts_dir"]
+
+    cmd = (
+        f"pixi run --manifest-path {pmf} python {os.path.join(scripts,'VariantsStep8-stats.py')} "
+        f"--input_csv {input_csv}"
+    )
+    run_cmd(cmd, shell=True)
+    
+    return "Executed step 8"
+
 def main():
 
     args = parse_arguments()
@@ -440,7 +454,7 @@ def main():
     for step in list(completed):
         missing = [p for p in expected_outputs.get(step, []) if not os.path.exists(p)]
         if missing:
-            logging.warning(f"Outputs for {step} missing ({missing}); will re-run that step")
+            logging.warning(f"Outputs for {step} missing ({missing}); will run that step")
             completed.remove(step)
 
     # Pipeline steps
@@ -454,7 +468,12 @@ def main():
         ("step6", "Convert Stockholm alignments",         lambda: step6(cfg, args.cores, pmf)),
         ("step7", "Merge results",                        lambda: step7(cfg, args.cores, pmf, args.mode)),
     ]
+    
+    if args.mode in ("variants", "both"):
+        steps.append(("step8", "Collect stats",         lambda: step8(cfg, pmf)))
 
+    print(steps)
+    
     # Run what needed
     for name, desc, func in steps:
         if name in completed:
