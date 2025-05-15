@@ -32,7 +32,8 @@ numpy==2.2.5
 pandas==2.2.3
 pathtools3==0.2.1
 pbr==6.1.1
-prompt-toolkit==3.0.51
+pillow==11.2.1
+prompt_toolkit==3.0.51
 psycopg2==2.9.10
 pydot==4.0.0
 pyparsing==3.2.3
@@ -45,8 +46,10 @@ redis==6.1.0
 scipy==1.15.3
 six==1.17.0
 SQLAlchemy==2.0.41
-sqlalchemy-schemadisplay==2.0
+sqlalchemy_schemadisplay==2.0
 threadpoolctl==3.6.0
+typing_extensions==4.13.2
+tzdata==2025.2
 vine==5.1.0
 watchdog==6.0.0
 wcwidth==0.2.13
