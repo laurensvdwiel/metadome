@@ -1,4 +1,4 @@
-from sklearn.externals.joblib.parallel import cpu_count
+from joblib.parallel import cpu_count
 
 def CalculateNumberOfActiveThreads(numberOfTasks):
     if(cpu_count() == 2):

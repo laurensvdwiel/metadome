@@ -502,6 +502,26 @@ function visualize() {
     }
 }
 
+function visualizeTranscript(transcript_id) {
+    $("#loading_overlay").addClass('is-active');
+    $("#loading_label").text("Loading...");
+    $.ajax(
+        {
+            type: 'POST',
+            url: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
+            data: JSON.stringify({'transcript_id': transcript_id}),
+            success: function(data) { getVisualizationStatus(data.transcript_id, 0); },
+            error: function(response) {
+                obj = JSON.parse(response.responseText);
+                $("#error-feedback").text(obj['error']);
+                $("#loading_overlay").removeClass('is-active');
+            },
+            contentType: "application/json",
+            dataType: 'json'
+        }
+    );
+}
+
 function getVisualizationStatus(transcript_id, checkCount) {
     $.get(Flask.url_for("api.get_visualization_status_for_transcript",
                         {'transcript_id': transcript_id}),
@@ -898,3 +918,17 @@ function sortTable() {
 	  $('#position_information_tbody').append(row);
     });
 }
+
+function checkForTranscript() {
+    var url = window.location.href;
+    var pattern = /\/transcript\/(.+)\/$/;
+    var match = pattern.exec(url);
+    if (match)
+    {
+        var transcriptID = match[1];
+
+        visualizeTranscript(transcriptID);
+    }
+}
+
+checkForTranscript();

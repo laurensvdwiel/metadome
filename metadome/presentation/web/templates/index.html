@@ -61,7 +61,7 @@
 var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
 
 // Firefox 1.0+
-var isFirefox =  /firefox/i.test(navigator.userAgent);
+var isFirefox = typeof InstallTrigger !== 'undefined';
 
 // Safari 3.0+ "[object HTMLElementConstructor]" 
 var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
@@ -72,8 +72,8 @@ var isIE = /*@cc_on!@*/false || !!document.documentMode;
 // Edge 20+
 var isEdge = !isIE && !!window.StyleMedia;
 
-// Chrome 1+
-var isChrome = !!window.chrome && !!window.chrome.webstore;
+//Chrome 1 - 71
+var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
 
 // Blink engine detection
 var isBlink = (isChrome || isOpera) && !!window.CSS;

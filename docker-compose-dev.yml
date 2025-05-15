@@ -5,7 +5,7 @@ version: '2'
 services:
     app: 
         build: .
-        command: watchmedo auto-restart -d /usr/src/app -p "*" --ignore-pattern "*.log;*.project;*.pydevproject;*.coverage*;*.cpython*;*/__pycache__*;.git/*;dbschema.png" -D -R -- gunicorn -b 0.0.0.0:5000 metadome.application:app
+        command: watchmedo auto-restart -d /usr/src/app -p "*" --ignore-pattern "*.log;*.project;*.pydevproject;*.coverage*;*.cpython*;*/__pycache__*;.git/*;dbschema.png" -D -R -- gunicorn -b 0.0.0.0:5000 metadome.application:app --worker-tmp-dir /dev/shm --workers=2 --threads=4 --worker-class=gthread
         environment:
             - FLASK_APP=metadome/application.py
         ports:

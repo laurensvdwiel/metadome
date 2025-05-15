@@ -86,8 +86,12 @@ def submit_visualization_job_for_transcript():
     data = request.get_json()
 
     if not 'transcript_id' in data:
-        return jsonify({"error: no transcript id"}), 400
+        return jsonify({'error': "no transcript id"}), 400
+
     transcript_id = data['transcript_id']
+
+    if not is_transcript_id(transcript_id):
+        return jsonify({'error': "not a valid transcript id: {}".format(transcript_id)}), 400
 
     _log.debug("submitted {}".format(transcript_id))
 

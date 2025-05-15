@@ -3,7 +3,7 @@
 <!-- Scripts needed for functionality on this page -->
 <script src="{{ url_for('static', filename='js/d3-tip.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard/visualization.js') }}" async></script>
-<script src="{{ url_for('web.dashboard_js') }}" async></script>
+<script src="{{ url_for('web.dashboard_js') }}" type="text/javascript" async></script>
 
 <script async>
 $( function() {
@@ -142,7 +142,11 @@ $( function() {
             <button class="button is-info" id="reset_zoom" onclick='resetZoom()'>Reset Zoom</button>
           </div>
           <div class="control">
-            <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.dashboard") }}"'>Reset Page</button>
+            {% if transcript_id|length > 0 %}
+              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.transcript", transcript_id=transcript_id) }}"'>Reset Page</button>
+            {% else %}
+              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.dashboard") }}"'>Reset Page</button>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -169,7 +173,7 @@ $( function() {
             </tr>
             <tr>
               <th colspan='4'></th>
-              <th><abbr title="gnoMAD variants found across the genome that are related to this position via meta-domains">gnomAD*</abbr></th>
+              <th><abbr title="gnomAD variants found across the genome that are related to this position via meta-domains">gnomAD*</abbr></th>
               <th><abbr title="ClinVar variants found across the genome that are related to this position via meta-domains">ClinVar*</abbr></th>
             </tr>
           </thead>
@@ -180,6 +184,9 @@ $( function() {
         </table>
       </div>
    </div> 
+  </div>
+  <div>
+    <h2 id="error-feedback" class="feedback-text"></h2>
   </div>
 </section>
 

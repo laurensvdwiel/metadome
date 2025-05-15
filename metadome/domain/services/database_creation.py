@@ -8,7 +8,7 @@ from metadome.domain.infrastructure import add_gene_mapping_to_database,\
     filter_gene_names_present_in_database
 from metadome.domain.wrappers.gencode import retrieve_all_protein_coding_gene_names
 from metadome.domain.wrappers.interpro import retrieve_interpro_entries
-from sklearn.externals.joblib.parallel import Parallel, delayed
+from joblib.parallel import Parallel, delayed
 
 import logging
 

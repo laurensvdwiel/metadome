@@ -18,3 +18,8 @@ body {
 	height: 60px;
 	background-color: #eeeeec;
 }
+
+.feedback-text
+{
+	color: red;
+}
