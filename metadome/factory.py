@@ -82,10 +82,8 @@ def make_celery(app):
 
     app = app or create_app()
 
-    celery = Celery(__name__)
+    celery = Celery(__name__, broker=app.config['CELERY_BROKER_URL'], backend=app.config['CELERY_RESULT_BACKEND'])
     celery.conf.update(
-        broker_url=app.config['CELERY_BROKER_URL'],
-        result_backend=app.config['CELERY_RESULT_BACKEND'],
         task_track_started=app.config['CELERY_TRACK_STARTED'],
         task_serializer=app.config['CELERY_TASK_SERIALIZER'],
         result_serializer=app.config['CELERY_RESULT_SERIALIZER'],
@@ -103,5 +101,7 @@ def make_celery(app):
 
     # needed here to register celery tasks, this should not be anywhere else
     import metadome.tasks
+
+    celery.set_default() # Make this the default app for all threads.
 
     return celery
