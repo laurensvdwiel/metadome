@@ -67,7 +67,7 @@ services:
              start_period: 10s
     redis:
         restart: always
-        image: redis:4.0
+        image: redis:8.0.1
         platform: linux/arm64
         depends_on:
             - db
@@ -75,7 +75,7 @@ services:
           - "6379:6379"
     rabbitmq:
         restart: always
-        image: rabbitmq:3.7
+        image: rabbitmq:4.1.0
         platform: linux/arm64
         depends_on:
             - db
