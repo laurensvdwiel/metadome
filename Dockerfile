@@ -28,6 +28,5 @@ WORKDIR /usr/src/app
 
 # Configure Python environment
 COPY requirements.txt /usr/src/app/
-RUN pip install --upgrade setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . /usr/src/app
