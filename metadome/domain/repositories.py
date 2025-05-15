@@ -32,7 +32,7 @@ class GeneRepository:
         """Retrieves all gene names for a given set of gencode transcripts 
         based on multiple Gene objects as {gencode_transcription_id: gene_name}"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             _gene_name_per_gencode_transcription_id = {}
@@ -52,7 +52,7 @@ class GeneRepository:
     def retrieve_transcript_id_for_multiple_gene_ids(_gene_ids):
         """Retrieves all gencode transcripts for multiple Gene objects as {gene_id: gencode_transcription_id}"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             _gencode_transcription_id_per_gene_id = {}
@@ -72,7 +72,7 @@ class GeneRepository:
     def retrieve_transcript_id_for_multiple_protein_ids(_protein_ids):
         """Retrieves all gencode transcripts for multiple protein ids as {gene_id: gencode_transcription_id}"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             _gencode_transcription_id_per_gene_id = {}
@@ -94,7 +94,7 @@ class GeneRepository:
     def retrieve_all_transcript_ids_with_mappings():
         """Retrieves all transcripts for which there are mappings"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try :
             return [transcript for transcript in _session.query(Gene.gencode_transcription_id).filter(Gene.protein_id != None).all()]
@@ -120,7 +120,7 @@ class GeneRepository:
     def retrieve_all_gene_names_from_db():
         """Retrieves all gene names present in the database"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             return [gene_name for gene_name in _session.query(Gene.gene_name).distinct(Gene.gene_name).all()]
@@ -137,7 +137,7 @@ class GeneRepository:
     def retrieve_all_transcript_ids(gene_name):
         """Retrieves all transcript ids for a gene name"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             return [transcript for transcript in _session.query(Gene).filter(func.lower(Gene.gene_name) == gene_name.lower()).all()]
@@ -154,7 +154,7 @@ class GeneRepository:
     def retrieve_gene(transcription_id):
         """Retrieves the gene object for a given transcript id"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
         try:
             return _session.query(Gene).filter(Gene.gencode_transcription_id == transcription_id).one()
         except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
@@ -194,7 +194,7 @@ class InterproRepository:
     def get_domains_for_ext_domain_id(ext_domain_id):
         """Retrieves all interpro entries of the corresponding ext_db_id"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             return [interpro_domain for interpro_domain in _session.query(Interpro).filter(Interpro.ext_db_id == ext_domain_id).all()]
@@ -211,7 +211,7 @@ class InterproRepository:
     def get_domains_for_protein(protein_id):
         """Retrieves all interpro entries for a given protein_id"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             return [interpro_domain for interpro_domain in _session.query(Interpro).filter(Interpro.protein_id == protein_id).all()]
@@ -230,7 +230,7 @@ class ProteinRepository:
     def retrieve_protein_ac_for_multiple_protein_ids(_protein_ids):
         """Retrieves all uniprot accession codes for multiple Protein objects as {protein_id: uniprot_ac}"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             _protein_ac_per_protein_id = {}
@@ -250,7 +250,7 @@ class ProteinRepository:
     def retrieve_protein_id_for_multiple_protein_acs(_protein_acs):
         """Retrieves all protein ids for multiple Protein objects as {protein_ac: uniprot_id}"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             _protein_id_per_protein_ac = {}
@@ -270,7 +270,7 @@ class ProteinRepository:
     def retrieve_protein(protein_id):
         """Retrieves the protein object for a given protein id"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             return _session.query(Protein).filter(Protein.id == protein_id).one()
@@ -295,7 +295,7 @@ class MappingRepository:
     def get_mappings_for_multiple_protein_ids(_protein_ids):
         """Retrieves all mappings for a multiple Protein objects as {protein_id: [ Mapping ]}"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             _mappings_per_protein = {}
@@ -318,7 +318,7 @@ class MappingRepository:
     def get_mappings_for_protein(_protein):
         """Retrieves all mappings for a Protein object"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             return [x for x in _session.query(Mapping).filter(Mapping.protein_id == _protein.id).all()]
@@ -336,7 +336,7 @@ class MappingRepository:
     def get_mappings_for_gene(_gene):
         """Retrieves all mappings for a Gene object"""
         # Open as session
-        _session = db.create_scoped_session()
+        _session = db._make_scoped_session(options={})
 
         try:
             return [x for x in _session.query(Mapping).filter(Mapping.gene_id == _gene.id).all()]

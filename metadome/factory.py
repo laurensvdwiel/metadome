@@ -82,9 +82,14 @@ def make_celery(app):
 
     app = app or create_app()
 
-    celery = Celery(__name__, backend=app.config['CELERY_RESULT_BACKEND'],
-                              broker=app.config['CELERY_BROKER_URL'])
-    celery.conf.update(app.config)
+    celery = Celery(__name__)
+    celery.conf.update(
+        broker_url=app.config['CELERY_BROKER_URL'],
+        result_backend=app.config['CELERY_RESULT_BACKEND'],
+        task_track_started=app.config['CELERY_TRACK_STARTED'],
+        task_serializer=app.config['CELERY_TASK_SERIALIZER'],
+        result_serializer=app.config['CELERY_RESULT_SERIALIZER'],
+        accept_content=app.config['CELERY_ACCEPT_CONTENT'])
     TaskBase = celery.Task
 
     class ContextTask(TaskBase):

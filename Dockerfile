@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 python:3.10-bullseye
+FROM --platform=linux/amd64 python:3.13.3-bullseye
 
 # Create directory to install required externals
 RUN mkdir -p /usr/externals
@@ -28,6 +28,6 @@ WORKDIR /usr/src/app
 
 # Configure Python environment
 COPY requirements.txt /usr/src/app/
-RUN pip install --upgrade pip wheel setuptools==58
+RUN pip install --upgrade setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . /usr/src/app
