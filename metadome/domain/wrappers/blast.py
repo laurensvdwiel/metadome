@@ -83,11 +83,11 @@ def run_blast(sequence, blastdb, max_target_seqs=None):
     if max_target_seqs is None:
         args = [BLASTP_EXECUTABLE, "-query", tmp_file.name, "-evalue", "1e-5",
             "-num_threads", "15", "-db", blastdb,
-            "-out", out_blast, '-outfmt', '10 std nident']
+            "-out", out_blast, '-outfmt', '10 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore nident']
     else:
         args = [BLASTP_EXECUTABLE, "-query", tmp_file.name, "-evalue", "1e-5",
             "-num_threads", "15", "-db", blastdb,
-            "-out", out_blast, '-outfmt', '10 std nident',
+            "-out", out_blast, '-outfmt', '10 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore nident',
             "-max_target_seqs", str(max_target_seqs)]
     try:
         subprocess.call(args)

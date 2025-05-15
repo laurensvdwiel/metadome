@@ -84,30 +84,50 @@ Clone the repository and go into the project folder:
     git clone https://github.com/cmbi/metadome.git
     cd metadome
 
-First configure the volumes (at the \<ABSOLUTE PATH\>) to correspond with your data folders in the docker-compose.yml (lines 72, 78, 84, 90, 96, 102).
+### Configuration
 
-Also make sure to create a folder in your data folder specifically to contain the MetaDome mapping database and at the path to line 108 in the docker-compose.yml. This database is to be created on a first run (see First time set-up below).
+Be sure to configure the correct file paths in the `.env` file (at the \<ABSOLUTE PATH\>) to correspond with your data folders.
+
+If you are attempting to recreate the underlying database (see First time set-up below), then be sure to create an empty folder specifically to contain the MetaDome mapping PostgreSQL database at `METADOME_POSTGRES_DB_DIR` in the .env file.
 
 ### (Optional) Credentials configuration
 If you are planning to expose the MetaDome server to a public adress, please make sure you get the security in order.
 
-	- Change the variable `POSTGRES_PASSWORD` for the postgresql database in `./metadome/postgres_credentials.py`
+	- Change the variable `POSTGRES_PASSWORD`, `POSTGRES_USER`, and `POSTGRES_DB` for the postgresql database in `./metadome/database.env`
 	- Change the variable `SECRET_KEY_CRED` in `./metadome/flask_app_credentials.py`
 
 Otherwise you will be using default passwords and API secrets.
 
-## Running the server
 ### First time set-up
 
-Run the following command to execute the install script:
+First you will need to build the docker-compose:
 
-    docker-compose run app python install.py
+    docker-compose build --force-rm --no-cache
+
+This will build the docker containers required to run the webserver.
+The PostgreSQL database needs to be initialized, therefore you should run the entire webserver untill it stabilizes (e.g. no more messages pop up):
+
+    docker-compose docker-compose.yml up
+
+When there are no further print-outs of following this command, the database should be readily initialized. You can shut down the webserver by `CTRL+C` keyboard command.
+
+TROUBLE SHOOTING: If there are still print outs even after a minute or so, you will have to follow these steps:
+- Stop the web server and remove volume bindings : `docker-compose down -v`
+- Make sure the empty folder to contain the MetaDome mapping PostgreSQL database at `metadome_postgres_db:` in the `volumes:` section in the docker-compose.yml is empty. If not, remove all files.
+- Make sure no further metadome instances are running (check through `docker ps -a`)
+- Restart the steps in first time set-up
+
+If you get through this step correctly, you can run the following command to execute the install script that will generate the database:
+
+    docker-compose run app python install.py --build --platform=linux/amd64
 
 Note: Launching the server this way, by creating the database from scratch, will first make it generate all mappings between gencode, swissprot and Pfam. This process, depending on your configuration, may take 2 weeks. If you require a pre-build database, do not hesitate to contact us.
 
+## Running the server
+
 ### Starting the server
 
-If you followed the above steps, you can now run the webserver via the command:
+If you followed the above configuration steps, you should now be able to run the webserver via the command:
 
     docker-compose docker-compose.yml up -d
 

@@ -4,10 +4,11 @@ DEBUG = False
 SECRET_KEY = SECRET_KEY_CRED
 
 # FLask-SQLAchemy settings
-from metadome.postgres_credentials import POSTGRES_USER, POSTGRES_PASSWORD
+# from metadome.postgres_credentials import POSTGRES_USER, POSTGRES_PASSWORD
+import os
 SQLALCHEMY_RECORD_QUERIES = DEBUG # should be false when not debug
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-SQLALCHEMY_DATABASE_URI = "postgresql://"+POSTGRES_USER+":"+POSTGRES_PASSWORD+"@metadome-db-1/"
+SQLALCHEMY_DATABASE_URI = "postgresql://"+os.environ["POSTGRES_USER"]+":"+os.environ["POSTGRES_PASSWORD"]+"@"+os.environ["POSTGRES_HOST"]+"/"+os.environ["POSTGRES_DB"]
 SQLALCHEMY_ECHO = True
 SQLALCHEMY_POOL_TIMEOUT = 10
 

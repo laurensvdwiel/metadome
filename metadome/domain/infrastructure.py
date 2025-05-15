@@ -50,7 +50,7 @@ def write_all_genes_names_to_disk():
     # write all gene names to file
     with open(GENE_NAMES_FILE, 'w') as gene_names_file:
         for gene_name in gene_names:
-            gene_names_file.write("%s\n" % gene_name)
+            gene_names_file.write("%s\n" % gene_name[0])
 
 
 def add_gene_mapping_to_database(gene_mapping):

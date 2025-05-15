@@ -1,6 +1,11 @@
-FROM --platform=linux/x86_64 python:3.5
+FROM --platform=linux/amd64 python:3.13.3-bullseye
 
+# Create directory to install required externals
 RUN mkdir -p /usr/externals
+
+# Install packages required for blast
+Run apt-get update
+RUN apt-get install libidn11
 
 # Install BLAST+
 RUN wget http://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/2.6.0/ncbi-blast-2.6.0+-x64-linux.tar.gz

@@ -765,7 +765,7 @@ function annotateDomains(protDomain, tolerance_data, domain_metadomain_coverage)
 		    document.getElementById("domain_information_overlay_content").innerHTML = '';
 		    // Add domain occurrence details
 		    document.getElementById("domain_information_overlay_content").innerHTML += '<label class="label" >';
-		    document.getElementById("domain_information_overlay_content").innerHTML += 'Domain: ' + d.Name+' (<a href="http://pfam.xfam.org/family/' + d.ID + '" target="_blank">' + d.ID + '</a>), located at p.'+d.start+' - p.'+d.stop;
+		    document.getElementById("domain_information_overlay_content").innerHTML += 'Domain: ' + d.Name+' (<a href="https://www.ebi.ac.uk/interpro/entry/pfam/' + d.ID + '" target="_blank">' + d.ID + '</a>), located at p.'+d.start+' - p.'+d.stop;
 		    document.getElementById("domain_information_overlay_content").innerHTML += ' in ';
 		    document.getElementById("domain_information_overlay_content").innerHTML += document.getElementById("geneDetails").innerHTML +'.<br>';
 		    

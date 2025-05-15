@@ -1,6 +1,8 @@
 # python auto generated
 *.py[a-z]
 
+.DS_Store
+.idea/*
 .coverage
 *.log
 *.project

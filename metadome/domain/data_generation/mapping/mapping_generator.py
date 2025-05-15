@@ -10,6 +10,7 @@ from metadome.domain.wrappers.uniprot import retrieveIdenticalUniprotMatch,\
 from metadome.domain.data_generation.mapping.Gene2ProteinMapping import createMappingOfGeneTranscriptionToTranslationToProtein
 from metadome.domain.models.gene import Gene
 from metadome.domain.models.protein import Protein
+from metadome.domain.models.interpro import Interpro
 
 import logging
 
