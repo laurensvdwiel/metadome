@@ -1,0 +1,35 @@
+services:
+    app:
+        restart: always
+        build: .
+        command: "python -m metadome.batch_load --csv /prebuild_data/MetaDome_Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
+        env_file:
+           - metadome/database.env
+        depends_on:
+            - db
+        volumes:
+            - ${PWD}:/usr/src/app
+            - /Users/laurens/data/metadome/metadome_prebuild:/prebuild_data
+    db:
+        restart: always
+        image: postgres:17.5
+        platform: linux/arm64
+        env_file:
+           - metadome/database.env
+        ports:
+            - "5432:5432"
+        volumes:
+            - metadome_postgres_db:/var/lib/postgresql/data
+        healthcheck:
+             test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+             interval: 30s
+             timeout: 30s
+             retries: 5
+             start_period: 10s
+volumes:
+   metadome_postgres_db:
+      driver_opts:
+        type: none
+        device: ${METADOME_POSTGRES_DB_DIR}
+        o: bind
+      driver: local
