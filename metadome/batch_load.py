@@ -7,24 +7,14 @@ import sys
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
-from dotenv import load_dotenv
-
-# --- Environment Variables ---
-# Load environment variables from .env file
-load_dotenv()
+from metadome.default_settings import SQLALCHEMY_DATABASE_URI
 
 # --- Flask App and SQLAlchemy Setup ---
 # This would typically be in your app.py or a config file
 flask_app = Flask(__name__)
 
 # IMPORTANT: Configure your actual database URI
-DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_PORT = os.getenv('DB_PORT', 5432)
-DB_USER = os.getenv('DB_USER')
-DB_PWD = os.getenv('DB_PWD')
-DB_NAME = os.getenv('DB_NAME', 'metadome')
-
-flask_app.config['SQLALCHEMY_DATABASE_URI'] =  f"postgresql://{DB_USER}:{DB_PWD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+flask_app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI #f"postgresql://{DB_USER}:{DB_PWD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False # Optional: silence a warning
 
 db = SQLAlchemy() # Initialize your db object globally or pass around
@@ -32,7 +22,7 @@ db = SQLAlchemy() # Initialize your db object globally or pass around
 # --- Model Definitions (gene.py, protein.py, etc.) ---
 # (These files would import 'db' from wherever you defined it above)
 from metadome.database import db
-from metadome.domain.models.gene import Strand, Gene
+from metadome.domain.models.gene import Gene
 from metadome.domain.models.protein import Protein, ProteinSource 
 from metadome.domain.models.mapping import Mapping
 from metadome.domain.models.interpro import Interpro
@@ -88,13 +78,13 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
 
                 try:
                     # 1. Process Protein
-                    uniprot_ac = get_cleaned_str(row, 'uniprot_ac')
+                    uniprot_ac = get_cleaned_str(row, 'uniprot_name') #@TODO should be uniprot_ac
                     if uniprot_ac:
                         if uniprot_ac in protein_cache:
                             current_protein = protein_cache[uniprot_ac]
                         else:
                             current_protein = sqlalchemy_session.query(Protein).filter_by(uniprot_ac=uniprot_ac).one_or_none()
-                            if not current_protein:
+                            if current_protein is None:
                                 uniprot_name_val = get_cleaned_str(row, 'uniprot_name')
                                 source_val_str = get_cleaned_str(row, 'source')
                                 eval_interpro_val = safe_bool_conversion(row.get('evaluated_interpro_domains'), False)
@@ -103,8 +93,8 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                 else:
                                     current_protein = Protein(_uniprot_ac=uniprot_ac, 
                                                               _uniprot_name=uniprot_name_val, 
-                                                              _source_str=source_val_str,
-                                                              _evaluated_interpro_domains=eval_interpro_val)
+                                                              _source=source_val_str)
+                                    current_protein.evaluated_interpro_domains = eval_interpro_val
                                     sqlalchemy_session.add(current_protein)
                             protein_cache[uniprot_ac] = current_protein
                     
@@ -115,7 +105,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                             current_gene = gene_cache[gencode_tr_id]
                         else:
                             current_gene = sqlalchemy_session.query(Gene).filter_by(gencode_transcription_id=gencode_tr_id).one_or_none()
-                            if not current_gene:
+                            if current_gene is None:
                                 strand_str = get_cleaned_str(row, 'strand')
                                 gene_name_val = get_cleaned_str(row, 'gene_name')
                                 gencode_transl_name_val = get_cleaned_str(row, 'gencode_translation_name')
@@ -125,7 +115,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                     logging.warning(f"L{line_num}: Missing gencode_translation_name for Gene '{gencode_tr_id}'. Skipping Gene.")
                                 else:
                                     current_gene = Gene(
-                                        _strand_str=strand_str, _gene_name=gene_name_val,
+                                        _strand=strand_str, _gene_name=gene_name_val,
                                         _gencode_transcription_id=gencode_tr_id, _gencode_translation_name=gencode_transl_name_val,
                                         _gencode_gene_id=get_cleaned_str(row, 'gencode_gene_id'),
                                         _havana_gene_id=get_cleaned_str(row, 'havana_gene_id'),
@@ -139,7 +129,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                     ext_db_id_val = get_cleaned_str(row, 'ext_db_id')
                     uniprot_start_val = safe_int_conversion(row.get('uniprot_start'))
                     uniprot_stop_val = safe_int_conversion(row.get('uniprot_stop'))
-                    if current_protein and ext_db_id_val and uniprot_start_val is not None and uniprot_stop_val is not None:
+                    if current_protein is not None and ext_db_id_val is not None and uniprot_start_val is not None and uniprot_stop_val is not None:
                         interpro_cache_key = (current_protein.uniprot_ac, ext_db_id_val, uniprot_start_val, uniprot_stop_val)
                         if interpro_cache_key not in interpro_cache:
                             existing_interpro = None
@@ -150,15 +140,15 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                             if not existing_interpro:
                                 interpro_obj = Interpro(
                                     _ext_db_id=ext_db_id_val, _uniprot_start=uniprot_start_val, _uniprot_stop=uniprot_stop_val,
-                                    _interpro_id=get_cleaned_str(row, 'interpro_id'), _region_name=get_cleaned_str(row, 'name'))
-                                interpro_obj.protein = current_protein
+                                    _interpro_id=get_cleaned_str(row, 'interpro_id'), _region_name=get_cleaned_str(row, 'name')) #@TODO should be region_name
+                                interpro_obj.protein_id = current_protein.id
                                 sqlalchemy_session.add(interpro_obj)
                                 interpro_cache[interpro_cache_key] = interpro_obj
                             else:
                                 interpro_cache[interpro_cache_key] = existing_interpro
                     
                     # 4. Process Mapping
-                    if current_gene:
+                    if current_gene is not None and current_protein is not None:
                         chromosome_val = get_cleaned_str(row, 'chromosome')
                         chromosome_pos_val = safe_int_conversion(row.get('chromosome_position'))
                         map_strand_str = get_cleaned_str(row, 'strand')
@@ -166,14 +156,16 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                             logging.warning(f"L{line_num}: Missing/invalid critical mapping info for gene '{current_gene.gencode_transcription_id}'. Skipping.")
                         else:
                             mapping_obj = Mapping(
-                                chromosome=chromosome_val, chromosome_position=chromosome_pos_val, strand_str=map_strand_str,
-                                gene_obj=current_gene, base_pair=get_cleaned_str(row, 'base_pair'),
+                                chromosome=chromosome_val, chromosome_position=chromosome_pos_val, strand=map_strand_str,
+                                gene_id=current_gene.id, base_pair=get_cleaned_str(row, 'base_pair'),
                                 codon=get_cleaned_str(row, 'codon'), codon_base_pair_position=safe_int_conversion(row.get('codon_base_pair_position')),
                                 amino_acid_residue=get_cleaned_str(row, 'amino_acid_residue'), amino_acid_position=safe_int_conversion(row.get('amino_acid_position')),
                                 cDNA_position=safe_int_conversion(row.get('cDNA_position')),
                                 uniprot_residue=get_cleaned_str(row, 'uniprot_residue'), uniprot_position=safe_int_conversion(row.get('uniprot_position')),
-                                protein_obj=current_protein)
+                                protein_id=current_protein.id)
                             sqlalchemy_session.add(mapping_obj)
+                    else:
+                        logging.warning(f"L{line_num}: Missing Gene or Protein for mapping. Skipping mapping for gene '{gencode_tr_id}' and protein '{uniprot_ac}'.")
                     
                     current_batch_count += 1
                     if current_batch_count >= batch_size:
