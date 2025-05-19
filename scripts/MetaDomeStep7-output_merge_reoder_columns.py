@@ -31,9 +31,16 @@ def load_pfam_to_interpro(path):
                        dtype=str).rename(columns={'Accession': 'PFAM_ID', 'Integrated Into': 'interpro_id'})
 
 def load_idmapper(path):
-    return pd.read_csv(path, 
-                       usecols=['qseqid', 'sseqid'], 
-                       dtype=str).rename(columns={'qseqid': 'ENSEMBL', 'sseqid': 'uniprot_ac'})
+    tmp = pd.read_csv(path, 
+                       usecols=['qseqid', 'swissprot_id'], 
+                       dtype=str)
+    
+    tmp['uniprot_ac'] = tmp['swissprot_id'].str.split('|', expand=True)[1]
+    tmp['uniprot_name'] = tmp['swissprot_id'].str.split('|', expand=True)[2]
+    
+    return tmp[['qseqid', 'uniprot_ac', 'uniprot_name']].rename(columns={'qseqid': 'ENSEMBL'})
+     
+     
 
 def load_metaposition(path):
     return pd.read_csv(path, sep='\t').rename(columns={
@@ -80,7 +87,7 @@ def parse_pfamscan(pfamscan_path):
     df = (
         df.assign(
             PFAM_ID = df['hmm_acc'].str.split('.').str[0],
-            name    = df['hmm_name']
+            region_name    = df['hmm_name']
         )
         [['PFAM_ID','region_name']]
         .drop_duplicates()
@@ -129,9 +136,9 @@ def main():
     idmapper = load_idmapper(args.idmapper)
 
     # Add uniprot names
-    uniprot_name = pd.read_csv(args.uniprot_name, sep="|", names=['sp', "uniprot_ac", "uniprot_name"])
-    idmapper = pd.merge(idmapper, uniprot_name, on='uniprot_ac', how='inner')
-    del uniprot_name
+    #uniprot_name = pd.read_csv(args.uniprot_name, sep="|", names=['sp', "uniprot_ac", "uniprot_name"])
+    #idmapper = pd.merge(idmapper, uniprot_name, on='uniprot_ac', how='inner')
+    #del uniprot_name
     
     # Split ENSEMBL fields
     idmapper = split_ensembl_fields(idmapper)
@@ -191,13 +198,12 @@ def main():
         'gene_name', 'gencode_gene_id', 'havana_gene_id', 'exon_number',
         'gencode_translation_name','ENSEMBL_TR','RefSeq', 'havana_translation_id',
         'cDNA_position', 'codon', 'codon_base_pair_position',
-        'uniprot_ac', 'uniprot_pos', 'uniprot_AA', 'sequence_length',
+        'uniprot_ac','uniprot_name', 'uniprot_pos', 'uniprot_AA', 'sequence_length',
         'evaluated_interpro_domains',
         'PFAM_ID','region_name', 'interpro_id', 'domain_length' ,'PFAM_consensus_pos', 'uniprot_start', 'uniprot_stop',
         'MANE','GencodeBasic',
         'genome_build', 'PFAM_version','GENCODE_version','source']].rename(
             columns={'ENSEMBL_TR': 'gencode_transcription_id',
-                       'uniprot_ac': 'uniprot_name',
                        'uniprot_pos': 'amino_acid_position',
                        'chr': 'chromosome',
                        'hg38': 'chromosome_position',
