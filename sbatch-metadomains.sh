@@ -8,7 +8,7 @@
 #SBATCH --partition=batch
 #SBATCH --requeue
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=64
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=100G
 #SBATCH --time=01:00:00
 
@@ -68,7 +68,7 @@ pixi run --manifest-path $PIXI_MANIFEST which python
 
 echo "Running pipeline..."
 pixi run --manifest-path $PIXI_MANIFEST python $PIXI_MANIFEST_DIR/metadomain_pipeline.py  \
---cores 64  \
+--cores 32  \
 --config $RUN_CONFIG \
 --working_dir_path $PIXI_MANIFEST_DIR \
 --mode metadome 

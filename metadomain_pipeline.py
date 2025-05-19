@@ -128,7 +128,8 @@ def step1(cfg, cores, pmf):
     cmd = f"grep OX=9606 {inter['uniprot_combined_fasta']} | sed 's/^>//;s/ .*//' > {inter['uniprot_ids']}"
     run_cmd(cmd, shell=True)
     cmd = f"pixi run --manifest-path {pmf} seqkit grep -f {inter['uniprot_ids']} {inter['uniprot_combined_fasta']} > {inter['uniprot_human_fasta']}"
-
+    run_cmd(cmd, shell=True)
+    
     logging.info("Maing BLAST database with Uniprot human data...")
 
     cmd = (
