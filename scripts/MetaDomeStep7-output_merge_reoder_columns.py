@@ -82,7 +82,7 @@ def parse_pfamscan(pfamscan_path):
             PFAM_ID = df['hmm_acc'].str.split('.').str[0],
             name    = df['hmm_name']
         )
-        [['PFAM_ID','name']]
+        [['PFAM_ID','region_name']]
         .drop_duplicates()
         .reset_index(drop=True)
     )
@@ -193,7 +193,7 @@ def main():
         'cDNA_position', 'codon', 'codon_base_pair_position',
         'uniprot_ac', 'uniprot_pos', 'uniprot_AA', 'sequence_length',
         'evaluated_interpro_domains',
-        'PFAM_ID','name', 'interpro_id', 'domain_length' ,'PFAM_consensus_pos', 'uniprot_start', 'uniprot_stop',
+        'PFAM_ID','region_name', 'interpro_id', 'domain_length' ,'PFAM_consensus_pos', 'uniprot_start', 'uniprot_stop',
         'MANE','GencodeBasic',
         'genome_build', 'PFAM_version','GENCODE_version','source']].rename(
             columns={'ENSEMBL_TR': 'gencode_transcription_id',
