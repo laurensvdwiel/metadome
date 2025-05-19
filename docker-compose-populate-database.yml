@@ -1,6 +1,6 @@
 services:
     app:
-        restart: always
+        restart: on-failure
         build: .
         command: "python -m metadome.batch_load --csv /prebuild_data/MetaDome_Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
         env_file:
