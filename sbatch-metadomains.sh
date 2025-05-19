@@ -8,8 +8,8 @@
 #SBATCH --partition=batch
 #SBATCH --requeue
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=32
-#SBATCH --mem=180G
+#SBATCH --cpus-per-task=64
+#SBATCH --mem=100G
 #SBATCH --time=01:00:00
 
 usage ()

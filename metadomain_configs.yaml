@@ -2,11 +2,11 @@
 
 download_links:
   gencode:
-    transcripts: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.pc_transcripts.fa.gz"
-    translations: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.pc_translations.fa.gz"
-    gtf: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.annotation.gtf.gz"
-    genome: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/GRCh38.p14.genome.fa.gz"
-    gencode_refseq: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_45/gencode.v45.metadata.RefSeq.gz"
+    transcripts: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.pc_transcripts.fa.gz"
+    translations: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.pc_translations.fa.gz"
+    gtf: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz"
+    genome: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/GRCh37.p13.genome.fa.gz"
+    gencode_refseq: "https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.metadata.RefSeq.gz"
   uniprot:
     isoforms_fasta: "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot_varsplic.fasta.gz"
     swissprot_fasta: "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
@@ -15,12 +15,12 @@ download_links:
     hmm_dat: "https://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam37.4/Pfam-A.hmm.dat.gz"
 raw:
   gencode:
-    transcripts: "data/raw/gencode/gencode.v45.pc_transcripts.fa.gz"
-    translations: "data/raw/gencode/gencode.v45.pc_translations.fa.gz"
-    gtf: "data/raw/gencode/gencode.v45.annotation.gtf.gz"
-    genome: "data/raw/gencode/GRCh38.p14.genome.fa.gz"
-    genome_unc: "data/raw/gencode/GRCh38.p14.genome.fa"
-    gencode_refseq: "data/raw/gencode/gencode.v45.metadata.RefSeq.gz"
+    transcripts: "data/raw/gencode/gencode.v19.pc_transcripts.fa.gz"
+    translations: "data/raw/gencode/gencode.v19.pc_translations.fa.gz"
+    gtf: "data/raw/gencode/gencode.v19.annotation.gtf.gz"
+    genome: "data/raw/gencode/GRCh37.p13.genome.fa.gz"
+    genome_unc: "data/raw/gencode/GRCh37.p13.genome.fa"
+    gencode_refseq: "data/raw/gencode/gencode.v19.metadata.RefSeq.gz"
   uniprot:
     isoforms_fasta: "data/raw/uniprot/uniprot_sprot_varsplic.fasta.gz"
     swissprot_fasta: "data/raw/uniprot/uniprot_sprot.fasta.gz"
@@ -36,18 +36,18 @@ intermediate:
   uniprot_human_fasta: "data/intermediate/uniprot_combined.Human.fasta"
   uniprot_ids: "data/intermediate/IDs.txt"
   blast_db_dir: "data/intermediate/blast_db/blast_db"
-  blast_output: "data/intermediate/blast/gencodev45_uniprot2025_01.eval1e-5.tab"
+  blast_output: "data/intermediate/blast/gencodev19_uniprot2025_01.eval1e-5.tab"
   pfam_scan_output: "data/results/step3_mane_annotation/pfam_scan_output.txt"
 
 results:
   step1_mapping:
-    perfect_matches: "data/results/step1_mapping/gencodev45_uniprot2025_01.eval1e-5.perfectmatches.tab"
+    perfect_matches: "data/results/step1_mapping/gencodev19_uniprot2025_01.eval1e-5.perfectmatches.tab"
   step2_checks:
-    pass_csv: "data/results/step2_checks/Gencode45-Uniprot2025_01-IDmapper-perfect_matches.csv"
-    fail_csv: "data/results/step2_checks/Gencode45-Uniprot2025_01-IDmapper-failed_matches.csv"
+    pass_csv: "data/results/step2_checks/Gencode19-Uniprot2025_01-IDmapper-perfect_matches.csv"
+    fail_csv: "data/results/step2_checks/Gencode19-Uniprot2025_01-IDmapper-failed_matches.csv"
   step3_mane_annotation:
-    matched_protein_fa: "data/results/step3_mane_annotation/gencode.v45.transcripts.matched.uniprot.fa"
-    output_csv: "data/results/step3_mane_annotation/gencodev45_uniprot2025_IDmapper_perfectmatches.MANE.csv"
+    matched_protein_fa: "data/results/step3_mane_annotation/gencode.v19.transcripts.matched.uniprot.fa"
+    output_csv: "data/results/step3_mane_annotation/gencodev19_uniprot2025_IDmapper_perfectmatches.MANE.csv"
   step4_pfam:
     output_pfamscan_file: "data/results/step4_pfam/pfam_scan_output.txt"
     annotated_metadomains_dir: "data/results/step4_pfam/gencode_annotated_metadomains"
@@ -57,11 +57,11 @@ results:
   step6_metapositions:
     metadomain_positions: "data/results/step6_metapositions/metadomain_positions.tsv"
   step7_finaloutput:
-    final_output: "data/results/step7_final_output/Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
-    final_output_metadome: "data/results/step7_final_output/MetaDome_Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
+    final_output: "data/results/step7_final_output/Gencodev19-PFAM37.4-Uniprot2025_metapositions.csv"
+    final_output_metadome: "data/results/step7_final_output/MetaDome_Gencodev19-PFAM37.4-Uniprot2025_metapositions.csv"
   metadome_data_fields:
-    genome_build: "GRCh38.p14"
-    GENCODE_version: "Version45"
+    genome_build: "GRCh37.p13"
+    GENCODE_version: "Version19"
     PFAM_version: "Version37.4"
     source: "SwissProt"
 

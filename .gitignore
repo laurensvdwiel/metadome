@@ -41,8 +41,4 @@ checkpoint-*/
 *.csv
 
 #Exceptions
-!Utils/metadome.hg19.wiel.8736positions4tests.tsv.gz
-AllLayers/Human-AllLayers/
-FreezingAllbutLast/Human-FreezingAllbutLast/
-FreezingAllbutLast5/Human-FreezingAllbutLast5/
-artifacts/
+!interpro-pfam.tsv
