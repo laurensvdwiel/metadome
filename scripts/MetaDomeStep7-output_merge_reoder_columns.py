@@ -98,13 +98,13 @@ def parse_pfamscan(pfamscan_path):
 
 def split_ensembl_fields(df):
     split_fields = df['ENSEMBL'].str.split('|', expand=True)
-    df['ENSEMBL_TR'] = split_fields[1]  
-    df['gencode_gene_id'] = split_fields[2]  
-    df['gencode_translation_name'] = split_fields[5]  
-    df['havana_gene_id'] = split_fields[3]  
-    df['havana_translation_id'] = split_fields[4] 
-    df['sequence_length'] = split_fields[7]  
-    df['gene_name'] = split_fields[6]  
+    df['ENSEMBL_TR'] = split_fields[0]  
+    df['gencode_gene_id'] = split_fields[1]  
+    df['gencode_translation_name'] = split_fields[4]  
+    df['havana_gene_id'] = split_fields[2]  
+    df['havana_translation_id'] = split_fields[3] 
+    df['sequence_length'] = split_fields[6]  
+    df['gene_name'] = split_fields[5]  
     
     return df
         

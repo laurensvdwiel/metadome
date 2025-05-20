@@ -84,7 +84,7 @@ def process_line(line_data):
             if str(swissprot_seq_record.seq) != str(gencode_prot_seq_record.seq):
                 results.append(('fail', (qseqid, sseqid, "Sequence mismatch")))
                 continue
-            transcript_id = qseqid.split('|')[1] if '|' in qseqid else None
+            transcript_id = qseqid.split('|')[0] if '|' in qseqid else None
 
             if not transcript_id:
                 results.append(('fail', (qseqid, sseqid, "Missing transcript ID in qseqid")))

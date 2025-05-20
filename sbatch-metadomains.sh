@@ -10,7 +10,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem=100G
-#SBATCH --time=01:00:00
+#SBATCH --time=48:00:00
 
 usage ()
 {

@@ -85,8 +85,10 @@ def step0(cfg, cores, pmf):
     cmd = f"wget --no-verbose -O {genome} {genome_link}" 
     run_cmd(cmd, shell=True)
 
-    # Decompress the genome since it's apparently the wrong format
     cmd = f"pixi run --manifest-path {pmf} bgzip -d {genome}"
+    run_cmd(cmd, shell=True)
+
+    cmd = f"pixi run --manifest-path {pmf} samtools faidx {cfg["raw"]["gencode"]['genome_unc']}"
     run_cmd(cmd, shell=True)
 
     cmd = f"wget --no-verbose -O {refseq} {refseq_link}"

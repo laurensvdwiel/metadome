@@ -33,8 +33,9 @@ def main():
     
     # Load and process the mapper file
     mappers = pd.read_csv(args.mapper_csv)
+    mappers.head()
     mappers['Ensembl_PRT'] = mappers['qseqid'].str.split("|", expand=True)[0]
-    mappers['Gene'] = mappers['qseqid'].str.split("|", expand=True)[7]
+    mappers['Gene'] = mappers['qseqid'].str.split("|", expand=True)[5]
     
     # Save the updated mapper file
     mappers.to_csv(args.output_csv, index=False)

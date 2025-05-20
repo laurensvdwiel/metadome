@@ -49,7 +49,7 @@ def parse_pfamscan(file_content):
             row['e_value'] = float(row['e_value'])
             parsed_data.append(row)
     df = pd.DataFrame(parsed_data)
-    df[['protein_id', 'transcript_id', 'gene_id', 'otthumg', 'otthumt',
+    df[['transcript_id', 'gene_id', 'otthumg', 'otthumt',
         'protein_name', 'gene_name', 'length']] = df['seq_id'].str.split('|', expand=True)
     return df
 
