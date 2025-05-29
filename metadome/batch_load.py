@@ -1,9 +1,11 @@
 import csv
 import logging
+import traceback
 import enum 
 import argparse
 import os
 import sys
+import gzip
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
@@ -65,7 +67,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
     # The rest of the batch_load_data function uses 'sqlalchemy_session'
     #      for all database operations like .query, .add, .commit, .rollback
     try:
-        with open(csv_filepath, mode='r', encoding='utf-8') as infile:
+        with gzip.open(csv_filepath, mode='rt') as infile:
             reader = csv.DictReader(infile)
             current_batch_count = 0
             total_processed_count = 0
@@ -141,7 +143,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                 interpro_obj = Interpro(
                                     _ext_db_id=ext_db_id_val, _start_pos=uniprot_start_val, _end_pos=uniprot_stop_val,
                                     _interpro_id=get_cleaned_str(row, 'interpro_id'), _region_name=get_cleaned_str(row, 'region_name'))
-                                interpro_obj.protein_id = current_protein.id
+                                interpro_obj.protein = current_protein
                                 sqlalchemy_session.add(interpro_obj)
                                 interpro_cache[interpro_cache_key] = interpro_obj
                             else:
@@ -157,12 +159,13 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                         else:
                             mapping_obj = Mapping(
                                 chromosome=chromosome_val, chromosome_position=chromosome_pos_val, strand=map_strand_enum,
-                                gene_id=current_gene.id, base_pair=get_cleaned_str(row, 'base_pair'),
+                                base_pair=get_cleaned_str(row, 'base_pair'),
                                 codon=get_cleaned_str(row, 'codon'), codon_base_pair_position=safe_int_conversion(row.get('codon_base_pair_position')),
                                 amino_acid_residue=get_cleaned_str(row, 'amino_acid_residue'), amino_acid_position=safe_int_conversion(row.get('amino_acid_position')),
                                 cDNA_position=safe_int_conversion(row.get('cDNA_position')),
-                                uniprot_residue=get_cleaned_str(row, 'uniprot_residue'), uniprot_position=safe_int_conversion(row.get('uniprot_position')),
-                                protein_id=current_protein.id)
+                                uniprot_residue=get_cleaned_str(row, 'uniprot_residue'), uniprot_position=safe_int_conversion(row.get('uniprot_position')))
+                            mapping_obj.gene = current_gene
+                            mapping_obj.protein = current_protein
                             sqlalchemy_session.add(mapping_obj)
                     else:
                         logging.warning(f"L{line_num}: Missing Gene or Protein for mapping. Skipping mapping for gene '{gencode_tr_id}' and protein '{uniprot_ac}'.")
@@ -178,9 +181,6 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                 except IntegrityError as ie:
                     logging.error(f"L{line_num}: Database integrity error: {ie}. Row: {row}. Rolling back.")
                     sqlalchemy_session.rollback()
-                except Exception as e:
-                    logging.error(f"L{line_num}: Unexpected error: {e}. Row: {row}. Skipping.")
-                    sqlalchemy_session.rollback()
             
             if current_batch_count > 0:
                 logging.info(f"Processed {total_processed_count} rows. Committing final batch of {current_batch_count}.")
@@ -189,6 +189,11 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
     except FileNotFoundError:
         logging.error(f"CSV file not found: {csv_filepath}")
     except Exception as e:
+        error_type = type(e).__name__
+        error_traceback = traceback.format_exc()
+        logging.error(f"L{line_num}: Unexpected error: {error_type}: {e}")
+        logging.error(f"Traceback: {error_traceback}")
+        logging.error(f"Row: {row}")
         logging.error(f"An unrecoverable error occurred: {e}")
         if sqlalchemy_session: sqlalchemy_session.rollback()
     # finally:
@@ -196,6 +201,28 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
         # If you manually obtained db.session, consider db.session.remove() or db.session.close()
         # but often Flask-SQLAlchemy manages this well.
         # sqlalchemy_session.close() # Generally not needed with Flask-SQLAlchemy's default session handling
+
+def verify_csv_data_completeness(csv_filepath):
+    """
+    Verify that the CSV file contents are complete, so that:
+    All mappings have a valid gene and protein, and the protein
+     has all required columns.
+
+     Finally return the results to be checked for database completeness check.
+    :param csv_filepath: Path to the CSV file to verify.
+    :return: A dictionary with counts of valid and invalid entries.
+    """
+    #@todo: Implement this function to check the CSV file for completeness.
+
+def verify_database_completeness(db_session, csv_completeness_results):
+    """
+    Verify that the database contains all expected entries.
+    This function should check that all proteins, genes, and mappings
+    are correctly linked and have the required fields populated.
+
+    :param db_session: The SQLAlchemy session to use for querying the database.
+    :return: A dictionary with counts of valid and invalid entries.
+    """
 
 
 # --- Main Execution Block ---
@@ -221,17 +248,16 @@ if __name__ == '__main__':
         # In a real app, this is often done once or via migrations (e.g., Flask-Migrate)
         db.create_all()
 
-        # Perform the batch load using db.session
-        batch_load_data(csv_file, db.session, batch_size=2)
+        # Verify CSV data completeness
+        # logging.info("--- Verifying CSV Data Completeness ---") # @todo: Implement this function to check the CSV file for completeness.
+        # completeness_results = verify_csv_data_completeness(csv_file)
 
-        # Verification (optional)
-        logging.info("--- Verification ---")
-        for protein in db.session.query(Protein).all():
-            logging.info(f"Loaded Protein: {protein} (Eval Interpro: {protein.evaluated_interpro_domains}) with {len(protein.genes)} genes and {len(protein.interpro_domains)} domains.")
-        for gene in db.session.query(Gene).all():
-            logging.info(f"Loaded Gene: {gene} (Protein ID: {gene.protein_id}) with {len(gene.mappings)} mappings.")
-        for mapping_count, mapping in enumerate(db.session.query(Mapping).all()):
-            logging.info(f"Loaded Mapping {mapping_count+1}: {mapping}")
-        
-        # db.session.remove() # Or db.session.close() - Flask-SQLAlchemy often handles this at context teardown
-                          # For long-running scripts, explicit removal might be good.
+        # Perform the batch load using db.session
+        batch_load_data(csv_file, db.session)
+
+        # Verification of database completeness
+        # logging.info("--- Verifying Database Completeness ---") # @todo: Implement this function to check the database for completeness.
+        # verify_database_completeness(db.session, completeness_results)
+
+        # Cleanup session through explicit removal
+        db.session.remove() # Flask-SQLAlchemy often handles this at context teardown, but for long-running scripts, explicit removal might be good.
