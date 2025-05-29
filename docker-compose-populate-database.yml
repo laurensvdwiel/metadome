@@ -1,12 +1,13 @@
 services:
     app:
-        restart: on-failure
+        restart: "no"
         build: .
-        command: "python -m metadome.batch_load --csv /prebuild_data/MetaDome_Gencodev45-PFAM37.4-Uniprot2025_metapositions.csv"
+        command: "python -m metadome.batch_load --csv /prebuild_data/MetaDome_Gencodev19-PFAM37.4-Uniprot2025_metapositions.csv.gz"
         env_file:
            - metadome/database.env
         depends_on:
-            - db
+            db:
+                condition: service_healthy # Wait until db is healthy
         volumes:
             - ${PWD}:/usr/src/app
             - /Users/laurens/data/metadome/metadome_prebuild:/prebuild_data
