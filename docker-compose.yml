@@ -51,7 +51,7 @@ services:
             - interpro_temp:/usr/interpro_temp
     db:
         restart: always
-        image: postgres:10
+        image: postgres:17.5
         platform: linux/arm64
         env_file:
            - metadome/database.env
