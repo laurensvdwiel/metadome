@@ -120,8 +120,12 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                         _strand=strand_str, _gene_name=gene_name_val,
                                         _gencode_transcription_id=gencode_tr_id, _gencode_translation_name=gencode_transl_name_val,
                                         _gencode_gene_id=get_cleaned_str(row, 'gencode_gene_id'),
+                                        _gencode_version=get_cleaned_str(row, 'GENCODE_version'),
+                                        _gencode_basic=safe_bool_conversion(row.get('GencodeBasic'), False),
+                                        _genome_build=get_cleaned_str(row, 'genome_build'),
                                         _havana_gene_id=get_cleaned_str(row, 'havana_gene_id'),
                                         _havana_translation_id=get_cleaned_str(row, 'havana_translation_id'),
+                                        _mane_transcript_type=get_cleaned_str(row, 'MANE'),
                                         _sequence_length=safe_int_conversion(row.get('sequence_length')))
                                     if current_protein: current_gene.protein = current_protein
                                     sqlalchemy_session.add(current_gene)
@@ -158,12 +162,19 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                             logging.warning(f"L{line_num}: Missing/invalid critical mapping info for gene '{current_gene.gencode_transcription_id}'. Skipping.")
                         else:
                             mapping_obj = Mapping(
-                                chromosome=chromosome_val, chromosome_position=chromosome_pos_val, strand=map_strand_enum,
+                                chromosome=chromosome_val,
+                                chromosome_position=chromosome_pos_val,
+                                strand=map_strand_enum,
                                 base_pair=get_cleaned_str(row, 'base_pair'),
-                                codon=get_cleaned_str(row, 'codon'), codon_base_pair_position=safe_int_conversion(row.get('codon_base_pair_position')),
-                                amino_acid_residue=get_cleaned_str(row, 'amino_acid_residue'), amino_acid_position=safe_int_conversion(row.get('amino_acid_position')),
+                                codon=get_cleaned_str(row, 'codon'),
+                                codon_base_pair_position=safe_int_conversion(row.get('codon_base_pair_position')),
+                                amino_acid_residue=get_cleaned_str(row, 'amino_acid_residue'),
+                                amino_acid_position=safe_int_conversion(row.get('amino_acid_position')),
                                 cDNA_position=safe_int_conversion(row.get('cDNA_position')),
-                                uniprot_residue=get_cleaned_str(row, 'uniprot_residue'), uniprot_position=safe_int_conversion(row.get('uniprot_position')))
+                                uniprot_residue=get_cleaned_str(row, 'uniprot_residue'),
+                                uniprot_position=safe_int_conversion(row.get('uniprot_position')),
+                                exon_number=safe_int_conversion(row.get('exon_number'))
+                            )
                             mapping_obj.gene = current_gene
                             mapping_obj.protein = current_protein
                             sqlalchemy_session.add(mapping_obj)
