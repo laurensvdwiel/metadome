@@ -1,19 +1,4 @@
 {% extends "base.html" %} {% block content %}
-  <!-- IE warning screen -->
-  <div class="modal" id="IE_warning_overlay">
-    <div class="modal-background" onclick='$("#IE_warning_overlay").removeClass("is-active");'></div>
-    <div class="modal-card">
-    <header class="modal-card-head">
-      <p class="modal-card-title">Unsupported browser warning</p>
-      <button class="delete" aria-label="close" onclick='$("#IE_warning_overlay").removeClass("is-active");'></button>
-    </header>
-    <section class="modal-card-body">
-      We have detected you are using a browser that the MetaDome web server does not support.
-      We recommend using <a href="https://www.google.com/chrome/">Google Chrome</a> or 
-      <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a> to access all features of our web server.
-    </section>
-	</div>
-  </div>
 <!-- Staring definition of site content -->
 <section class="section">
   <div class="box">
@@ -54,34 +39,5 @@
     </section>
   </div>
  </section>
-
-<script>
-// Check which browser is used 
-// Opera 8.0+
-var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
-
-// Firefox 1.0+
-var isFirefox = typeof InstallTrigger !== 'undefined';
-
-// Safari 3.0+ "[object HTMLElementConstructor]" 
-var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
-
-// Internet Explorer 6-11
-var isIE = /*@cc_on!@*/false || !!document.documentMode;
-
-// Edge 20+
-var isEdge = !isIE && !!window.StyleMedia;
-
-//Chrome 1 - 71
-var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
-
-// Blink engine detection
-var isBlink = (isChrome || isOpera) && !!window.CSS;
-
-// Warn users if they are using something other than Chrome or Firefox
-if (!(isChrome || isFirefox)){
-	$("#IE_warning_overlay").addClass("is-active");
-}
-</script>
 
 {% endblock %} {% block js %} {% endblock %}
