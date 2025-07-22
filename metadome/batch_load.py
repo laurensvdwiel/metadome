@@ -102,11 +102,13 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                     
                     # 2. Process Gene
                     gencode_tr_id = get_cleaned_str(row, 'gencode_transcription_id')
+                    gencode_tr_version = get_cleaned_str(row, 'GENCODE_version')
+                    current_gene_key = gencode_tr_id+"_"+gencode_tr_version
                     if gencode_tr_id:
                         if gencode_tr_id in gene_cache:
-                            current_gene = gene_cache[gencode_tr_id]
+                            current_gene = gene_cache[current_gene_key]
                         else:
-                            current_gene = sqlalchemy_session.query(Gene).filter_by(gencode_transcription_id=gencode_tr_id).one_or_none()
+                            current_gene = sqlalchemy_session.query(Gene).filter_by(gencode_transcription_id=gencode_tr_id, gencode_version=gencode_tr_version).one_or_none()
                             if current_gene is None:
                                 strand_str = get_cleaned_str(row, 'strand')
                                 gene_name_val = get_cleaned_str(row, 'gene_name')
@@ -120,7 +122,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                         _strand=strand_str, _gene_name=gene_name_val,
                                         _gencode_transcription_id=gencode_tr_id, _gencode_translation_name=gencode_transl_name_val,
                                         _gencode_gene_id=get_cleaned_str(row, 'gencode_gene_id'),
-                                        _gencode_version=get_cleaned_str(row, 'GENCODE_version'),
+                                        _gencode_version=gencode_tr_version,
                                         _gencode_basic=safe_bool_conversion(row.get('GencodeBasic'), False),
                                         _genome_build=get_cleaned_str(row, 'genome_build'),
                                         _havana_gene_id=get_cleaned_str(row, 'havana_gene_id'),
@@ -129,7 +131,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                         _sequence_length=safe_int_conversion(row.get('sequence_length')))
                                     if current_protein: current_gene.protein = current_protein
                                     sqlalchemy_session.add(current_gene)
-                            gene_cache[gencode_tr_id] = current_gene
+                            gene_cache[current_gene_key] = current_gene
                     
                     # 3. Process Interpro
                     ext_db_id_val = get_cleaned_str(row, 'ext_db_id')

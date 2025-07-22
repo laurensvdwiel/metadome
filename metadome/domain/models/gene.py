@@ -38,7 +38,7 @@ class Gene(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     strand = db.Column(db.Enum(Strand), nullable=False)
     gene_name = db.Column(db.String(50))
-    gencode_transcription_id = db.Column(db.String(50), unique=True, nullable=False)
+    gencode_transcription_id = db.Column(db.String(50), nullable=False)
     gencode_translation_name = db.Column(db.String(50), nullable=False)
     gencode_gene_id = db.Column(db.String(50))
     gencode_version = db.Column(db.String(50), nullable=False)
@@ -49,11 +49,14 @@ class Gene(db.Model):
     mane_transcript_type = db.Column(db.String(50))
     sequence_length = db.Column(db.Integer)
     protein_id = db.Column(db.Integer, db.ForeignKey('proteins.id'))
-    
+
     # Relationships
     protein = db.relationship("Protein", back_populates="genes")
     mappings = db.relationship('Mapping', back_populates="gene")
-    
+
+    #Contraints
+    __table_args__ = (db.UniqueConstraint('gencode_transcription_id', 'gencode_version', name='_unique_gencode_id_per_version'),)
+
     def __init__(self, _strand, _gene_name, _gencode_transcription_id, 
                  _gencode_translation_name, _gencode_gene_id,
                  _gencode_version, _gencode_basic, _genome_build,
