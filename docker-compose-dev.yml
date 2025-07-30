@@ -1,7 +1,6 @@
 # This is a development version for the docker-compose of this webserver, 
 # it checks for any changes in the code and reboots the server if there are any changes
 # please start via the run_dev.sh script.
-version: '2'
 services:
     app: 
         build: .
