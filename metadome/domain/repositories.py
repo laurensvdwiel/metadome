@@ -3,7 +3,7 @@ import traceback
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.sql.functions import func
-from metadome.default_settings import GENE_NAMES_FILE
+from metadome.default_settings import GENE_NAMES_FILE, GENOME_BUILDS_FILE
 from sqlalchemy.sql.expression import and_, distinct
 from sqlalchemy.exc import ResourceClosedError as AlchemyResourceClosedError
 from sqlalchemy.exc import OperationalError as AlchemyOperationalError
@@ -26,7 +26,7 @@ class MalformedAARegionException(Exception):
 
 
 class GeneRepository:
-    
+
     @staticmethod
     def retrieve_gene_names_for_multiple_transcript_ids(_transcript_ids):
         """Retrieves all gene names for a given set of gencode transcripts 
@@ -134,13 +134,39 @@ class GeneRepository:
             _session.remove()
 
     @staticmethod
-    def retrieve_all_transcript_ids(gene_name):
+    def retrieve_all_genome_builds_from_db():
+        """Retrieves all genome builds present in the database"""
+        # Open as session
+        _session = db._make_scoped_session(options={})
+
+        try:
+            return [genome_build for genome_build in _session.query(Gene.genome_build).distinct(Gene.genome_build).all()]
+        except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
+            raise RecoverableError(str(e))
+        except:
+            _log.error(traceback.format_exc())
+            raise
+        finally:
+            # Close this session, thus all items are cleared and memory usage is kept at a minimum
+            _session.remove()
+
+    @staticmethod
+    def retrieve_all_genome_builds_from_file():
+        """Retrieves all genome builds present in the static file"""
+        try:
+            with open(GENOME_BUILDS_FILE, 'r') as genome_builds_file:
+                return genome_builds_file.read().splitlines()
+        except OSError:
+            return []
+
+    @staticmethod
+    def retrieve_all_transcript_ids(genome_build, gene_name):
         """Retrieves all transcript ids for a gene name"""
         # Open as session
         _session = db._make_scoped_session(options={})
 
         try:
-            return [transcript for transcript in _session.query(Gene).filter(func.lower(Gene.gene_name) == gene_name.lower()).all()]
+            return [transcript for transcript in _session.query(Gene).filter(func.lower(Gene.gene_name) == gene_name.lower(), func.lower(Gene.genome_build) == genome_build.lower()).all()]
         except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
             raise RecoverableError(str(e))
         except:

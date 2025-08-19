@@ -13,8 +13,6 @@ SQLALCHEMY_ECHO = True
 SQLALCHEMY_POOL_TIMEOUT = 10
 
 # Flask-Celery settings
-CELERY_BROKER_URL='amqp://guest@metadome-rabbitmq-1'
-CELERY_RESULT_BACKEND='redis://metadome-redis-1/0'
 CELERY_TRACK_STARTED = True
 CELERY_TASK_SERIALIZER = 'pickle'
 CELERY_RESULT_SERIALIZER='pickle'
@@ -34,6 +32,7 @@ DEFAULT_RECIPIENT = None # where should the support emails be sent to
 # local data directory
 DATA_DIR = "/usr/data/"
 GENE_NAMES_FILE = DATA_DIR+'gene_names.txt'
+GENOME_BUILDS_FILE = DATA_DIR+'genome_builds.txt'
 
 # local executables
 BLASTP_EXECUTABLE = "/usr/externals/blast/bin/blastp"
