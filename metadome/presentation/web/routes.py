@@ -64,7 +64,6 @@ def contact():
 def about():
     return render_template('about.html')
 
-
 @bp.route('/method', methods=['GET'])
 def method():
     return render_template('method.html')
@@ -79,11 +78,9 @@ def visualization_error(transcript_id):
     error = "error during visualization generation"
     return render_template('error.html', msg=error, stack_trace=stacktrace)
 
-
 @bp.before_request
 def before_request():
-    g.metadom_version = get_version()
-
+    g.metadome_version = get_version()
 
 @bp.errorhandler(Exception)
 def exception_error_handler(error):  # pragma: no cover
