@@ -1,6 +1,13 @@
 /**
- * Controls all responsiveness for the tolerance.html page
+ * Controls all responsiveness for the dashboard.html page
  */
+
+// Initialize with global_debugging set to false
+var global_debugging = false;
+
+// Specify the style for the console messages
+const info_style = "background: blue; color: white; padding-left:10px;";
+const success_style = "background: green; color: white; padding-left:10px;";
 
 // This function allows clicking events to be raised on d3js elements
 jQuery.fn.d3Click = function () {
@@ -11,6 +18,7 @@ jQuery.fn.d3Click = function () {
 };
 
 $("#geneName").keyup(function(event) {
+	// Allow the user to press enter to retrieve transcripts
     if (event.keyCode === 13) {
         $("#getTranscriptsButton").click();
     }
@@ -19,6 +27,7 @@ $("#geneName").keyup(function(event) {
 // when the user presses the ESC the overlays are disabled
 document.addEventListener("keydown", keyPress, false);
 function keyPress (e) {
+    if (global_debugging) {console.info('%c Function keyPress(e) called with e = ' + e, info_style);}
     if(e.key === "Escape") {
     	$("#domain_information_overlay").removeClass("is-active");
     	$("#positional_information_overlay").removeClass("is-active");
@@ -27,121 +36,124 @@ function keyPress (e) {
 }
 
 function get_query_param(param) {
+    if (global_debugging) {console.info('%c Function get_query_paran(param) called with param = ' + param, info_style);}
 	var result =  window.location.search.match(
 			new RegExp("(\\?|&)" + param + "(\\[\\])?=([^&]*)"));
     return result ? result[3] : false;
 }
 
 function show_tour_data_input(index) {
+    if (global_debugging) {console.info('%c Function show_tour_data_input(index) called with index = ' + index, info_style);}
     switch (index) {
-    case 0:// reset
-    	tour_reset_gene_name();
-    	break;
-    case 1: // gene input
-    	// ensure no interaction is possible
-		document.getElementById("retrieve_transcripts_control").setAttribute("style", "pointer-events: none;");
-		document.getElementById("start_analysis_control").setAttribute("style", "pointer-events: none;");
+		case 0:// reset
+			tour_reset_gene_name();
+			break;
+		case 1: // genome build
+			break;
+		case 2: // gene input
+			// ensure no interaction is possible
+			document.getElementById("retrieve_transcripts_control").setAttribute("style", "pointer-events: none;");
+			document.getElementById("start_analysis_control").setAttribute("style", "pointer-events: none;");
 
-    	//reset
-    	document.getElementById("geneNameHelpMessage").innerHTML = "";
-    	
-    	// behaviour
-    	tour_fill_gene_name();
-    	break;
-    case 2: // messages after get transcripts
-    	//reset
-    	resetDropdown();
-    	
-    	// behaviour
-    	tour_fill_succes_message_transcripts();
-    	break;
-    case 3: // start analysis
-    	// reset
-    	$("#loading_overlay").removeClass('is-active');
-    	
-    	// behaviour
-    	tour_fill_transcripts();
-    	break;
-    case 4: // loading overlay
-    	// reset
-		$("#toleranceGraphContainer").addClass('is-hidden');
-		$("#graph_control_field").addClass('is-hidden');
-		$("#selected_positions_information").addClass('is-hidden');
-    	
-    	// behaviour
-    	$("#loading_overlay").addClass('is-active');
-        $("#loading_label").text("Loading...");
-    	break;
-    case 5: // fill the graph
-    	$("#loading_overlay").removeClass('is-active');
-    	tour_fill_graph_example();
-    	break;
-    case 7:
-    	// resets
-    	resetZoom();
-    	break;
-    case 8: // zooming explanation
-    	// resets
-    	resetZoom();
-    	tour_turn_clinvar_variants_off();
-    	tour_check_default_visualization();toggleToleranceLandscapeOrMetadomainLandscape();
-		document.getElementById("graph_control_field_checkboxes").setAttribute("style", "pointer-events: none;");
-		break;
-    case 9: // landscape modes
-    	// resets
-    	resetZoom();
-    	tour_turn_clinvar_variants_off();
-    	
-    	// behaviour
-    	window.setTimeout(tour_check_alternative_visualization, 500);
-    	window.setTimeout(toggleToleranceLandscapeOrMetadomainLandscape,1000);
-    	window.setTimeout(tour_check_default_visualization, 2200);
-    	window.setTimeout(toggleToleranceLandscapeOrMetadomainLandscape,2200);
-		document.getElementById("graph_control_field_checkboxes").removeAttribute("style", "pointer-events: none;");
-    	break;
-    case 10: // clinvar variants
-    	// resets
-		document.getElementById("graph_control_field_checkboxes").removeAttribute("style", "pointer-events: none;");
-    	resetZoom();
-    	
-    	// behaviour
-    	tour_switch_clinvar_variants();
-    	window.setTimeout(tour_switch_clinvar_variants,1200);
-    	break;
-    case 11: // explanation of schematic protein
-    	// resets
-    	tour_check_default_visualization();
-    	tour_turn_clinvar_variants_off();
-    	tour_unselect_position_in_domain();
-    	resetZoom();
-		document.getElementById("graph_control_field_checkboxes").setAttribute("style", "pointer-events: none;");
-    	break;
-    case 12: // positional information
-    	// resets
-    	resetZoom();
-    	tour_turn_clinvar_variants_off();
-    	
-    	// Behaviour
-    	window.setTimeout(tour_select_position_in_domain, 500);
-    	break;
-    }
+			//reset
+			document.getElementById("geneNameHelpMessage").innerHTML = "";
+
+			// behaviour
+			tour_fill_gene_name();
+			break;
+		case 3: // messages after get transcripts
+			//reset
+			resetDropdown();
+
+			// behaviour
+			tour_fill_succes_message_transcripts();
+			break;
+		case 4: // start analysis
+			// reset
+			$("#loading_overlay").removeClass('is-active');
+
+			// behaviour
+			tour_fill_transcripts();
+			break;
+		case 5: // loading overlay
+			// reset
+			$("#toleranceGraphContainer").addClass('is-hidden');
+			$("#graph_control_field").addClass('is-hidden');
+			$("#selected_positions_information").addClass('is-hidden');
+
+			// behaviour
+			$("#loading_overlay").addClass('is-active');
+			$("#loading_label").text("Loading...");
+			break;
+		case 6: // fill the graph
+			$("#loading_overlay").removeClass('is-active');
+			tour_fill_graph_example();
+			break;
+		case 8:
+			// resets
+			resetZoom();
+			break;
+		case 9: // zooming explanation
+			// resets
+			resetZoom();
+			tour_turn_clinvar_variants_off();
+			tour_check_default_visualization();toggleToleranceLandscapeOrMetadomainLandscape();
+			document.getElementById("graph_control_field_checkboxes").setAttribute("style", "pointer-events: none;");
+			break;
+		case 10: // landscape modes
+			// resets
+			resetZoom();
+			tour_turn_clinvar_variants_off();
+
+			// behaviour
+			window.setTimeout(tour_check_alternative_visualization, 500);
+			window.setTimeout(toggleToleranceLandscapeOrMetadomainLandscape,1000);
+			window.setTimeout(tour_check_default_visualization, 2200);
+			window.setTimeout(toggleToleranceLandscapeOrMetadomainLandscape,2200);
+			document.getElementById("graph_control_field_checkboxes").removeAttribute("style", "pointer-events: none;");
+			break;
+		case 11: // clinvar variants
+			// resets
+			document.getElementById("graph_control_field_checkboxes").removeAttribute("style", "pointer-events: none;");
+			resetZoom();
+
+			// behaviour
+			tour_switch_clinvar_variants();
+			window.setTimeout(tour_switch_clinvar_variants,1200);
+			break;
+		case 12: // explanation of schematic protein
+			// resets
+			tour_check_default_visualization();
+			tour_turn_clinvar_variants_off();
+			tour_unselect_position_in_domain();
+			resetZoom();
+			document.getElementById("graph_control_field_checkboxes").setAttribute("style", "pointer-events: none;");
+			break;
+		case 13: // positional information
+			// resets
+			resetZoom();
+			tour_turn_clinvar_variants_off();
+
+			// Behaviour
+			window.setTimeout(tour_select_position_in_domain, 500);
+			break;
+		}
 }
 
 function tour_turn_clinvar_variants_off(){
+    if (global_debugging) {console.info('%c Function tour_turn_clinvar_variants_off() called', info_style);}
 	if ($('#clinvar_checkbox').is(':checked') == true ){
 		tour_switch_clinvar_variants();
 	}
 }
 
 function tour_switch_clinvar_variants(){
-	$('#clinvar_checkbox').trigger( "click" );
-}
-
-function tour_switch_clinvar_variants_off(){
+    if (global_debugging) {console.info('%c Function tour_switch_clinvar_variants() called', info_style);}
 	$('#clinvar_checkbox').trigger( "click" );
 }
 
 function tour_unselect_position_in_domain(){
+    if (global_debugging) {console.info('%c Function tour_unselect_position_in_domain() called', info_style);}
 	var tour_selected_position;
 	d3.select('#toleranceAxisRect_68').attr("element_is_selected",function(d,i){ tour_selected_position = d.values[0].selected});
 	
@@ -151,6 +163,7 @@ function tour_unselect_position_in_domain(){
 }
 
 function tour_select_position_in_domain(){
+    if (global_debugging) {console.info('%c Function tour_select_position_in_domain() called', info_style);}
 	var tour_selected_position;
 	d3.select('#toleranceAxisRect_68').attr("element_is_selected",function(d,i){ tour_selected_position = d.values[0].selected});
 	
@@ -160,30 +173,45 @@ function tour_select_position_in_domain(){
 }
 
 function tour_trigger_position_of_interest(){
+    if (global_debugging) {console.info('%c Function tour_trigger_position_of_interest() called', info_style);}
 	$('#toleranceAxisRect_68').d3Click();
 }
 
 function tour_check_default_visualization(){
+    if (global_debugging) {console.info('%c Function tour_check_default_visualization() called', info_style);}
 	$('#checkbox_for_landscape_default').prop('checked', true);
 }
 function tour_check_alternative_visualization(){
+    if (global_debugging) {console.info('%c Function tour_check_alternative_visualization() called', info_style);}
 	$('#checkbox_for_landscape_alternative').prop('checked', true);
 }
 
+function tour_default_genome_build(){
+    if (global_debugging) {console.info('%c Function tour_default_genome_build() called', info_style);}
+	const genome_build_tour = 'GRCh38'
+	var genome_build_button = document.getElementById("genomeBuild");
+	genome_build_button.innerText = genome_build_tour;
+}
+
 function tour_fill_gene_name(){
+    if (global_debugging) {console.info('%c Function tour_fill_gene_name() called', info_style);}
 	$('#geneName').val('T');
 }
+
 function tour_reset_gene_name(){
+    if (global_debugging) {console.info('%c Function tour_reset_gene_name() called', info_style);}
 	$('#geneName').val('');
 }
 
 function tour_fill_succes_message_transcripts(){
+    if (global_debugging) {console.info('%c Function tour_fill_succes_message_transcripts() called', info_style);}
 	document.getElementById("geneNameHelpMessage").innerHTML = "Retrieved transcripts for gene 'T'";
 	$("#geneNameHelpMessage").removeClass('is-danger');
 	$("#geneNameHelpMessage").addClass('is-success');
 }
 
 function tour_fill_transcripts(){
+    if (global_debugging) {console.info('%c Function tour_fill_transcripts() called', info_style);}
 	clearDropdown();
 	$("#getToleranceButton").addClass('is-info');
 	$("#getToleranceButton").removeClass('is-static');
@@ -196,6 +224,7 @@ function tour_fill_transcripts(){
 }
 
 function tour_fill_graph_example(){
+    if (global_debugging) {console.info('%c Function tour_fill_graph_example() called', info_style);}
 	// Retrieve the example json to fill in the graph
 	$.getJSON("{{ url_for('static', filename='json/example_T_gene.json') }}", function(json) {	    
 		document.getElementById("toleranceGraphContainer").setAttribute("style", "pointer-events: none;");
@@ -217,6 +246,7 @@ var tour = new Tour({
   backdrop: true,
   orphan: true,
   storage: false,
+  onStart: function (tour) {tour_default_genome_build();},
   onNext: function (tour) {
     show_tour_data_input(tour.getCurrentStep() + 1)
   },
@@ -234,6 +264,14 @@ var tour = new Tour({
 				"You can click 'end tour' any time to start "+
 				"analysing your own gene of interest. " +
 				"<br><br>Click next to begin."
+	  },
+	  {
+	    element: "#genomeBuild",
+	    title: "Genome Build",
+	    content: "MetaDome support the human genome builds GRCh37 "+
+	    		"and GRCh38. By default the newest ('GRCh38') is" +
+	    		"selected. You can always check which genome build" +
+	    		"is selected in this field."
 	  },
 	  {
 	    element: "#retrieve_transcripts_control",
@@ -357,70 +395,64 @@ var tour = new Tour({
 ]});
 tour.init();
 
-// Start the tour automatically if redirected to the index page via the
-// help button.
-if (get_query_param('tour')) {
-	tour.restart();
-}
+// Function to handle receiving all transcripts belonging to a gene name from the webserver
+function getTranscript(geneName, genomeBuild, transcript_id_results) {
+	if (global_debugging) {console.info('%c Function getTranscript(geneName, genomeBuild, transcript_id_results) called, with geneName='+geneName+', genomeBuild='+genomeBuild+', transcript_id_results='+ transcript_id_results, info_style);}
 
-// Function to send AJAX request to the webserver to get all transcripts
-// belonging to a gene name
-function getTranscript() {
+    // Clear any previous transcripts in user interface
 	clearTranscripts();
-	var geneName = document.getElementById("geneName").value;
-	if (typeof geneName !== 'undefined' && geneName.length > 0) {
-		// the variable is defined
-        $.get(Flask.url_for("api.get_transcript_ids_for_gene", {'gene_name': geneName}),
-          function(transcript_id_results)
-          {
-			document.getElementById("geneNameHelpMessage").innerHTML = transcript_id_results.message;
 
-			if (typeof transcript_id_results == 'undefined' || transcript_id_results == null || transcript_id_results.trancript_ids.length == 0) {
-				$("#geneName").addClass('is-danger');
-				$("#geneName").removeClass('is-success');
-				$("#geneNameHelpMessage").addClass('is-danger');
-				$("#geneNameHelpMessage").removeClass('is-success');
-				$("#getToleranceButton").addClass('is-static');
-				$("#getToleranceButton").removeClass('is-info');
-				resetDropdown()
-			} else {
-				clearDropdown();
-				$("#geneName").addClass('is-success');
-				$("#geneName").removeClass('is-danger');
-				$("#geneNameHelpMessage").addClass('is-success');
-				$("#geneNameHelpMessage").removeClass('is-danger');
-				$("#getToleranceButton").addClass('is-info');
-				$("#getToleranceButton").removeClass('is-static');
-				var dropdown = document.getElementById("gtID");
-				dropdown.setAttribute('class', 'dropdown');
-				// Sort the results by sequence length
-				transcript_id_results.trancript_ids.sort(function(a,b){return (a.aa_length<b.aa_length) ? 1 : ((b.aa_length<a.aa_length) ? -1: 0);});
-				
-				// Add the transcripts as options
-				for (var i = 0; i < transcript_id_results.trancript_ids.length; i++) {
-					var opt = new Option();
-					opt.value = i;
-					if ( transcript_id_results.trancript_ids[i].refseq_nm_numbers === ""){
-						opt.text = transcript_id_results.trancript_ids[i].gencode_id + " ("+ transcript_id_results.trancript_ids[i].aa_length +"aa)" ;
-					}
-					else {
-						opt.text = transcript_id_results.trancript_ids[i].gencode_id + " / "+ transcript_id_results.trancript_ids[i].refseq_nm_numbers+" ("+ transcript_id_results.trancript_ids[i].aa_length +"aa)" ;
-					}
-					
-					if (!transcript_id_results.trancript_ids[i].has_protein_data){
-						opt.disabled = true;
-					}
-					
-					dropdown.options.add(opt);
-				}
-			}
-          }
-        );
+    // Check if there are any transcripts retrieved
+	if (typeof geneName !== 'undefined' && geneName.length > 0) {
+
+        // Check if there are any messages to be displayed
+        document.getElementById("geneNameHelpMessage").innerHTML = transcript_id_results.message;
+
+        if (transcript_id_results.transcript_ids.length > 0) {
+            clearDropdown();
+            $("#geneName").addClass('is-success');
+            $("#geneName").removeClass('is-danger');
+            $("#geneNameHelpMessage").addClass('is-success');
+            $("#geneNameHelpMessage").removeClass('is-danger');
+            $("#getToleranceButton").addClass('is-info');
+            $("#getToleranceButton").removeClass('is-static');
+            var dropdown = document.getElementById("gtID");
+            dropdown.setAttribute('class', 'dropdown');
+            // Sort the results by sequence length
+            transcript_id_results.transcript_ids.sort(function(a,b){return (a.aa_length<b.aa_length) ? 1 : ((b.aa_length<a.aa_length) ? -1: 0);});
+
+            // Add the transcripts as options
+            for (var i = 0; i < transcript_id_results.transcript_ids.length; i++) {
+                var opt = new Option();
+                opt.value = i;
+                if ( transcript_id_results.transcript_ids[i].refseq_nm_numbers === ""){
+                    opt.text = transcript_id_results.transcript_ids[i].gencode_id + " ("+ transcript_id_results.transcript_ids[i].aa_length +"aa)" ;
+                }
+                else {
+                    opt.text = transcript_id_results.transcript_ids[i].gencode_id + " / "+ transcript_id_results.transcript_ids[i].refseq_nm_numbers+" ("+ transcript_id_results.transcript_ids[i].aa_length +"aa)" ;
+                }
+
+                if (!transcript_id_results.transcript_ids[i].has_protein_data){
+                    opt.disabled = true;
+                }
+
+                dropdown.options.add(opt);
+            }
+        } else{
+            $("#geneName").addClass('is-danger');
+            $("#geneName").removeClass('is-success');
+            $("#geneNameHelpMessage").addClass('is-danger');
+            $("#geneNameHelpMessage").removeClass('is-success');
+            $("#getToleranceButton").addClass('is-static');
+            $("#getToleranceButton").removeClass('is-info');
+            resetDropdown()
+        }
 	}
 }
 
 // function to clear all items in the transcript dropdown
 function clearDropdown() {
+    if (global_debugging) {console.info('%c Function clearDropdown() called', info_style);}
 	var dropdown = document.getElementById("gtID");
 	for (var i = dropdown.options.length - 1; i >= 0; i--) {
 		dropdown.remove(i);
@@ -429,6 +461,7 @@ function clearDropdown() {
 }
 
 function resetDropdown() {
+    if (global_debugging) {console.info('%c Function resetDropdown() called', info_style);}
 	clearDropdown()
 
 	var dropdown = document.getElementById("gtID");
@@ -444,11 +477,13 @@ function resetDropdown() {
 }
 
 function resetGraphControl(){
+    if (global_debugging) {console.info('%c Function resetGraphControl() called', info_style);}
 	document.getElementById("clinvar_checkbox").checked = false;
 	document.getElementById("checkbox_for_landscape_default").checked = true;
 }
 
 function clearTranscripts() {
+    if (global_debugging) {console.info('%c Function clearTranscripts() called', info_style);}
 	resetDropdown();
 	resetGraph();
 	resetGraphControl();
@@ -462,6 +497,7 @@ function clearTranscripts() {
 }
 
 function saveSvg(svgEl, name) {
+    if (global_debugging) {console.info('%c Function saveSvg(svgEl, name) called', info_style);}
     svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     var svgData = svgEl.outerHTML;
     var preface = '<?xml version="1.0" standalone="no"?>\r\n';
@@ -476,6 +512,7 @@ function saveSvg(svgEl, name) {
 }
 
 function visualize() {
+	if (global_debugging) {console.info('%c Function visualize() called', info_style);}
     resetGraphControl();
     var selection = document.getElementsByClassName("dropdown")[0];
 
@@ -494,6 +531,11 @@ function visualize() {
                     url: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
                     data: JSON.stringify({'transcript_id': transcript_id}),
                     success: function(data) { getVisualizationStatus(data.transcript_id, 0); },
+                    error: function(response) {
+                        obj = JSON.parse(response.responseText);
+                        $("#error-feedback").text(obj['error']);
+                        $("#loading_overlay").removeClass('is-active');
+                    },
                     contentType: "application/json",
                     dataType: 'json'
                 }
@@ -503,6 +545,7 @@ function visualize() {
 }
 
 function visualizeTranscript(transcript_id) {
+    if (global_debugging) {console.info('%c Function visualizeTranscript(transcript_id) called, with transcript_id='+transcript_id, info_style);}
     $("#loading_overlay").addClass('is-active');
     $("#loading_label").text("Loading...");
     $.ajax(
@@ -523,6 +566,7 @@ function visualizeTranscript(transcript_id) {
 }
 
 function getVisualizationStatus(transcript_id, checkCount) {
+    if (global_debugging) {console.info('%c Function getVisualizationStatus(transcript_id, checkCount) called, with transcript_id='+transcript_id+', checkCount='+checkCount, info_style);}
     $.get(Flask.url_for("api.get_visualization_status_for_transcript",
                         {'transcript_id': transcript_id}),
         function(data) {
@@ -545,6 +589,7 @@ function getVisualizationStatus(transcript_id, checkCount) {
 }
 
 function getVisualizationResult(transcript_id) {
+    if (global_debugging) {console.info('%c Function getVisualizationResult(transcript_id) called, with transcript_id='+transcript_id, info_style);}
     $.get(Flask.url_for("api.get_visualization_result_for_transcript",
                         {'transcript_id': transcript_id}),
         function(obj) {
@@ -569,7 +614,8 @@ function getVisualizationResult(transcript_id) {
 	            }
 	            refSeqLinks += ','
             }
-            
+
+            //@todo: add behaviour for other genome builds
             geneDetails.innerHTML = 'Protein of ' + obj.gene_name + ' (GENCODE: <a href="http://grch37.ensembl.org/Homo_sapiens/Transcript/Summary?t='
                                   + obj.transcript_id + '" target="_blank">' + obj.transcript_id
                                   + '</a>, '+refSeqLinks+' UniProt: <a href="https://www.uniprot.org/uniprot/'
@@ -587,12 +633,14 @@ function getVisualizationResult(transcript_id) {
 }
 
 function showVisualizationError(transcript_id) {
+    if (global_debugging) {console.info('%c Function showVisualizationError(transcript_id) called, with transcript_id='+transcript_id, info_style);}
     // Forward to the error page.
-    window.location.href = Flask.url_for("web.visualization_error", {'transcript_id': transcript_id});
+    customRedirect(Flask.url_for("web.visualization_error", {'transcript_id': transcript_id}));
 }
 
 // annotates meta domain information for a position
 function createPositionalInformation(domain_metadomain_coverage, transcript_id, position_json) {
+    if (global_debugging) {console.info('%c Function createPositionalInformation(omain_metadomain_coverage, transcript_id, position_json) called', info_style);}
     // Retrieve the needed information for the GET request
     var protein_position = position_json.values[0].protein_pos;
 
@@ -646,7 +694,8 @@ function createPositionalInformation(domain_metadomain_coverage, transcript_id, 
 }
 
 //Adds positional information for a selected position
-function FillPositionalInformation(domain_metadomain_coverage, position_data, data){	
+function FillPositionalInformation(domain_metadomain_coverage, position_data, data){
+    if (global_debugging) {console.info('%c Function FillPositionalInformation(domain_metadomain_coverage, position_data, data) called', info_style);}
 	// Reset the positional information
     document.getElementById("positional_information_overlay_title").innerHTML = '<div class="label"><label class="title">Positional information (p.'+ position_data.values[0].protein_pos+')</label></div>';
     document.getElementById("positional_information_overlay_body").innerHTML = '';
@@ -763,6 +812,7 @@ function FillPositionalInformation(domain_metadomain_coverage, position_data, da
 
 //Update the positional information table with new values
 function addRowToPositionalInformationTable(domain_metadomain_coverage, d, transcript_id) {
+    if (global_debugging) {console.info('%c Function addRowToPositionalInformationTable(domain_metadomain_coverage, d, transcript_id) called', info_style);}
 	var new_row = d3.select('#position_information_tbody').append('tr').attr('class', 'tr').attr("id", "positional_table_info_" + d.values[0].protein_pos);
 	
 	new_row.append('th').text(d.values[0].protein_pos);
@@ -827,6 +877,7 @@ function addRowToPositionalInformationTable(domain_metadomain_coverage, d, trans
 }
 
 function createClinVarTableHeader(){
+    if (global_debugging) {console.info('%c Function createClinVarTableHeader() called', info_style);}
     var html_table= '';
     // Define the header
     html_table += '<table class="table is-hoverable is-narrow">';
@@ -842,6 +893,7 @@ function createClinVarTableHeader(){
 }
 
 function createClinVarTableBody(ClinvarVariants){
+    if (global_debugging) {console.info('%c Function createClinVarTableBody(ClinvarVariants) called', info_style);}
     var html_table= '';
     // here comes the data
     for (var index = 0; index < ClinvarVariants.length; index++){
@@ -860,6 +912,7 @@ function createClinVarTableBody(ClinvarVariants){
 }
 
 function createGnomADTableHeader(){
+    if (global_debugging) {console.info('%c Function createGnomADTableHeader() called', info_style);}
     var html_table= '';
     // Define the header
     html_table += '<table class="table is-hoverable is-narrow">';
@@ -875,6 +928,7 @@ function createGnomADTableHeader(){
 }
 
 function createGnomADTableBody(gnomADVariants){
+    if (global_debugging) {console.info('%c Function createGnomADTableBody(gnomADVariants) called', info_style);}
     var html_table= '';
     // here comes the data
     for (var index = 0; index < gnomADVariants.length; index++){
@@ -893,10 +947,12 @@ function createGnomADTableBody(gnomADVariants){
 }
 
 function createTableFooter(){
+    if (global_debugging) {console.info('%c Function createTableFooter() called', info_style);}
     return '</tbody></table>';
 }
 
 function sortTable() {
+    if (global_debugging) {console.info('%c Function sortTable() called', info_style);}
 	var rows = $('#position_information_tbody tr').get();
 	
 	rows.sort(function(a, b) {
@@ -919,16 +975,199 @@ function sortTable() {
     });
 }
 
-function checkForTranscript() {
-    var url = window.location.href;
-    var pattern = /\/transcript\/(.+)\/$/;
-    var match = pattern.exec(url);
-    if (match)
-    {
-        var transcriptID = match[1];
+function customRedirect(url){
+    // redirect while keeping debug settings
+    if (global_debugging) {
+		window.location.assign(url + "?debug=True");
+	} else {
+		window.location.assign(url);
+	}
+}
 
-        visualizeTranscript(transcriptID);
+function getTranscriptButtonPress() {
+    if (global_debugging) {console.info('%c Function getTranscriptButtonPress() called', info_style);}
+		const geneName = document.getElementById("geneName").value;
+		const genomeBuild = document.getElementById("genomeBuild").value;
+
+		// Check if the gene name and genome build variables are defined
+		if (typeof genomeBuild !== 'undefined' && genomeBuild.length > 0) {
+			if (typeof geneName !== 'undefined' && geneName.length > 0) {
+				// correctly set the genome build and gene name
+				customRedirect(Flask.url_for("web.dashboard_gene_name", {'genome_build': genomeBuild, 'gene_name': geneName}));
+			}
+			else {
+				// no gene name set, redirect to the dashboard with the genome build
+				customRedirect(Flask.url_for("web.dashboard_genome_build", {'genome_build': genomeBuild}));
+			}
+		}
+		else {
+			// no genome build set, redirect to the default dashboard
+            console.info('%c No genome build specified in the URL, redirecting to the default dashboard.', info_style);
+            customRedirect(Flask.url_for("web.dashboard"))
+		}
+}
+
+function getToleranceButtonPress() {
+    if (global_debugging) {console.info('%c Function getToleranceButtonPress() called', info_style);}
+	const geneName = document.getElementById("geneName").value;
+	const genomeBuild = document.getElementById("genomeBuild").value;
+	const selection = document.getElementsByClassName("dropdown")[0];
+
+	// Check if the gene name and genome build variables are defined
+	if (typeof genomeBuild !== 'undefined' && genomeBuild.length > 0) {
+		if (typeof geneName !== 'undefined' && geneName.length > 0) {
+			if (selection !== undefined && selection !== null && selection.length > 0) {
+				var input = selection.options[selection.selectedIndex].text;
+				var gtID = input.toUpperCase();
+
+				if (gtID !== undefined && gtID.length > 0 && !selection.options[selection.selectedIndex].disabled) {
+					const transcript_id = gtID.split(" ")[0];
+
+					// redirect to the dashboard with the genome build, gene name and transcript id
+					customRedirect(Flask.url_for("web.transcript", {'genome_build': genomeBuild, 'gene_name': geneName, 'transcript_id': transcript_id}));
+				}
+			}
+		}
+	}
+}
+
+async function retrieveSessionVariables() {
+    if (global_debugging) {console.info('%c Function retrieveSessionVariables() called', info_style);}
+    // Expected session variables
+    const session_variables = {
+        // @todo 1: should be redesigned as a dict where genome_build+gene_name are keys and transcript_ids_for_gene as values and multiple transcript_ids_for_gene can be stored then the parameter urls should interact with this dictionary and make this browser tab independent
+        // @todo 2: align the contents here with the session variables in Flask (web.py)
+        genome_builds: [],
+        genome_build: "",
+        gene_name: "",
+        transcript_ids_for_gene: {},
+        transcript_id: "",
+        message:"",
+    };
+
+    // get session variables from Flask
+    try{
+        let response = await fetch(Flask.url_for("web.get_dashboard_session"));
+        if (!response.ok) {
+            throw new Error('get_dashboard_session did not respond: ' + response.statusText);
+        }
+        let data = await response.json();
+        // extract all vars: genome_builds = result['genome_builds'], genome_build = result['genome_build'], gene_name = result['gene_name'], transcript_ids_for_gene = transcript_ids_for_gene, transcript_id = result['transcript_id']
+        session_variables.genome_builds = data.genome_builds || [];
+        session_variables.genome_build = data.genome_build || "";
+        session_variables.gene_name = data.gene_name || "";
+        session_variables.transcript_ids_for_gene = data.transcript_ids_for_gene || {};
+        session_variables.transcript_id = data.transcript_id || "";
+        if (session_variables.transcript_ids_for_gene.message === undefined) {
+            session_variables.message = "";
+        } else{
+            session_variables.message = data.transcript_ids_for_gene.message || "";
+        }
+
+        // return the session variables
+        return session_variables;
+    }
+    catch (error) {
+        console.error('Error fetching session data:'+ error);
+        // return empty session variables
+        return session_variables;
     }
 }
 
-checkForTranscript();
+function handleURLPathParameters(session_vars) {
+    if (global_debugging) {console.info('%c Function handleURLPathParameters() called', info_style);}
+	// Handle the URL path parameters
+    const path = window.location.pathname; // e.g., "/metadome/dashboard/<GenomeBuild>/<gene_name>/<transcript_id>"
+    var pathSegments = path.split('/'); // ["", "users", "123", "profile"]
+
+	// remove empty strings segments from the pathSegments array
+	pathSegments = pathSegments.filter(segment => segment.length > 0);
+
+	if (get_query_param('debug')) {
+		// Enable debugging mode
+		global_debugging = true;
+		console.info('%c Debugging enabled', success_style);
+
+		// Print the path segments for global_debugging
+		console.info('%c Path: ' + path, info_style);
+		console.info('%c Path segments length: ' + pathSegments.length, info_style);
+		console.info('%c Path segments: ' + pathSegments, info_style);
+	}
+
+    // Log the session data for debugging
+    if (global_debugging) {
+        console.info('%c Session variable - Genome builds: ' + session_vars.genome_builds.join(', '), info_style);
+        console.info('%c Session variable - "selected" Genome build: ' + session_vars.genome_build, info_style);
+        console.info('%c Session variable - "selected" Gene name: ' + session_vars.gene_name, info_style);
+        if (session_vars.transcript_ids_for_gene.transcript_ids !== undefined && session_vars.transcript_ids_for_gene.transcript_ids.length > 0){
+            // iterate and print out: "transcript_ids_for_gene":{"gene_name":"PTP4A1","genome_build":"GRCh38.p14","message":"Retrieved transcripts for gene 'PTP4A1'","transcript_ids":[{"aa_length":173,"gencode_id":"ENST00000648894.1","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"},{"aa_length":173,"gencode_id":"ENST00000673199.1","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"},{"aa_length":173,"gencode_id":"ENST00000672924.1","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"},{"aa_length":173,"gencode_id":"ENST00000626021.3","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"}]}}
+            console.info('%c Session variable - Transcript IDs for "selected" gene name details:', info_style);
+            session_vars.transcript_ids_for_gene.transcript_ids.forEach(function(transcript) {
+                console.info('%c   - ' + transcript.gencode_id + ' (' + transcript.aa_length + 'aa) RefSeq: ' + transcript.refseq_nm_numbers + ' Has protein data: ' + transcript.has_protein_data, info_style);
+            })
+        }
+        console.info('%c Session variable - "selected" Transcript ID: ' + session_vars.transcript_id, info_style);
+    }
+	// Check if the path contains the expected segments
+	// the first segment should be metadome
+	if (pathSegments.length > 2 && pathSegments.indexOf('metadome') == 0 && pathSegments.indexOf('dashboard') == 1 ) {
+		// set the metadome variable
+		const url_param_metadome = pathSegments[pathSegments.indexOf('metadome')];
+		const url_param_dashboard = pathSegments[pathSegments.indexOf('dashboard')];
+
+		const url_param_tour_or_genome_build = pathSegments[2]; // e.g., "GRCh37"
+		const url_param_gene_name = pathSegments[3]; // e.g., "TP53"
+		const url_param_transcript_id = pathSegments[4]; // e.g., "ENST00000367792"
+
+		if (global_debugging) {
+            console.info('%c URL parameters: ', info_style);
+            console.info('%c Metadome: ' + url_param_metadome, info_style);
+            console.info('%c Dashboard: ' + url_param_dashboard, info_style);
+            console.info('%c Genome build: ' + url_param_tour_or_genome_build, info_style);
+            console.info('%c Gene name: ' + url_param_gene_name, info_style);
+            console.info('%c Transcript ID: ' + url_param_transcript_id, info_style);
+        }
+
+		// Handle the JavaScript behaviour of the page based on the path segments
+		switch (pathSegments.length) {
+			case 3: // Only Genome build is specified
+                if (global_debugging) { console.info('%c Case 3: Only Genome build is specified', info_style); }
+                // Start the tour automatically if this url parameter is tour
+                if (url_param_tour_or_genome_build == 'tour') {
+                    // start the tour
+                    tour.restart();
+                    return;
+                }
+				break;
+			case 4: // Genome build and gene name are specified
+                if (global_debugging) { console.info('%c Case 4: Genome build and gene name are specified', info_style); }
+				document.getElementById("geneName").value = url_param_gene_name;
+				document.getElementById("genomeBuild").value = url_param_tour_or_genome_build;
+				getTranscript(session_vars.gene_name, session_vars.genome_build, session_vars.transcript_ids_for_gene);
+				break;
+			case 5: // Genome build, gene name and transcript id are specified
+                if (global_debugging) { console.info('%c Case 5: Genome build, gene name and transcript id are specified', info_style); }
+				document.getElementById("geneName").value = url_param_gene_name;
+				document.getElementById("genomeBuild").value = url_param_tour_or_genome_build;
+				getTranscript(session_vars.gene_name, session_vars.genome_build, session_vars.transcript_ids_for_gene);
+				// select the transcript id in the dropdown
+				var dropdown = document.getElementById("gtID");
+				for (var i = 0; i < dropdown.options.length; i++) {
+					if(global_debugging) { console.info('%c Checking transcript ID: ' + dropdown.options[i].text + ' against} ' + url_param_transcript_id, info_style); }
+					if (dropdown.options[i].text.startsWith(url_param_transcript_id)) {
+						dropdown.selectedIndex = i;
+						break;
+					}
+				}
+				visualize();
+				break;
+		}
+	} else {
+		// The path does not contain the expected segments, redirect to the index page
+		console.info('%c Invalid URL path: "' + path + '", expected format is /metadome/dashboard/<GenomeBuild>/<gene_name>/<transcript_id>.', info_style);
+        customRedirect(Flask.url_for("web.dashboard"))
+	}
+}
+
+// Initialize the dashboard by retrieving session variables and handling URL path parameters
+retrieveSessionVariables().then(session_variables => {handleURLPathParameters(session_variables)}).catch(error => console.error(error));
