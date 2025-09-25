@@ -20,8 +20,6 @@ $( function() {
 <link rel="stylesheet"
   href="{{ url_for('static', filename='css/tolerance_graph.css') }}">
 
-
-
 <!-- Staring definition of site content -->
 <section class="section" id="content">
   <!-- Loading screen -->
@@ -68,18 +66,22 @@ $( function() {
   
   <!-- Start of the page content -->
   <div class="container">
-    <!-- Tolerance landscape form -->
+        <!-- Tolerance landscape form -->
     <div class="field">
 
       <!-- Gene name input -->
       <div class="field has-addons" id="retrieve_transcripts_control">
+        <div class="control">
+          <button class="button is-static is-fullwidth" type="text" name="genomeBuild"
+            id="genomeBuild" value="{{ genome_build }}">{{ genome_build }}</button>
+        </div>
         <div class="control is-expanded">
           <input class="input is-fullwidth" type="text" name="geneName"
             id="geneName" size="20" onclick="this.setSelectionRange(0, this.value.length)"
             placeholder="Type here your gene name of interest" required />
         </div>
         <div class="control">
-          <button id="getTranscriptsButton" class="button is-info is-fullwidth" onclick="getTranscript()">
+          <button id="getTranscriptsButton" class="button is-info is-fullwidth" onclick="getTranscriptButtonPress()">
             Get transcripts</button>
         </div>
       </div>
@@ -97,7 +99,7 @@ $( function() {
         </div>
         <div class="control">
           <button id='getToleranceButton' type="submit"
-            class="button is-static is-fullwidth" onclick="visualize();">Analyse Protein</button>
+            class="button is-static is-fullwidth" onclick="getToleranceButtonPress();">Analyse Protein</button>
         </div>
       </div>
       <!-- Toggling advanced mode -->
@@ -143,9 +145,9 @@ $( function() {
           </div>
           <div class="control">
             {% if transcript_id|length > 0 %}
-              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.transcript", transcript_id=transcript_id) }}"'>Reset Page</button>
+              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.transcript", genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id) }}"'>Reset Page</button>
             {% else %}
-              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.dashboard") }}"'>Reset Page</button>
+              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.dashboard", genome_build=genome_build) }}"'>Reset Page</button>
             {% endif %}
           </div>
         </div>
@@ -184,6 +186,14 @@ $( function() {
         </table>
       </div>
    </div> 
+  </div>
+  <!-- Hidden select element for genome builds -->
+  <div type="hidden">
+    <select id="genomeBuilds" name="genomeBuilds" class="is-invisible">
+       {% for genome_build in all_genome_builds %}
+          <option value="{{ genome_build }}">{{ genome_build }}</option>
+       {% endfor %}
+    </select>
   </div>
   <div>
     <h2 id="error-feedback" class="feedback-text"></h2>
