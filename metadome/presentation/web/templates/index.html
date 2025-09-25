@@ -30,8 +30,10 @@
     <section class="section has-text-centered">
     <!-- Start a tolerance landscape -->
       <div class="control is-expanded has-text-centered">
-        <button class="button is-info is-large" onclick='location.href="{{ url_for("web.dashboard") }}"'>
-          Start analysis</button>
+        <button class="button is-link is-large" onclick='location.href="{{ url_for("web.dashboard_grch38") }}"'>
+          Start GRCh38 analysis</button>
+        <button class="button is-info is-large" onclick='location.href="{{ url_for("web.dashboard_grch37") }}"'>
+          Start GRCh37 analysis</button>
         <p class="label" style="color: #00AFDC;"> or </p>
         <button class="button is-info is-outlined is-large" onclick='location.href="{{ url_for("web.dashboard") }}?tour=true"'>
           Start the tour</button>
