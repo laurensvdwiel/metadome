@@ -61,11 +61,15 @@
     <div id='navbar_menu' class="navbar-menu">
       <div class="navbar-start">
         <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.dashboard') }}">Start
-            Analysis</a>
+          <a class="link is-info" href="{{ url_for('web.dashboard_grch38') }}"><b>GRCh38
+              Analysis</b></a>
         </div>
         <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.dashboard') }}?tour=true">Start Tour</a>
+          <a class="link is-info" href="{{ url_for('web.dashboard_grch37') }}"><i>GRCh37
+              Analysis</i></a>
+        </div>
+        <div class="navbar-item">
+          <a class="link is-info" href="{{ url_for('web.dashboard_tour') }}">Start Tour</a>
         </div>
       </div>
 
