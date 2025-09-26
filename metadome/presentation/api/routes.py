@@ -1,21 +1,14 @@
 from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.helper_functions import is_transcript_id
-from metadome.controllers.job import create_visualization_job_if_needed, retrieve_error
-
-
-from flask import Blueprint, jsonify, render_template, request
+from metadome.controllers.job import retrieve_error
+from flask import Blueprint, jsonify, request
 from builtins import Exception
-
 import traceback
 import logging
-import json
-
-
 from metadome.controllers.job import (create_visualization_job_if_needed,
                                       get_visualization_status,
                                       retrieve_visualization)
-from metadome.domain.wrappers.gencode import retrieve_refseq_identifiers_for_transcript
-
+from prebuild_all import transcripts
 
 _log = logging.getLogger(__name__)
 
@@ -25,34 +18,28 @@ bp = Blueprint('api', __name__)
 #########    Route end points    #########
 ##########################################
 
-
-@bp.route('/get_transcripts/<string:gene_name>', methods=['GET'])
-def get_transcript_ids_for_gene(gene_name):
+@bp.route('/get_transcripts/<string:genome_build>/<string:gene_name>', methods=['GET'])
+def get_transcript_ids_for_gene(genome_build, gene_name):
     _log.debug('get_transcript_ids_for_gene')
     # retrieve the transcript ids for this gene
-    trancripts = GeneRepository.retrieve_all_transcript_ids(gene_name)
+    transcripts = GeneRepository.retrieve_all_transcript_ids(genome_build, gene_name)
     
     # check if there was any return value
-    if len(trancripts) > 0:
-        message = "Retrieved transcripts for gene '"+trancripts[0].gene_name+"'"
+    if len(transcripts) > 0:
+        message = "Retrieved transcripts for gene '"+transcripts[0].gene_name+"'"
     else:
         message = "No transcripts available in database for gene '"+gene_name+"'"
 
     transcript_results = []
-    for t in trancripts:
-        # retrieve matching refseq identifiers for this transcript 
-        refseq_ids = retrieve_refseq_identifiers_for_transcript(t.gencode_transcription_id)
-        refseq_nm_numbers = ", ".join(nm_number for nm_number in refseq_ids['NM'])
-        
+    for t in transcripts:
         transcript_entry = {}
         transcript_entry['aa_length'] = t.sequence_length
         transcript_entry['gencode_id'] = t.gencode_transcription_id
-        transcript_entry['refseq_nm_numbers'] = refseq_nm_numbers
+        transcript_entry['refseq_nm_numbers'] = ", ".join(nm_number for nm_number in t.refseq_transcript_id.split(','))
         transcript_entry['has_protein_data'] = not t.protein_id is None
         transcript_results.append(transcript_entry)
 
-    return jsonify(trancript_ids=transcript_results, message=message)
-
+    return jsonify(transcript_ids=transcript_results, message=message, genome_build=genome_build, gene_name=gene_name)
 
 @bp.route('/get_metadomain_annotation/', methods=['POST'])
 def get_metadomain_annotation():
