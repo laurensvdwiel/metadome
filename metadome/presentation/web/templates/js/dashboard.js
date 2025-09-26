@@ -1042,7 +1042,6 @@ async function retrieveSessionVariables() {
         gene_name: "",
         transcript_ids_for_gene: {},
         transcript_id: "",
-        message:"",
     };
 
     // get session variables from Flask
@@ -1058,11 +1057,6 @@ async function retrieveSessionVariables() {
         session_variables.gene_name = data.gene_name || "";
         session_variables.transcript_ids_for_gene = data.transcript_ids_for_gene || {};
         session_variables.transcript_id = data.transcript_id || "";
-        if (session_variables.transcript_ids_for_gene.message === undefined) {
-            session_variables.message = "";
-        } else{
-            session_variables.message = data.transcript_ids_for_gene.message || "";
-        }
 
         // return the session variables
         return session_variables;
