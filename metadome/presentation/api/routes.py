@@ -8,7 +8,6 @@ import logging
 from metadome.controllers.job import (create_visualization_job_if_needed,
                                       get_visualization_status,
                                       retrieve_visualization)
-from prebuild_all import transcripts
 
 _log = logging.getLogger(__name__)
 
