@@ -34,7 +34,10 @@ def get_transcript_ids_for_gene(genome_build, gene_name):
         transcript_entry = {}
         transcript_entry['aa_length'] = t.sequence_length
         transcript_entry['gencode_id'] = t.gencode_transcription_id
-        transcript_entry['refseq_nm_numbers'] = ", ".join(nm_number for nm_number in t.refseq_transcript_id.split(','))
+        if t.refseq_transcript_id is None:
+            transcript_entry['refseq_nm_numbers'] = ""
+        else:
+            transcript_entry['refseq_nm_numbers'] = ", ".join(nm_number for nm_number in t.refseq_transcript_id.split(','))
         transcript_entry['has_protein_data'] = not t.protein_id is None
         transcript_results.append(transcript_entry)
 
