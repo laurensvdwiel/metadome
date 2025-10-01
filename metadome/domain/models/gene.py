@@ -20,6 +20,7 @@ class Gene(db.Model):
     gencode_version           e.g. Version45...
     gencode_basic             True/False wether the transcription meets the 'Basic' qualifications
     genome_build              e.g. GRCh38.p14...
+    refseq_transcript_id      e.g. NM_####...
     havana_gene_id            e.g. OTTHUMG#####....
     havana_translation_id     e.g. OTTHUMT#####....
     mane_transcript_type      e.g. MANE_Select, MANE_Plus_Clinical or no match
@@ -44,6 +45,7 @@ class Gene(db.Model):
     gencode_version = db.Column(db.String(50), nullable=False)
     gencode_basic = db.Column(db.Boolean, nullable=False)
     genome_build = db.Column(db.String(50), nullable=False)
+    refseq_transcript_id = db.Column(db.String(50))
     havana_gene_id = db.Column(db.String(50))
     havana_translation_id = db.Column(db.String(50))
     mane_transcript_type = db.Column(db.String(50))
@@ -60,7 +62,8 @@ class Gene(db.Model):
     def __init__(self, _strand, _gene_name, _gencode_transcription_id, 
                  _gencode_translation_name, _gencode_gene_id,
                  _gencode_version, _gencode_basic, _genome_build,
-                 _havana_gene_id, _havana_translation_id, _mane_transcript_type,
+                 _refseq_transcript_id, _havana_gene_id,
+                 _havana_translation_id, _mane_transcript_type,
                  _sequence_length):
         if _strand == '-':
             self.strand = Strand.minus
@@ -76,6 +79,7 @@ class Gene(db.Model):
         self.gencode_version = _gencode_version
         self.gencode_basic = _gencode_basic
         self.genome_build = _genome_build
+        self.refseq_transcript_id = None if _refseq_transcript_id == '-' else _refseq_transcript_id
         self.havana_gene_id = None if _havana_gene_id == '-' else _havana_gene_id
         self.havana_translation_id = None if _havana_translation_id == '-' else _havana_translation_id
         self.mane_transcript_type = None if _mane_transcript_type == '-' else _mane_transcript_type
