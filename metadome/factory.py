@@ -67,6 +67,12 @@ def create_app(settings=None):
 
     # Database
     from metadome.database import db
+    from metadome.domain.models.gene import Gene
+    from metadome.domain.models.protein import Protein
+    from metadome.domain.models.mapping import Mapping
+    from metadome.domain.models.interpro import Interpro
+    from metadome.domain.models.meta_domain_mapping import MetaDomainMapping
+
     db.init_app(app)
     with app.app_context():
         db.create_all()

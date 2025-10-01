@@ -53,6 +53,7 @@ class Mapping(db.Model):
     # Relationships
     gene = db.relationship("Gene", back_populates="mappings")
     protein = db.relationship("Protein", back_populates="mappings")
+    meta_domain_mapping = db.relationship("MetaDomainMapping", back_populates="mapping")
     
     def __repr__(self):
         return "<Mapping(chr='%s', chr_pos='%s' base_pair='%s', codon='%s', codon_base_pair_position='%s', amino_acid_residue='%s', cDNA_position='%s', uniprot_position='%s')>" % (
