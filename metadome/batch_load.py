@@ -28,6 +28,7 @@ from metadome.domain.models.gene import Gene
 from metadome.domain.models.protein import Protein, ProteinSource 
 from metadome.domain.models.mapping import Mapping
 from metadome.domain.models.interpro import Interpro
+from metadome.domain.models.meta_domain_mapping import MetaDomainMapping
 
 # --- Helper Functions (safe_int_conversion, safe_bool_conversion, get_cleaned_str) ---
 # (These remain unchanged)
@@ -125,6 +126,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                         _gencode_version=gencode_tr_version,
                                         _gencode_basic=safe_bool_conversion(row.get('GencodeBasic'), False),
                                         _genome_build=get_cleaned_str(row, 'genome_build'),
+                                        _refseq_transcript_id=get_cleaned_str(row, 'refseq_transcript_id'),
                                         _havana_gene_id=get_cleaned_str(row, 'havana_gene_id'),
                                         _havana_translation_id=get_cleaned_str(row, 'havana_translation_id'),
                                         _mane_transcript_type=get_cleaned_str(row, 'MANE'),
@@ -135,25 +137,27 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                     
                     # 3. Process Interpro
                     ext_db_id_val = get_cleaned_str(row, 'ext_db_id')
+                    ext_db_version_val = get_cleaned_str(row, 'PFAM_version')
                     uniprot_start_val = safe_int_conversion(row.get('uniprot_start'))
                     uniprot_stop_val = safe_int_conversion(row.get('uniprot_stop'))
-                    if current_protein is not None and ext_db_id_val is not None and uniprot_start_val is not None and uniprot_stop_val is not None:
-                        interpro_cache_key = (current_protein.uniprot_ac, ext_db_id_val, uniprot_start_val, uniprot_stop_val)
+                    current_interpro = None
+                    if current_protein is not None and ext_db_id_val is not None and ext_db_version_val is not None and uniprot_start_val is not None and uniprot_stop_val is not None:
+                        interpro_cache_key = (current_protein.uniprot_ac, ext_db_id_val, ext_db_version_val, uniprot_start_val, uniprot_stop_val)
                         if interpro_cache_key not in interpro_cache:
-                            existing_interpro = None
+                            current_interpro = None
                             if current_protein.id:
-                                existing_interpro = sqlalchemy_session.query(Interpro).filter_by(
-                                    protein_id=current_protein.id, ext_db_id=ext_db_id_val,
+                                current_interpro = sqlalchemy_session.query(Interpro).filter_by(
+                                    protein_id=current_protein.id, ext_db_id=ext_db_id_val, ext_db_version=ext_db_version_val,
                                     uniprot_start=uniprot_start_val, uniprot_stop=uniprot_stop_val).one_or_none()
-                            if not existing_interpro:
-                                interpro_obj = Interpro(
-                                    _ext_db_id=ext_db_id_val, _start_pos=uniprot_start_val, _end_pos=uniprot_stop_val,
+                            if not current_interpro:
+                                current_interpro = Interpro(
+                                    _ext_db_id=ext_db_id_val, _ext_db_version=ext_db_version_val, _start_pos=uniprot_start_val, _end_pos=uniprot_stop_val,
                                     _interpro_id=get_cleaned_str(row, 'interpro_id'), _region_name=get_cleaned_str(row, 'region_name'))
-                                interpro_obj.protein = current_protein
-                                sqlalchemy_session.add(interpro_obj)
-                                interpro_cache[interpro_cache_key] = interpro_obj
+                                current_interpro.protein = current_protein
+                                sqlalchemy_session.add(current_interpro)
+                                interpro_cache[interpro_cache_key] = current_interpro
                             else:
-                                interpro_cache[interpro_cache_key] = existing_interpro
+                                interpro_cache[interpro_cache_key] = current_interpro
                     
                     # 4. Process Mapping
                     if current_gene is not None and current_protein is not None:
@@ -163,7 +167,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                         if not chromosome_val or chromosome_pos_val is None:
                             logging.warning(f"L{line_num}: Missing/invalid critical mapping info for gene '{current_gene.gencode_transcription_id}'. Skipping.")
                         else:
-                            mapping_obj = Mapping(
+                            current_mapping = Mapping(
                                 chromosome=chromosome_val,
                                 chromosome_position=chromosome_pos_val,
                                 strand=map_strand_enum,
@@ -177,12 +181,23 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                 uniprot_position=safe_int_conversion(row.get('uniprot_position')),
                                 exon_number=safe_int_conversion(row.get('exon_number'))
                             )
-                            mapping_obj.gene = current_gene
-                            mapping_obj.protein = current_protein
-                            sqlalchemy_session.add(mapping_obj)
+                            current_mapping.gene = current_gene
+                            current_mapping.protein = current_protein
+                            sqlalchemy_session.add(current_mapping)
                     else:
                         logging.warning(f"L{line_num}: Missing Gene or Protein for mapping. Skipping mapping for gene '{gencode_tr_id}' and protein '{uniprot_ac}'.")
-                    
+
+                    if current_interpro is not None and current_mapping is not None:
+                        # Check if there is a meta-domain mapping
+                        PFAM_consensus_pos_val = safe_int_conversion(row.get('PFAM_consensus_pos'))
+                        if PFAM_consensus_pos_val is None:
+                            current_meta_domain_mapping = MetaDomainMapping(consensus_position=PFAM_consensus_pos_val, ext_db_id=current_interpro.ext_db_id)
+                            current_meta_domain_mapping.interpro_domain = current_interpro
+                            current_meta_domain_mapping.mapping = current_mapping
+                            sqlalchemy_session.add(current_meta_domain_mapping)
+                        else:
+                            logging.info(f"L{line_num}: Missing consensus position for mapping that does contain a protein domain at this position. Skipping meta-domain mapping for gene '{gencode_tr_id}' and protein '{uniprot_ac}'.")
+
                     current_batch_count += 1
                     if current_batch_count >= batch_size:
                         logging.info(f"Processed {total_processed_count} rows. Committing batch of {current_batch_count}.")
