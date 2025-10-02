@@ -29,7 +29,7 @@ class MetaDomainMappingAssociation(db.Model):
 
     # Relationships
     mapping = db.relationship("Mapping", back_populates="meta_domain_associations")
-    meta_domain_mapping = db.relationship("MetaDomainMapping", back_populates="meta_domain_mapping_association")
+    meta_domain_mapping = db.relationship("MetaDomainMapping", back_populates="meta_domain_mapping_associations")
     interpro_domain = db.relationship("Interpro", back_populates="meta_domain_associations")
 
     # Constraints
