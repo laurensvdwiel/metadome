@@ -72,6 +72,7 @@ def create_app(settings=None):
     from metadome.domain.models.mapping import Mapping
     from metadome.domain.models.interpro import Interpro
     from metadome.domain.models.meta_domain_mapping import MetaDomainMapping
+    from metadome.domain.models.meta_domain_mapping_association import MetaDomainMappingAssociation
 
     db.init_app(app)
     with app.app_context():
