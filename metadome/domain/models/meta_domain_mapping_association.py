@@ -10,11 +10,11 @@ class MetaDomainMappingAssociation(db.Model):
     id                      identifier
     mapping_id              Foreign key to mappings table
     interpro_id             Foreign key to interpro_domains table
-    meta_domain_mapping_id  Foreign key to meta_domain_mappings table
+    meta_domain_position_id Foreign key to meta_domain_positions table
 
     Relationships
     many to one             mapping
-    many to one             meta_domain_mapping
+    many to one             meta_domain_position
     many to one             interpro_domain
     """
 
@@ -25,14 +25,14 @@ class MetaDomainMappingAssociation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     mapping_id = db.Column(db.Integer, db.ForeignKey('mappings.id'), nullable=False)
     interpro_id = db.Column(db.Integer, db.ForeignKey('interpro_domains.id'), nullable=False)
-    meta_domain_mapping_id = db.Column(db.Integer, db.ForeignKey('meta_domain_mappings.id'), nullable=False)
+    meta_domain_position_id = db.Column(db.Integer, db.ForeignKey('meta_domain_positions.id'), nullable=False)
 
     # Relationships
     mapping = db.relationship("Mapping", back_populates="meta_domain_associations")
-    meta_domain_mapping = db.relationship("MetaDomainMapping", back_populates="meta_domain_mapping_associations")
+    meta_domain_position = db.relationship("MetaDomainPosition", back_populates="meta_domain_mapping_associations")
     interpro_domain = db.relationship("Interpro", back_populates="meta_domain_associations")
 
     # Constraints
     __table_args__ = (
-        db.UniqueConstraint('mapping_id', 'meta_domain_mapping_id', 'interpro_id', name='_unique_meta_domain_mapping_association'),
+        db.UniqueConstraint('mapping_id', 'meta_domain_position_id', 'interpro_id', name='_unique_meta_domain_mapping_association'),
     )

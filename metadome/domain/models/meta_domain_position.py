@@ -1,8 +1,8 @@
 from metadome.database import db
 
-class MetaDomainMapping(db.Model):
+class MetaDomainPosition(db.Model):
     """
-    Table: meta_domain_mapping
+    Table: meta_domain_positions
     Representation of a single meta-domain position in a protein domain
     
     Fields
@@ -14,7 +14,7 @@ class MetaDomainMapping(db.Model):
     one to many               meta_domain_mapping_association
     """
     # Table configuration
-    __tablename__ = 'meta_domain_mappings'
+    __tablename__ = 'meta_domain_positions'
     
     # Fields
     id = db.Column(db.Integer, primary_key=True)
@@ -23,7 +23,7 @@ class MetaDomainMapping(db.Model):
     
     # Relationships
     meta_domain_mapping_associations = db.relationship("MetaDomainMappingAssociation",
-                                              back_populates="meta_domain_mapping")
+                                              back_populates="meta_domain_position")
 
     # Constraints
     __table_args__ = (db.UniqueConstraint('ext_db_id', 'consensus_position',
