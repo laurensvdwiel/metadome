@@ -87,6 +87,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                     if uniprot_ac:
                         if uniprot_ac in protein_cache:
                             current_protein = protein_cache[uniprot_ac]
+                            logging.debug(f"L{line_num}: Reusing cached Protein '{uniprot_ac}'")
                         else:
                             current_protein = sqlalchemy_session.query(Protein).filter_by(uniprot_ac=uniprot_ac).one_or_none()
                             if current_protein is None:
@@ -108,8 +109,9 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                     gencode_tr_version = get_cleaned_str(row, 'GENCODE_version')
                     current_gene_key = gencode_tr_id+"_"+gencode_tr_version
                     if gencode_tr_id:
-                        if gencode_tr_id in gene_cache:
+                        if current_gene_key in gene_cache:
                             current_gene = gene_cache[current_gene_key]
+                            logging.debug(f"L{line_num}: Reusing cached Gene '{current_gene_key}'")
                         else:
                             current_gene = sqlalchemy_session.query(Gene).filter_by(gencode_transcription_id=gencode_tr_id, gencode_version=gencode_tr_version).one_or_none()
                             if current_gene is None:
@@ -162,6 +164,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                 interpro_cache[interpro_cache_key] = current_interpro
                         else:
                             current_interpro = interpro_cache[interpro_cache_key]
+                            logging.debug(f"L{line_num}: Reusing cached Interpro domain '{current_protein.id}{ext_db_id_val}{uniprot_start_val}{uniprot_stop_val}'")
                     
                     # 4. Process Mapping
                     if current_gene is not None and current_protein is not None:
@@ -211,6 +214,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                     metadomain_position_cache[metadomain_position_cache_key] = current_meta_domain_mapping
                             else:
                                 current_meta_domain_mapping = metadomain_position_cache[metadomain_position_cache_key]
+                                logging.debug(f"L{line_num}: Reusing cached MetaDomainMapping for ext_db_id '{ext_db_id_val}' and consensus position '{PFAM_consensus_pos_val}'")
                             # add the association
                             if current_meta_domain_mapping is not None:
                                 current_meta_domain_mapping_assoc = MetaDomainMappingAssociation()
