@@ -29,6 +29,7 @@ from metadome.domain.models.protein import Protein, ProteinSource
 from metadome.domain.models.mapping import Mapping
 from metadome.domain.models.interpro import Interpro
 from metadome.domain.models.meta_domain_mapping import MetaDomainMapping
+from metadome.domain.models.meta_domain_mapping_association import MetaDomainMappingAssociation
 
 # --- Helper Functions (safe_int_conversion, safe_bool_conversion, get_cleaned_str) ---
 # (These remain unchanged)
@@ -65,6 +66,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
     protein_cache = {}
     gene_cache = {}
     interpro_cache = {}
+    metadomain_position_cache = {}
     # The rest of the batch_load_data function uses 'sqlalchemy_session'
     #      for all database operations like .query, .add, .commit, .rollback
     try:
@@ -192,11 +194,32 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                     if current_interpro is not None and current_mapping is not None:
                         # Check if there is a meta-domain mapping
                         PFAM_consensus_pos_val = safe_int_conversion(row.get('PFAM_consensus_pos'))
-                        if PFAM_consensus_pos_val is None:
-                            current_meta_domain_mapping = MetaDomainMapping(consensus_position=PFAM_consensus_pos_val, ext_db_id=current_interpro.ext_db_id)
-                            current_meta_domain_mapping.interpro_domain = current_interpro
-                            current_meta_domain_mapping.mapping = current_mapping
-                            sqlalchemy_session.add(current_meta_domain_mapping)
+
+                        if PFAM_consensus_pos_val is not None:
+                            # Add meta-domain mapping to DB if not already present
+                            metadomain_position_cache_key = (ext_db_id_val, PFAM_consensus_pos_val)
+                            current_meta_domain_mapping = None
+                            if metadomain_position_cache_key not in metadomain_position_cache:
+                                current_meta_domain_mapping = sqlalchemy_session.query(MetaDomainMapping).filter_by(
+                                        consensus_position=PFAM_consensus_pos_val, ext_db_id=ext_db_id_val).one_or_none()
+                                if not current_meta_domain_mapping:
+                                    current_meta_domain_mapping = MetaDomainMapping(
+                                        consensus_position=PFAM_consensus_pos_val, ext_db_id=current_interpro.ext_db_id)
+                                    sqlalchemy_session.add(current_meta_domain_mapping)
+                                    metadomain_position_cache[metadomain_position_cache_key] = current_meta_domain_mapping
+                                else:
+                                    metadomain_position_cache[metadomain_position_cache_key] = current_meta_domain_mapping
+                            else:
+                                current_meta_domain_mapping = metadomain_position_cache[metadomain_position_cache_key]
+                            # add the association
+                            if current_meta_domain_mapping is not None:
+                                current_meta_domain_mapping_assoc = MetaDomainMappingAssociation()
+                                current_meta_domain_mapping_assoc.meta_domain_mapping = current_meta_domain_mapping
+                                current_meta_domain_mapping_assoc.mapping = current_mapping
+                                current_meta_domain_mapping_assoc.interpro_domain = current_interpro
+                                sqlalchemy_session.add(current_meta_domain_mapping_assoc)
+                            else:
+                                logging.info(f"L{line_num}: Could not find or create meta-domain mapping for consensus position '{PFAM_consensus_pos_val}' and ext_db_id '{ext_db_id_val}'. Skipping association.")
                         else:
                             logging.info(f"L{line_num}: Missing consensus position for mapping that does contain a protein domain at this position. Skipping meta-domain mapping for gene '{gencode_tr_id}' and protein '{uniprot_ac}'.")
 
