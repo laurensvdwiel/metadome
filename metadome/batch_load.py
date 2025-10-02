@@ -29,7 +29,7 @@ from metadome.domain.models.protein import Protein, ProteinSource
 from metadome.domain.models.mapping import Mapping
 from metadome.domain.models.interpro import Interpro
 from metadome.domain.models.meta_domain_position import MetaDomainPosition
-from metadome.domain.models.meta_domain_mapping_association import MetaDomainMappingAssociation
+from metadome.domain.models.meta_domain_mapping import MetaDomainMapping
 
 # --- Helper Functions (safe_int_conversion, safe_bool_conversion, get_cleaned_str) ---
 # (These remain unchanged)
@@ -217,11 +217,11 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                 logging.debug(f"L{line_num}: Reusing cached MetaDomainPosition for ext_db_id '{ext_db_id_val}' and consensus position '{PFAM_consensus_pos_val}'")
                             # add the association
                             if current_meta_domain_position is not None:
-                                current_meta_domain_mapping_assoc = MetaDomainMappingAssociation()
-                                current_meta_domain_mapping_assoc.meta_domain_position = current_meta_domain_position
-                                current_meta_domain_mapping_assoc.mapping = current_mapping
-                                current_meta_domain_mapping_assoc.interpro_domain = current_interpro
-                                sqlalchemy_session.add(current_meta_domain_mapping_assoc)
+                                current_meta_domain_mapping = MetaDomainMapping()
+                                current_meta_domain_mapping.meta_domain_position = current_meta_domain_position
+                                current_meta_domain_mapping.mapping = current_mapping
+                                current_meta_domain_mapping.interpro_domain = current_interpro
+                                sqlalchemy_session.add(current_meta_domain_mapping)
                             else:
                                 logging.info(f"L{line_num}: Could not find or create meta-domain mapping for consensus position '{PFAM_consensus_pos_val}' and ext_db_id '{ext_db_id_val}'. Skipping association.")
                         else:

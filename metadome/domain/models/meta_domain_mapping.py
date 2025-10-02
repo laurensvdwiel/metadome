@@ -1,10 +1,10 @@
 from metadome.database import db
 
-class MetaDomainMappingAssociation(db.Model):
+class MetaDomainMapping(db.Model):
     """
-    Table: meta_domain_mapping_association
-    Association model to represent the many-to-many relationship between
-    mappings, interpro_domains, and meta_domain_mappings
+    Table: meta_domain_mapping
+    Association table to represent the many-to-one relationship between
+    mappings, interpro_domains, and meta_domain_positions
 
     Fields
     id                      identifier
@@ -19,7 +19,7 @@ class MetaDomainMappingAssociation(db.Model):
     """
 
     # Table configuration
-    __tablename__ = 'meta_domain_mapping_association'
+    __tablename__ = 'meta_domain_mapping'
 
     # Fields
     id = db.Column(db.Integer, primary_key=True)
@@ -28,9 +28,9 @@ class MetaDomainMappingAssociation(db.Model):
     meta_domain_position_id = db.Column(db.Integer, db.ForeignKey('meta_domain_positions.id'), nullable=False)
 
     # Relationships
-    mapping = db.relationship("Mapping", back_populates="meta_domain_associations")
-    meta_domain_position = db.relationship("MetaDomainPosition", back_populates="meta_domain_mapping_associations")
-    interpro_domain = db.relationship("Interpro", back_populates="meta_domain_associations")
+    mapping = db.relationship("Mapping", back_populates="meta_domain_mappings")
+    meta_domain_position = db.relationship("MetaDomainPosition", back_populates="meta_domain_mappings")
+    interpro_domain = db.relationship("Interpro", back_populates="meta_domain_mappings")
 
     # Constraints
     __table_args__ = (

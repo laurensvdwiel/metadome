@@ -35,7 +35,7 @@ class Interpro(db.Model):
     
     # Relationships
     protein = db.relationship("Protein", back_populates="interpro_domains")
-    meta_domain_associations = db.relationship("MetaDomainMappingAssociation",
+    meta_domain_mappings = db.relationship("MetaDomainMapping",
                                                back_populates="interpro_domain")
     
     # Constraints

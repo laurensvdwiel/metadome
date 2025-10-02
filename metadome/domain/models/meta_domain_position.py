@@ -22,7 +22,7 @@ class MetaDomainPosition(db.Model):
     ext_db_id = db.Column(db.String, nullable=False)
     
     # Relationships
-    meta_domain_mapping_associations = db.relationship("MetaDomainMappingAssociation",
+    meta_domain_mappings = db.relationship("MetaDomainMapping",
                                               back_populates="meta_domain_position")
 
     # Constraints

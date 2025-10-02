@@ -53,7 +53,7 @@ class Mapping(db.Model):
     # Relationships
     gene = db.relationship("Gene", back_populates="mappings")
     protein = db.relationship("Protein", back_populates="mappings")
-    meta_domain_associations = db.relationship("MetaDomainMappingAssociation",
+    meta_domain_mappings = db.relationship("MetaDomainMapping",
                                                back_populates="mapping")
     
     def __repr__(self):
