@@ -158,6 +158,8 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                                 interpro_cache[interpro_cache_key] = current_interpro
                             else:
                                 interpro_cache[interpro_cache_key] = current_interpro
+                        else:
+                            current_interpro = interpro_cache[interpro_cache_key]
                     
                     # 4. Process Mapping
                     if current_gene is not None and current_protein is not None:
