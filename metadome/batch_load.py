@@ -62,7 +62,7 @@ def get_cleaned_str(row, key, default=None):
     return val_stripped if val_stripped else default
 
 # --- Batch Load Function (uses the passed sqlalchemy_session, which will be db.session) ---
-def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
+def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=5000):
     protein_cache = {}
     gene_cache = {}
     interpro_cache = {}
@@ -230,7 +230,16 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=1000):
                     current_batch_count += 1
                     if current_batch_count >= batch_size:
                         logging.info(f"Processed {total_processed_count} rows. Committing batch of {current_batch_count}.")
+                        # Commit the batch
                         sqlalchemy_session.commit()
+
+                        # Empty the caches to free memory
+                        protein_cache.clear()
+                        gene_cache.clear()
+                        interpro_cache.clear()
+                        metadomain_position_cache.clear()
+
+                        # Reset batch count
                         current_batch_count = 0
                 except ValueError as ve:
                     logging.error(f"L{line_num}: Data validation error: {ve}. Row: {row}. Skipping.")
