@@ -177,24 +177,24 @@ class GeneRepository:
             _session.remove()
 
     @staticmethod
-    def retrieve_gene(transcription_id):
-        """Retrieves the gene object for a given transcript id"""
+    def retrieve_gene(transcription_id, genome_build):
+        """Retrieves the gene object for a given transcript id and genome_build"""
         # Open as session
         _session = db._make_scoped_session(options={})
         try:
-            return _session.query(Gene).filter(Gene.gencode_transcription_id == transcription_id).one()
+            return _session.query(Gene).filter(Gene.gencode_transcription_id == transcription_id, func.lower(Gene.genome_build) == genome_build.lower()).one()
         except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
             raise RecoverableError(str(e))
         except MultipleResultsFound as e:
-            error_message = "GeneRepository.retrieve_gene(transcription_id): Multiple results found while expecting uniqueness for transcription_id '"+str(transcription_id)+"'. "+str(e)
+            error_message = "GeneRepository.retrieve_gene(transcription_id, genome_build): Multiple results found while expecting uniqueness for transcription_id '"+str(transcription_id)+"', genome_build='"+genome_build+"'. "+str(e)
             _log.error(error_message)
             raise RepositoryException(error_message)
         except NoResultFound as e:
-            error_message = "GeneRepository.retrieve_gene(transcription_id): Expected results but found none for transcription_id '"+str(transcription_id)+"'. "+str(e)
+            error_message = "GeneRepository.retrieve_gene(transcription_id, genome_build): Expected results but found none for transcription_id '"+str(transcription_id)+"', genome_build='"+genome_build+"'. "+str(e)
             _log.error(error_message)
             raise RepositoryException(error_message)
         except Exception as e:
-            error_message = "GeneRepository.retrieve_gene(transcription_id): Unexpected exception for transcription_id '"+str(transcription_id)+"'. "+str(e)
+            error_message = "GeneRepository.retrieve_gene(transcription_id, genome_build): Unexpected exception for transcription_id '"+str(transcription_id)+"', genome_build='"+genome_build+"'. "+str(e)
             _log.error(error_message)
             raise RepositoryException(error_message)
         finally:

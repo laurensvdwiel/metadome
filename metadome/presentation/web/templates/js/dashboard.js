@@ -522,6 +522,7 @@ function visualize() {
 
         if (gtID !== undefined && gtID.length > 0 && !selection.options[selection.selectedIndex].disabled) {
             var transcript_id = gtID.split(" ")[0];
+            var genome_build = document.getElementById("genomeBuild").innerText;
 
             $("#loading_overlay").addClass('is-active');
             $("#loading_label").text("Loading...");
@@ -529,8 +530,8 @@ function visualize() {
                 {
                     type: 'POST',
                     url: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
-                    data: JSON.stringify({'transcript_id': transcript_id}),
-                    success: function(data) { getVisualizationStatus(data.transcript_id, 0); },
+                    data: JSON.stringify({'transcript_id': transcript_id, 'genome_build': genome_build}),
+                    success: function(data) { getVisualizationStatus(data.transcript_id, data.genome_build, 0); },
                     error: function(response) {
                         obj = JSON.parse(response.responseText);
                         $("#error-feedback").text(obj['error']);
@@ -544,36 +545,15 @@ function visualize() {
     }
 }
 
-function visualizeTranscript(transcript_id) {
-    if (global_debugging) {console.info('%c Function visualizeTranscript(transcript_id) called, with transcript_id='+transcript_id, info_style);}
-    $("#loading_overlay").addClass('is-active');
-    $("#loading_label").text("Loading...");
-    $.ajax(
-        {
-            type: 'POST',
-            url: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
-            data: JSON.stringify({'transcript_id': transcript_id}),
-            success: function(data) { getVisualizationStatus(data.transcript_id, 0); },
-            error: function(response) {
-                obj = JSON.parse(response.responseText);
-                $("#error-feedback").text(obj['error']);
-                $("#loading_overlay").removeClass('is-active');
-            },
-            contentType: "application/json",
-            dataType: 'json'
-        }
-    );
-}
-
-function getVisualizationStatus(transcript_id, checkCount) {
-    if (global_debugging) {console.info('%c Function getVisualizationStatus(transcript_id, checkCount) called, with transcript_id='+transcript_id+', checkCount='+checkCount, info_style);}
+function getVisualizationStatus(transcript_id, genome_build, checkCount) {
+    if (global_debugging) {console.info('%c Function getVisualizationStatus(transcript_id, checkCount) called, with transcript_id='+transcript_id+', genome_build='+genome_build+', checkCount='+checkCount, info_style);}
     $.get(Flask.url_for("api.get_visualization_status_for_transcript",
-                        {'transcript_id': transcript_id}),
+                        {'transcript_id': transcript_id, 'genome_build': genome_build}),
         function(data) {
             if (data.status == 'SUCCESS')
-                getVisualizationResult(transcript_id);
+                getVisualizationResult(transcript_id, genome_build);
             else if (data.status == 'FAILURE')
-                showVisualizationError(transcript_id);
+                showVisualizationError(transcript_id, genome_build);
             else {  // try again after a while..
                 var delay = 10000;
                 if (checkCount >= 5) {
@@ -582,16 +562,16 @@ function getVisualizationStatus(transcript_id, checkCount) {
                 }
                 checkCount++;
 
-                setTimeout(function() { getVisualizationStatus(transcript_id, checkCount); }, delay);
+                setTimeout(function() { getVisualizationStatus(transcript_id, genome_build, checkCount); }, delay);
             }
         }
     );
 }
 
-function getVisualizationResult(transcript_id) {
-    if (global_debugging) {console.info('%c Function getVisualizationResult(transcript_id) called, with transcript_id='+transcript_id, info_style);}
+function getVisualizationResult(transcript_id, genome_build) {
+    if (global_debugging) {console.info('%c Function getVisualizationResult(transcript_id) called, with transcript_id='+transcript_id+' genome_build='+genome_build, info_style);}
     $.get(Flask.url_for("api.get_visualization_result_for_transcript",
-                        {'transcript_id': transcript_id}),
+                        {'transcript_id': transcript_id, 'genome_build': genome_build}),
         function(obj) {
             $("#loading_overlay").removeClass('is-active');
 
@@ -632,10 +612,10 @@ function getVisualizationResult(transcript_id) {
     );
 }
 
-function showVisualizationError(transcript_id) {
-    if (global_debugging) {console.info('%c Function showVisualizationError(transcript_id) called, with transcript_id='+transcript_id, info_style);}
+function showVisualizationError(transcript_id, genome_build) {
+    if (global_debugging) {console.info('%c Function showVisualizationError(transcript_id) called, with transcript_id='+transcript_id+' genome_build='+genome_build, info_style);}
     // Forward to the error page.
-    customRedirect(Flask.url_for("web.visualization_error", {'transcript_id': transcript_id}));
+    customRedirect(Flask.url_for("web.visualization_error", {'transcript_id': transcript_id, 'genome_build': genome_build}));
 }
 
 // annotates meta domain information for a position

@@ -11,50 +11,49 @@ from flask import current_app as flask_app
 _log = logging.getLogger(__name__)
 
 
-def get_visualization_path(transcript_id):
-    return os.path.join(_get_visualization_dir_path(transcript_id),
+def get_visualization_path(transcript_id, genome_build):
+    return os.path.join(_get_visualization_dir_path(transcript_id, genome_build),
                         flask_app.config['PRE_BUILD_VISUALIZATION_FILE_NAME'])
 
 
-def _get_visualization_dir_path(transcript_id):
-    return os.path.join(flask_app.config['PRE_BUILD_VISUALIZATION_DIR'],
-                        transcript_id)
+def _get_visualization_dir_path(transcript_id, genome_build):
+    return os.path.join(flask_app.config['PRE_BUILD_VISUALIZATION_DIR'], genome_build, transcript_id)
 
 
-def _get_visualization_task_path(transcript_id):
-    return os.path.join(_get_visualization_dir_path(transcript_id),
+def _get_visualization_task_path(transcript_id, genome_build):
+    return os.path.join(_get_visualization_dir_path(transcript_id, genome_build),
                         flask_app.config['PRE_BUILD_VISUALIZATION_TASK_FILE_NAME'])
 
 
-def get_visualization_error_path(transcript_id):
-    return os.path.join(_get_visualization_dir_path(transcript_id),
+def get_visualization_error_path(transcript_id, genome_build):
+    return os.path.join(_get_visualization_dir_path(transcript_id, genome_build),
                         flask_app.config['PRE_BUILD_VISUALIZATION_ERROR_FILE_NAME'])
 
 
-def _get_lock_for(transcript_id):
-    lock_dir_path = _get_visualization_dir_path(transcript_id)
+def _get_lock_for(transcript_id, genome_build):
+    lock_dir_path = _get_visualization_dir_path(transcript_id, genome_build)
 
     if not os.path.isdir(lock_dir_path):
-        os.mkdir(lock_dir_path)
+        os.makedirs(lock_dir_path)
 
     return LockFile(lock_dir_path)
 
 
-def _cleanup_visualisation_if_needed(transcript_id):
-    visualization_path = get_visualization_path(transcript_id)
-    task_path = _get_visualization_task_path(transcript_id)
+def _cleanup_visualisation_if_needed(transcript_id, genome_build):
+    visualization_path = get_visualization_path(transcript_id, genome_build)
+    task_path = _get_visualization_task_path(transcript_id, genome_build)
 
     if os.path.isfile(visualization_path) and os.path.isfile(task_path):
         # Not needed anymore
         os.remove(task_path)
 
 
-def create_visualization_job_if_needed(transcript_id):
-    visualization_path = get_visualization_path(transcript_id)
-    task_path = _get_visualization_task_path(transcript_id)
-    error_path = get_visualization_error_path(transcript_id)
+def create_visualization_job_if_needed(transcript_id, genome_build):
+    visualization_path = get_visualization_path(transcript_id, genome_build)
+    task_path = _get_visualization_task_path(transcript_id, genome_build)
+    error_path = get_visualization_error_path(transcript_id, genome_build)
 
-    with _get_lock_for(transcript_id):
+    with _get_lock_for(transcript_id, genome_build):
         if os.path.isfile(error_path):
             # It has failed before, try this job again.
             os.remove(error_path)
@@ -69,16 +68,16 @@ def create_visualization_job_if_needed(transcript_id):
             if result.status == 'PENDING':  # PENDING means it's just not in the backend
                 os.remove(task_path)
             else:
-                _log.info("visualization job for transcript {} is already submitted as task {}"
-                          .format(transcript_id, task_id))
+                _log.info("visualization job for genome_build {} transcript {} is already submitted as task {}"
+                          .format(genome_build, transcript_id, task_id))
                 return
 
         if os.path.isfile(visualization_path):
-            _log.info("visualization file for transcript {} already exists"
-                      .format(transcript_id))
+            _log.info("visualization file for genome_build {} transcript {} already exists"
+                      .format(genome_build, transcript_id))
         else:
             from metadome.tasks import create_prebuild_visualization
-            result = create_prebuild_visualization.delay(transcript_id)
+            result = create_prebuild_visualization.delay(transcript_id, genome_build)
 
             with open(task_path, 'w') as f:
                 f.write(result.task_id)
@@ -86,13 +85,13 @@ def create_visualization_job_if_needed(transcript_id):
             # From here on, the task itself will handle the creation of result and error files.
 
 
-def get_visualization_status(transcript_id):
-    visualization_path = get_visualization_path(transcript_id)
-    error_path = get_visualization_error_path(transcript_id)
-    task_path = _get_visualization_task_path(transcript_id)
+def get_visualization_status(transcript_id, genome_build):
+    visualization_path = get_visualization_path(transcript_id, genome_build)
+    error_path = get_visualization_error_path(transcript_id, genome_build)
+    task_path = _get_visualization_task_path(transcript_id, genome_build)
 
-    with _get_lock_for(transcript_id):
-        _cleanup_visualisation_if_needed(transcript_id)
+    with _get_lock_for(transcript_id, genome_build):
+        _cleanup_visualisation_if_needed(transcript_id, genome_build)
 
         if os.path.isfile(visualization_path):
             return 'SUCCESS'
@@ -108,18 +107,18 @@ def get_visualization_status(transcript_id):
             return 'PENDING'
 
 
-def store_error(transcript_id, traceback):
-    error_path = get_visualization_error_path(transcript_id)
+def store_error(transcript_id, genome_build, traceback):
+    error_path = get_visualization_error_path(transcript_id, genome_build)
 
-    with _get_lock_for(transcript_id):
+    with _get_lock_for(transcript_id, genome_build):
         with open(error_path, 'w') as f:
             f.write(traceback)
 
 
-def retrieve_error(transcript_id):
-    error_path = get_visualization_error_path(transcript_id)
+def retrieve_error(transcript_id, genome_build):
+    error_path = get_visualization_error_path(transcript_id, genome_build)
 
-    with _get_lock_for(transcript_id):
+    with _get_lock_for(transcript_id, genome_build):
         if os.path.isfile(error_path):
             with open(error_path, 'r') as f:
                 return f.read()
@@ -127,19 +126,19 @@ def retrieve_error(transcript_id):
             return 'unknown'
 
 
-def store_visualization(transcript_id, result):
-    visualization_path = get_visualization_path(transcript_id)
+def store_visualization(transcript_id, genome_build, result):
+    visualization_path = get_visualization_path(transcript_id, genome_build)
 
-    with _get_lock_for(transcript_id):
+    with _get_lock_for(transcript_id, genome_build):
         with open(visualization_path, 'w') as f:
             json.dump(result, f)
 
 
-def retrieve_visualization(transcript_id):
-    visualization_path = get_visualization_path(transcript_id)
+def retrieve_visualization(transcript_id, genome_build):
+    visualization_path = get_visualization_path(transcript_id, genome_build)
 
-    with _get_lock_for(transcript_id):
-        _cleanup_visualisation_if_needed(transcript_id)
+    with _get_lock_for(transcript_id, genome_build):
+        _cleanup_visualisation_if_needed(transcript_id, genome_build)
 
         if not os.path.isfile(visualization_path):
             raise FileNotFoundError("missing file: {}".format(visualization_path))

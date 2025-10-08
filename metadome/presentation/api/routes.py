@@ -1,3 +1,5 @@
+from pickletools import genops
+
 from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.helper_functions import is_transcript_id
 from metadome.controllers.job import retrieve_error
@@ -76,40 +78,49 @@ def submit_visualization_job_for_transcript():
 
     if not 'transcript_id' in data:
         return jsonify({'error': "no transcript id"}), 400
+    if not 'genome_build' in data:
+        return jsonify({'error': "no genome build"}), 400
 
     transcript_id = data['transcript_id']
+    genome_build = data['genome_build']
+
+    # check if genome build is valid
+    if not genome_build in GeneRepository.retrieve_all_genome_builds_from_file():
+        return jsonify({'error': "not a valid genome build: {}".format(genome_build)}), 400
+
 
     if not is_transcript_id(transcript_id):
-        return jsonify({'error': "not a valid transcript id: {}".format(transcript_id)}), 400
+        return jsonify({'error': "for genome build {}, not a valid transcript id: {}".format(genome_build, transcript_id)}), 400
 
-    _log.debug("submitted {}".format(transcript_id))
 
-    create_visualization_job_if_needed(transcript_id)
+    _log.debug("submitted submit_visualization_job_for_transcript with genome_build {}, transcript_id {}".format(genome_build, transcript_id))
+
+    create_visualization_job_if_needed(transcript_id, genome_build)
 
     # It has to return something :(
-    return jsonify({'transcript_id': transcript_id})
+    return jsonify({'transcript_id': transcript_id, 'genome_build': genome_build})
 
 
-@bp.route('/status/<transcript_id>/', methods=['GET'])
-def get_visualization_status_for_transcript(transcript_id):
-    status = get_visualization_status(transcript_id)
+@bp.route('/status/<genome_build>/<transcript_id>', methods=['GET'])
+def get_visualization_status_for_transcript(genome_build, transcript_id):
+    status = get_visualization_status(transcript_id, genome_build)
 
     response = {'status': status}
     return jsonify(response)
 
 
-@bp.route('/result/<transcript_id>/', methods=['GET'])
-def get_visualization_result_for_transcript(transcript_id):
+@bp.route('/result/<genome_build>/<transcript_id>', methods=['GET'])
+def get_visualization_result_for_transcript(genome_build, transcript_id):
     try:
-        result = retrieve_visualization(transcript_id)
+        result = retrieve_visualization(transcript_id, genome_build)
         return jsonify(result)
     except FileNotFoundError:
         return jsonify({'error': "file not found"}), 404
 
 
-@bp.route('/error/<transcript_id>/', methods=['GET'])
-def get_visualization_error_for_transcript(transcript_id):
-    stacktrace = retrieve_error(transcript_id)
+@bp.route('/error/<genome_build>/<transcript_id>', methods=['GET'])
+def get_visualization_error_for_transcript(genome_build, transcript_id):
+    stacktrace = retrieve_error(transcript_id, genome_build)
     error = "error running visualization job"
     return jsonify({'error': error, 'stacktrace': stacktrace})
 

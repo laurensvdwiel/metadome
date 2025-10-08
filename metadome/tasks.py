@@ -1,10 +1,11 @@
 from metadome.domain.repositories import GeneRepository, RepositoryException
-from metadome.domain.models.entities.gene_region import GeneRegion
+from metadome.domain.models.entities.gene_region import GeneRegion, GenomeBuild
 from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant
 from metadome.domain.models.entities.meta_domain import MetaDomain,\
     UnsupportedMetaDomainIdentifier
 from metadome.domain.services.computation.gene_region_computations import compute_tolerance_landscape
-from metadome.domain.services.annotation.gene_region_annotators import annotateTranscriptWithClinvarData
+from metadome.domain.services.annotation.gene_region_annotators import GRCh37_annotateTranscriptWithClinvarData,\
+    GRCh38_annotateTranscriptWithClinvarData
 from metadome.domain.services.annotation.annotation import annotateSNVs,\
     convertNucleotide
 from metadome.controllers.job import store_error, store_visualization
@@ -20,7 +21,6 @@ import json
 import os
 import logging
 from metadome.domain.models.gene import Strand
-from metadome.domain.wrappers.gencode import retrieve_refseq_identifiers_for_transcript
 
 _log = logging.getLogger(__name__)
 
@@ -103,19 +103,19 @@ def retrieve_prebuild_visualization(self, transcript_id):
 @celery_app.task(bind=True,
                  autoretry_for=(RecoverableError,),
                  retry_kwargs={'max_retries': 50})
-def create_prebuild_visualization(self, transcript_id):
+def create_prebuild_visualization(self, transcript_id, genome_build):
     try:
         _log.info("Attempting to create visualization for '{}'".format(transcript_id))
 
-        result = analyse_transcript(transcript_id)
+        result = analyse_transcript(transcript_id, genome_build)
         if 'error' in result.keys():
             _log.info("Something went wrong while trying to create visualization for '{}'".format(transcript_id))
             raise RuntimeError(result['error'])
 
-        store_visualization(transcript_id, result)
+        store_visualization(transcript_id, genome_build, result)
         return result
     except:
-        store_error(transcript_id, traceback.format_exc())
+        store_error(transcript_id, genome_build, traceback.format_exc())
         raise
 
 def retrieve_metadomain_annotation(transcript_id, protein_position, domain_positions):
@@ -127,60 +127,60 @@ def retrieve_metadomain_annotation(transcript_id, protein_position, domain_posit
     for domain_id in domain_positions.keys():
         # add new key to domain results
         domain_results[domain_id] = {}
-        
+
         # create the values that are to be returned
         normal_variants = []
         pathogenic_variants = []
         alignment_depth = 0
-        
+
         # retrieve the metadomain
         meta_domain = MetaDomain.initializeFromDomainID(domain_id)
-        
+
         # retrieve the codon
         current_codon = meta_domain.get_codon_for_transcript_and_position(transcript_id, protein_position)
-        
+
         for consensus_position in domain_positions[domain_id]:
             # first correct the consensus_position
             consensus_position -= 1
-            
+
             # Retrieve the meta codons for this position
             meta_codons = meta_domain.get_codons_aligned_to_consensus_position(consensus_position)
             alignment_depth += len(meta_codons)
-            
+
             # Retrieve the meta SNVs for this position
             meta_snvs = meta_domain.get_annotated_SNVs_for_consensus_position(consensus_position)
-            
+
             # Retrieve the matching gene names for the transcripts
             transcript_ids = [meta_snvs[meta_snv_repr][0]['gencode_transcription_id'] for meta_snv_repr in meta_snvs.keys()]
             transcripts_to_gene = GeneRepository.retrieve_gene_names_for_multiple_transcript_ids(transcript_ids)
-            
+
             # iterate over meta_codons and add to metadom_entry
             for meta_snv_repr in meta_snvs.keys():
                 if not current_codon.unique_str_representation() in meta_snv_repr:
                     # unique variant at homologous position, can just take the first from the list
                     meta_snv = meta_snvs[meta_snv_repr][0]
-                    
+
                     # initiate the SNV variant
                     snv_variant = SingleNucleotideVariant.initializeFromDict(meta_snv)
-                
+
                     # Convert to the original nucleotide
                     if snv_variant.strand == Strand.minus:
                         snv_variant.ref_nucleotide = convertNucleotide(snv_variant.ref_nucleotide)
                         snv_variant.alt_nucleotide = convertNucleotide(snv_variant.alt_nucleotide)
-                
+
                     # start the variant entry and add the codon based information
                     variant_entry = snv_variant.toCodonJson()
-                    
+
                     # Add the gene name
                     variant_entry['gene_name'] = transcripts_to_gene[snv_variant.gencode_transcription_id]
-                    
+
                     # Add the variant specific information
                     if meta_snv['variant_source'] == 'gnomAD':
                         # convert the variant to the expected format
                         gnomad_json = snv_variant.toGnommADJson(allele_number=meta_snv['allele_number'], allele_count=meta_snv['allele_count'])
                         for key in gnomad_json.keys():
                             variant_entry[key] = gnomad_json[key]
-                        
+
                         # append to the list of variants
                         normal_variants.append(variant_entry)
                     elif meta_snv['variant_source'] == 'ClinVar':
@@ -188,22 +188,22 @@ def retrieve_metadomain_annotation(transcript_id, protein_position, domain_posit
                         clinvar_json = snv_variant.initializeFromDict(meta_snv).toClinVarJson(ClinVar_id=meta_snv['clinvar_ID'])
                         for key in clinvar_json.keys():
                             variant_entry[key] = clinvar_json[key]
-                        
+
                         # append to the list of variants
                         pathogenic_variants.append(variant_entry)
-                                
+
         domain_results[domain_id]["pathogenic_variants"] = pathogenic_variants
         domain_results[domain_id]["normal_variants"] = normal_variants
         domain_results[domain_id]["alignment_depth"] = alignment_depth
 
     return domain_results
 
-def analyse_transcript(transcript_id):
+def analyse_transcript(transcript_id, genome_build):
     # Retrieve the gene from the database
     try:
-        gene = GeneRepository.retrieve_gene(transcript_id)
+        gene = GeneRepository.retrieve_gene(transcript_id, genome_build)
     except RepositoryException as e:
-        return {'error': 'No gene region could be build for transcript {}, reason: {}'.format(transcript_id, e)}
+        return {'error': 'No gene region could be build for transcript {}, genome_build {}, reason: {}'.format(transcript_id, genome_build, e)}
 
     # build the gene region
     gene_region = GeneRegion(gene)
@@ -227,31 +227,17 @@ def analyse_transcript(transcript_id):
                 pfam_domain["start"] = domain.uniprot_start
                 pfam_domain["stop"] = domain.uniprot_stop
 
-                try:
-                    if not pfam_domain['ID'] in meta_domains.keys():
-                        # construct a meta-domain if possible
-                        temp_meta_domain = MetaDomain.initializeFromDomainID(domain.ext_db_id)
-
-                        # Ensure there are enough instances to actually perform the metadomain trick
-                        if temp_meta_domain.n_instances < 2:
-                            pfam_domain["metadomain"] = False
-                            meta_domains[pfam_domain['ID']] = None
-                        else:
-                            pfam_domain["metadomain"] = True
-                            meta_domains[pfam_domain['ID']] = temp_meta_domain
-                            pfam_domain['meta_domain_alignment_depth'] = temp_meta_domain.get_max_alignment_depth()
-                    else:
-                        pfam_domain["metadomain"] = not(meta_domains[pfam_domain['ID']] is None)
-                except UnsupportedMetaDomainIdentifier as e:
-                    _log.error(str(e))
-                    # meta domain is not possible
-                    meta_domains[pfam_domain['ID']] = None
-
-                # Add the domain to the domain list
-                Pfam_domains.append(pfam_domain)
+        # Based on genome build, select the correct gnomAD annotation function
+        if gene_region.genome_build == GenomeBuild.GRCh37:
+            clinvar_annotation_function = GRCh37_annotateTranscriptWithClinvarData
+        elif gene_region.genome_build == GenomeBuild.GRCh38:
+            clinvar_annotation_function = GRCh38_annotateTranscriptWithClinvarData
+        else:
+            raise Exception("Could not determine gnomAD annotation function based on genome build '" + str(
+                gene_region.genome_build.value) + "'")
 
         # Annotate the clinvar variants for the current gene
-        ClinVar_annotation = annotateSNVs(annotateTranscriptWithClinvarData,
+        ClinVar_annotation = annotateSNVs(clinvar_annotation_function,
                                          mappings_per_chr_pos=gene_region.retrieve_mappings_per_chromosome(),
                                          strand=gene_region.strand,
                                          chromosome=gene_region.chr,
@@ -293,7 +279,7 @@ def analyse_transcript(transcript_id):
 
                         if domain["metadomain"] and len(consensus_positions)>0:
                             d['domains'][domain['ID']] = create_meta_domain_entry(gene_region, meta_domains[domain['ID']], consensus_positions, db_position)
-        result = {"transcript_id":transcript_id, "refseq_ids":refseq_ids['NM'], "protein_ac":gene_region.uniprot_ac, "gene_name":gene_region.gene_name, "positional_annotation":region_positional_annotation, "domains":Pfam_domains}
+        result = {"transcript_id":transcript_id, "refseq_ids":refseq_ids, "protein_ac":gene_region.uniprot_ac, "gene_name":gene_region.gene_name, "positional_annotation":region_positional_annotation, "domains":Pfam_domains}
     else:
         result = {'error': 'No gene region could be build for transcript '+str(transcript_id)}
 

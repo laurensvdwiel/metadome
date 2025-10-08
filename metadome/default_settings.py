@@ -4,7 +4,6 @@ DEBUG = False
 SECRET_KEY = SECRET_KEY_CRED
 
 # FLask-SQLAchemy settings
-# from metadome.postgres_credentials import POSTGRES_USER, POSTGRES_PASSWORD
 import os
 SQLALCHEMY_RECORD_QUERIES = DEBUG # should be false when not debug
 SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -88,8 +87,9 @@ PFAM_HMM_DAT = PFAM_DIR+"/Pfam-A.hmm.dat.gz"
 PFAM_HMM = PFAM_DIR+"/Pfam-A.hmm"
 
 # gnomAD specific files
-GNOMAD_DIR = DATA_DIR + "gnoMAD/"
-GNOMAD_VCF_FILE = GNOMAD_DIR + "pass_gnomad.exomes.r2.0.2.sites.vcf.gz"
+GNOMAD_DIR = DATA_DIR + "gnomAD/"
+GNOMAD_GRCH37_VCF_FILE = GNOMAD_DIR + "GRCh37" + "/" + "pass_gnomad.exomes.r2.0.2.sites.vcf.gz"
+GNOMAD_GRCH38_VCF_FILE = GNOMAD_DIR + "GRCh38" + "/" + "gnomad.joint.v4.1.sites.exomes.vcf.gz"
 GNOMAD_ACCEPTED_FILTERS = ['PASS']
 
 # ClinVar specific files
@@ -97,3 +97,6 @@ CLINVAR_DIR = DATA_DIR + 'ClinVar/GRCh37/'
 CLINVAR_ORIGINAL_VCF_FILE = CLINVAR_DIR + 'clinvar.vcf.gz'
 CLINVAR_VCF_FILE = CLINVAR_ORIGINAL_VCF_FILE
 CLINVAR_CONSIDERED_CLINSIG = ['Pathogenic']
+CLINVAR_DIR = DATA_DIR + 'ClinVar/'
+CLINVAR_GRCH37_VCF_FILE = CLINVAR_DIR + "GRCh37" + "/" + 'clinvar_20251006.vcf.gz'
+CLINVAR_GRCH38_VCF_FILE = CLINVAR_DIR + "GRCh38" + "/" + 'clinvar_20251006.vcf.gz'

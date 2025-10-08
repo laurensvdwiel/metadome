@@ -188,9 +188,9 @@ def method():
 def help_page():
     return render_template('faq.html')
 
-@bp.route('/visualization_error/<transcript_id>/', methods=['GET'])
-def visualization_error(transcript_id):
-    stacktrace = retrieve_error(transcript_id)
+@bp.route('/visualization_error/<genome_build>/<transcript_id>/', methods=['GET'])
+def visualization_error(genome_build, transcript_id):
+    stacktrace = retrieve_error(transcript_id, genome_build)
     error = "error during visualization generation"
     return render_template('error.html', msg=error, stack_trace=stacktrace)
 
