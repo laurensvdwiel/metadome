@@ -53,9 +53,12 @@ def GRCh37_annotateTranscriptWithClinvarData(chromosome, regions):
                             "CLNDISDB": None if "CLNDISDB" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNDISDB"], 
                             "CLNSIG": None if "CLNSIG" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNSIG"],
                             "GENEINFO": None if "GENEINFO" not in tabix_record.INFO.keys() else tabix_record.INFO["GENEINFO"],
-                            "ALLELEID":tabix_record.INFO["ALLELEID"], "CLNHGVS":tabix_record.INFO["CLNHGVS"],
-                            "CLNREVSTAT":tabix_record.INFO["CLNREVSTAT"], "CLNVC":tabix_record.INFO["CLNVC"],
-                            "CLNVCSO":tabix_record.INFO["CLNVCSO"],"ID":tabix_record.ID}
+                            "CLNREVSTAT": None if "CLNREVSTAT" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNREVSTAT"],
+                            "ALLELEID": None if "ALLELEID" not in tabix_record.INFO.keys() else tabix_record.INFO["ALLELEID"],
+                            "CLNHGVS": None if "CLNHGVS" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNHGVS"],
+                            "CLNVC": None if "CLNVC" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNVC"],
+                            "CLNVCSO": None if "CLNVCSO" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNVCSO"],
+                            "ID":tabix_record.ID}
             
                 clinvar_record = {'CHROM': tabix_record.CHROM, 'POS': tabix_record.POS, 'REF':tabix_record.REF, 'ALT':item, 'INFO':clinvar_info}
                 
@@ -101,29 +104,28 @@ def GRCh38_annotateTranscriptWithClinvarData(chromosome, regions):
         for tabix_record in tabix_query(CLINVAR_GRCH38_VCF_FILE, chromosome[3:], gene_sub_region[0], gene_sub_region[1],
                                         variant_coordinate_system.one_based):
             for _, item in enumerate(tabix_record.ALT):
-                clinvar_info = {
-                    "AF_ESP": None if "AF_ESP" not in tabix_record.INFO.keys() else tabix_record.INFO["AF_ESP"],
-                    "AF_EXAC": None if "AF_EXAC" not in tabix_record.INFO.keys() else tabix_record.INFO["AF_EXAC"],
-                    "AF_TGP": None if "AF_TGP" not in tabix_record.INFO.keys() else tabix_record.INFO["AF_TGP"],
-                    "CLNDNINCL": None if "CLNDNINCL" not in tabix_record.INFO.keys() else tabix_record.INFO[
-                        "CLNDNINCL"],
-                    "CLNDISDBINCL": None if "CLNDISDBINCL" not in tabix_record.INFO.keys() else tabix_record.INFO[
-                        "CLNDISDBINCL"],
-                    "CLNSIGINCL": None if "CLNSIGINCL" not in tabix_record.INFO.keys() else tabix_record.INFO[
-                        "CLNSIGINCL"],
-                    "DBVARID": None if "DBVARID" not in tabix_record.INFO.keys() else tabix_record.INFO["DBVARID"],
-                    "SSR": None if "SSR" not in tabix_record.INFO.keys() else tabix_record.INFO["SSR"],
-                    "CLNVI": None if "CLNVI" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNVI"],
-                    "MC": None if "MC" not in tabix_record.INFO.keys() else tabix_record.INFO["MC"],
-                    "RS": None if "RS" not in tabix_record.INFO.keys() else tabix_record.INFO["RS"],
-                    "ORIGIN": None if "ORIGIN" not in tabix_record.INFO.keys() else tabix_record.INFO["ORIGIN"],
-                    "CLNDN": None if "CLNDN" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNDN"],
-                    "CLNDISDB": None if "CLNDISDB" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNDISDB"],
-                    "CLNSIG": None if "CLNSIG" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNSIG"],
-                    "GENEINFO": None if "GENEINFO" not in tabix_record.INFO.keys() else tabix_record.INFO["GENEINFO"],
-                    "ALLELEID": tabix_record.INFO["ALLELEID"], "CLNHGVS": tabix_record.INFO["CLNHGVS"],
-                    "CLNREVSTAT": tabix_record.INFO["CLNREVSTAT"], "CLNVC": tabix_record.INFO["CLNVC"],
-                    "CLNVCSO": tabix_record.INFO["CLNVCSO"], "ID": tabix_record.ID}
+                clinvar_info = {"AF_ESP": None if "AF_ESP" not in tabix_record.INFO.keys() else tabix_record.INFO["AF_ESP"],
+                            "AF_EXAC": None if "AF_EXAC" not in tabix_record.INFO.keys() else tabix_record.INFO["AF_EXAC"],
+                            "AF_TGP": None if "AF_TGP" not in tabix_record.INFO.keys() else tabix_record.INFO["AF_TGP"],
+                            "CLNDNINCL": None if "CLNDNINCL" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNDNINCL"],
+                            "CLNDISDBINCL": None if "CLNDISDBINCL" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNDISDBINCL"],
+                            "CLNSIGINCL": None if "CLNSIGINCL" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNSIGINCL"],
+                            "DBVARID": None if "DBVARID" not in tabix_record.INFO.keys() else tabix_record.INFO["DBVARID"],
+                            "SSR": None if "SSR" not in tabix_record.INFO.keys() else tabix_record.INFO["SSR"],
+                            "CLNVI": None if "CLNVI" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNVI"],
+                            "MC": None if "MC" not in tabix_record.INFO.keys() else tabix_record.INFO["MC"],
+                            "RS": None if "RS" not in tabix_record.INFO.keys() else tabix_record.INFO["RS"],
+                            "ORIGIN": None if "ORIGIN" not in tabix_record.INFO.keys() else tabix_record.INFO["ORIGIN"],
+                            "CLNDN": None if "CLNDN" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNDN"],
+                            "CLNDISDB": None if "CLNDISDB" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNDISDB"],
+                            "CLNSIG": None if "CLNSIG" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNSIG"],
+                            "GENEINFO": None if "GENEINFO" not in tabix_record.INFO.keys() else tabix_record.INFO["GENEINFO"],
+                            "CLNREVSTAT": None if "CLNREVSTAT" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNREVSTAT"],
+                            "ALLELEID": None if "ALLELEID" not in tabix_record.INFO.keys() else tabix_record.INFO["ALLELEID"],
+                            "CLNHGVS": None if "CLNHGVS" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNHGVS"],
+                            "CLNVC": None if "CLNVC" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNVC"],
+                            "CLNVCSO": None if "CLNVCSO" not in tabix_record.INFO.keys() else tabix_record.INFO["CLNVCSO"],
+                            "ID":tabix_record.ID}
 
                 clinvar_record = {'CHROM': tabix_record.CHROM, 'POS': tabix_record.POS, 'REF': tabix_record.REF,
                                   'ALT': item, 'INFO': clinvar_info}
