@@ -118,7 +118,7 @@ def create_prebuild_visualization(self, transcript_id, genome_build):
         store_error(transcript_id, genome_build, traceback.format_exc())
         raise
 
-def retrieve_metadomain_annotation(transcript_id, protein_position, domain_positions):
+def retrieve_metadomain_annotation(transcript_id, protein_position, domain_positions, genome_build):
     # first correct the protein_position
     protein_position -= 1
         
@@ -134,7 +134,7 @@ def retrieve_metadomain_annotation(transcript_id, protein_position, domain_posit
         alignment_depth = 0
 
         # retrieve the metadomain
-        meta_domain = MetaDomain.initializeFromDomainID(domain_id)
+        meta_domain = MetaDomain.initializeFromDomainID(domain_id, genome_build)
 
         # retrieve the codon
         current_codon = meta_domain.get_codon_for_transcript_and_position(transcript_id, protein_position)
