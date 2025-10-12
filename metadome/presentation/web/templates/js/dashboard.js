@@ -646,9 +646,12 @@ function createPositionalInformation(domain_metadomain_coverage, transcript_id, 
         $("#loading_overlay").addClass('is-active');
         $("#loading_label").text("Loading...");
 
+        var genome_build = document.getElementById("genomeBuild").value;
+
         var input = {"requested_domains": requested_domains,
                      "transcript_id": transcript_id,
-                     "protein_position": protein_position};
+                     "protein_position": protein_position,
+                     "genome_build": genome_build};
 
         // Execute the POST request
         $.ajax(

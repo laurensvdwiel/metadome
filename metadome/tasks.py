@@ -227,13 +227,36 @@ def analyse_transcript(transcript_id, genome_build):
                 pfam_domain["start"] = domain.uniprot_start
                 pfam_domain["stop"] = domain.uniprot_stop
 
+                try:
+                    if not pfam_domain['ID'] in meta_domains.keys():
+                        # construct a meta-domain if possible
+                        temp_meta_domain = MetaDomain.initializeFromDomainID(domain.ext_db_id, gene_region.genome_build)
+
+                        # Ensure there are enough instances to actually perform the metadomain trick
+                        if temp_meta_domain.n_instances < 2:
+                            pfam_domain["metadomain"] = False
+                            meta_domains[pfam_domain['ID']] = None
+                        else:
+                            pfam_domain["metadomain"] = True
+                            meta_domains[pfam_domain['ID']] = temp_meta_domain
+                            pfam_domain['meta_domain_alignment_depth'] = temp_meta_domain.get_max_alignment_depth()
+                    else:
+                        pfam_domain["metadomain"] = not(meta_domains[pfam_domain['ID']] is None)
+                except UnsupportedMetaDomainIdentifier as e:
+                    _log.error(str(e))
+                    # meta domain is not possible
+                    meta_domains[pfam_domain['ID']] = None
+
+                # Add the domain to the domain list
+                Pfam_domains.append(pfam_domain)
+
         # Based on genome build, select the correct gnomAD annotation function
         if gene_region.genome_build == GenomeBuild.GRCh37:
             clinvar_annotation_function = GRCh37_annotateTranscriptWithClinvarData
         elif gene_region.genome_build == GenomeBuild.GRCh38:
             clinvar_annotation_function = GRCh38_annotateTranscriptWithClinvarData
         else:
-            raise Exception("Could not determine gnomAD annotation function based on genome build '" + str(
+            raise Exception("Could not determine ClinVar annotation function based on genome build '" + str(
                 gene_region.genome_build.value) + "'")
 
         # Annotate the clinvar variants for the current gene

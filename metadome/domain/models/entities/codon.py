@@ -159,7 +159,10 @@ class Codon(object):
         _strand = _mappings[0].strand.value
         _amino_acid_residue = _mappings[0].amino_acid_residue
         _amino_acid_position = _mappings[0].amino_acid_position
-        _chr = _mappings[0].chromosome
+        if _mappings[0].chromosome.lower().startswith('chr'):
+            _chr = 'chr'+_mappings[0].chromosome[3:]
+        else:
+            _chr = 'chr'+_mappings[0].chromosome
         _cDNA_position_one = _mappings[0].cDNA_position
         _cDNA_position_two = _mappings[1].cDNA_position
         _cDNA_position_three = _mappings[2].cDNA_position
@@ -201,7 +204,10 @@ class Codon(object):
             _base_pair_representation = _d['base_pair_representation']
             _amino_acid_residue = _d['amino_acid_residue']
             _amino_acid_position = _d['amino_acid_position']
-            _chr = _d['chr']
+            if _d['chr'].lower().startswith('chr'):
+                _chr = 'chr' + _d['chr'][3:]
+            else:
+                _chr = 'chr'+_d['chr']
             _chromosome_position_base_pair_one = _d['chromosome_position_base_pair_one']
             _chromosome_position_base_pair_two = _d['chromosome_position_base_pair_two']
             _chromosome_position_base_pair_three = _d['chromosome_position_base_pair_three']

@@ -1,5 +1,6 @@
 from pickletools import genops
 
+from metadome.domain.models.entities.gene_region import GenomeBuild
 from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.helper_functions import is_transcript_id
 from metadome.controllers.job import retrieve_error
@@ -57,17 +58,28 @@ def get_metadomain_annotation():
         return jsonify({"error: no protein position"}), 400
     elif not 'requested_domains' in data:
         return jsonify({"error: no requested domains"}), 400
+    elif not 'genome_build' in data:
+        return jsonify({"error: no genome build"}), 400
 
     transcript_id = data['transcript_id']
     protein_pos = data['protein_position']
     requested_domains = data['requested_domains']
+    genome_build_full = data['genome_build']
 
-    _log.debug("get_metadomain_annotation with transcript: {}, protein position: {}, requested_domains: {}"
-               .format(transcript_id, protein_pos, requested_domains))
+    # set the genome build enum
+    if genome_build_full.upper()[:6] == 'GRCH37':
+        genome_build = GenomeBuild.GRCh37
+    elif genome_build_full.upper()[:6] == 'GRCH38':
+        genome_build = GenomeBuild.GRCh38
+    else:
+        return jsonify({"error: at meta domain annotation request: no genome build {}".format(genome_build_full)}), 400
+
+    _log.debug("get_metadomain_annotation with transcript: {}, protein position: {}, requested_domains: {}, genome_build: {}"
+               .format(transcript_id, protein_pos, requested_domains, genome_build))
 
     # attempt to retrieve the response for a metadomain position
     from metadome.tasks import retrieve_metadomain_annotation as rma
-    response = rma(transcript_id, protein_pos, requested_domains)
+    response = rma(transcript_id, protein_pos, requested_domains, genome_build)
 
     return jsonify(response)
 

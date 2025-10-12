@@ -1,15 +1,30 @@
+from metadome.domain.models.entities.gene_region import GenomeBuild
 from metadome.domain.services.annotation.annotation import annotateSNVs
 from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant
-from metadome.domain.services.annotation.gene_region_annotators import annotateTranscriptWithGnomADData,\
-    annotateTranscriptWithClinvarData
+from metadome.domain.services.annotation.gene_region_annotators import GRCh37_annotateTranscriptWithGnomADData, \
+    GRCh37_annotateTranscriptWithClinvarData, GRCh38_annotateTranscriptWithClinvarData, GRCh38_annotateTranscriptWithGnomADData
 
-def annotate_ClinVar_SNVs_for_codons(codons):
+def annotate_ClinVar_SNVs_for_codons(codons, genome_build):
     """Annotate provided codons with ClinVar SNVs"""
-    return annotate_SNVs_for_codons(annotateTranscriptFunction=annotateTranscriptWithClinvarData, codons=codons, variant_source='ClinVar')
+    if genome_build == GenomeBuild.GRCh37:
+        clinvar_annotation_function = GRCh37_annotateTranscriptWithClinvarData
+    elif genome_build == GenomeBuild.GRCh38:
+        clinvar_annotation_function = GRCh38_annotateTranscriptWithClinvarData
+    else:
+        raise Exception("Could not determine ClinVar annotation function based on genome build '" + str(
+            genome_build.value) + "'")
+    return annotate_SNVs_for_codons(annotateTranscriptFunction=clinvar_annotation_function, codons=codons, variant_source='ClinVar')
 
-def annotate_gnomAD_SNVs_for_codons(codons):
+def annotate_gnomAD_SNVs_for_codons(codons, genome_build):
     """Annotate provided codons with gnomAD SNVs"""
-    return annotate_SNVs_for_codons(annotateTranscriptFunction=annotateTranscriptWithGnomADData, codons=codons, variant_source='gnomAD')
+    if genome_build == GenomeBuild.GRCh37:
+        gnomad_annotation_function = GRCh37_annotateTranscriptWithGnomADData
+    elif genome_build == GenomeBuild.GRCh38:
+        gnomad_annotation_function = GRCh38_annotateTranscriptWithGnomADData
+    else:
+        raise Exception("Could not determine gnomAD annotation function based on genome build '" + str(
+            genome_build.value) + "'")
+    return annotate_SNVs_for_codons(annotateTranscriptFunction=gnomad_annotation_function, codons=codons, variant_source='gnomAD')
 
 def annotate_SNVs_for_codons(annotateTranscriptFunction, codons, variant_source):
     """Annotate provided codons with SNVs from the provided variant source and transcript annotation function"""

@@ -12,6 +12,8 @@ from psycopg2 import OperationalError as PsycopOperationalError
 from metadome.database import db
 from metadome.domain.models.mapping import Mapping
 from metadome.domain.models.gene import Gene
+from metadome.domain.models.meta_domain_mapping import MetaDomainMapping
+from metadome.domain.models.meta_domain_position import MetaDomainPosition
 from metadome.domain.models.protein import Protein
 from metadome.domain.models.interpro import Interpro
 from metadome.domain.error import RecoverableError
@@ -24,6 +26,36 @@ class RepositoryException(Exception):
 class MalformedAARegionException(Exception):
     pass
 
+
+class MetaDomainRepository:
+
+    @staticmethod
+    def retrieve_all_mappings_for_meta_domain(_ext_db_id, _genome_build):
+        """Retrieves all Mappings, Genes, MetaDomainMapping, MetaDomainPosition, and Protein for
+         a given metadomain ext_db_id and genome_build"""
+        # Open as session
+        _session = db._make_scoped_session(options={})
+
+        try:
+            results = _session.query(Mapping, Gene, MetaDomainMapping, MetaDomainPosition, Protein)\
+                    .join(Gene, Mapping.gene_id == Gene.id)\
+                    .join(Protein, Mapping.protein_id == Protein.id)\
+                    .join(MetaDomainMapping, MetaDomainMapping.mapping_id == Mapping.id)\
+                    .join(MetaDomainPosition, MetaDomainPosition.id == MetaDomainMapping.meta_domain_position_id)\
+                    .filter(\
+                        MetaDomainPosition.ext_db_id == _ext_db_id,\
+                        Gene.genome_build.like(_genome_build + '%')\
+                    ).all()
+
+            return results
+        except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
+            raise RecoverableError(str(e))
+        except:
+            _log.error(traceback.format_exc())
+            raise
+        finally:
+            # Close this session, thus all items are cleared and memory usage is kept at a minimum
+            _session.remove()
 
 class GeneRepository:
 

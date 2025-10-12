@@ -1,4 +1,5 @@
-from metadome.domain.data_generation.mapping.meta_domain_mapping import generate_pfam_aligned_codons
+from metadome.domain.data_generation.mapping.meta_domain_mapping import retrieve_pfam_aligned_codons
+from metadome.domain.models.entities.gene_region import GenomeBuild
 from metadome.domain.services.annotation.codon_annotation import annotate_ClinVar_SNVs_for_codons,\
     annotate_gnomAD_SNVs_for_codons
 from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant
@@ -16,13 +17,16 @@ import logging
 
 _log = logging.getLogger(__name__)
 
-class UnsupportedMetaDomainIdentifier(Exception):
+class MetaDomainException(Exception):
     pass
 
-class ConsensusPositionOutOfBounds(Exception):
+class UnsupportedMetaDomainIdentifier(MetaDomainException):
     pass
 
-class NotInMetaDomain(Exception):
+class ConsensusPositionOutOfBounds(MetaDomainException):
+    pass
+
+class NotInMetaDomain(MetaDomainException):
     pass
 
 class MetaDomain(object):
@@ -32,7 +36,8 @@ class MetaDomain(object):
     
     Variables
     name                       description
-    domain_id                  str the id / accession code of this domain 
+    domain_id                  str the id / accession code of this domain
+    genome_build               GenomeBuild the genome build for which this metadomain is constructed
     consensus_length           int length of the domain consensus
     n_proteins                 int number of unique proteins containing this domain
     n_instances                int number of unique instances containing this domain
@@ -151,9 +156,9 @@ class MetaDomain(object):
     def annotate_metadomain(self, reannotate=False):
         """Annotate this meta domain with gnomAD and ClinVar variants"""
         # check if a Meta Domain is already mapped
-        meta_domain_dir = METADOMAIN_DIR+self.domain_id
+        meta_domain_dir = METADOMAIN_DIR + self.genome_build.value + '/' + self.domain_id
         meta_domain_snv_annotation_file = meta_domain_dir+'/'+METADOMAIN_SNV_ANNOTATION_FILE_NAME
-        
+
         # initialize the meta_domain_annotation as a list
         meta_domain_annotation = []
         
@@ -174,10 +179,10 @@ class MetaDomain(object):
                 
                 # Annotate ClinVar and gnomAD SNVs
                 for unique_str_repr in meta_codons.keys():
-                    for snv in annotate_ClinVar_SNVs_for_codons(meta_codons[unique_str_repr]): 
+                    for snv in annotate_ClinVar_SNVs_for_codons(meta_codons[unique_str_repr], self.genome_build):
                         snv['consensus_pos'] = consensus_position
                         meta_domain_annotation.append(snv)
-                    for snv in annotate_gnomAD_SNVs_for_codons(meta_codons[unique_str_repr]):
+                    for snv in annotate_gnomAD_SNVs_for_codons(meta_codons[unique_str_repr], self.genome_build):
                         snv['consensus_pos'] = consensus_position
                         meta_domain_annotation.append(snv)
                         
@@ -192,8 +197,9 @@ class MetaDomain(object):
             
             _log.info('Finished annotation of MetaDomain for domain id: '+str(self.domain_id))
     
-    def __init__(self, domain_id, consensus_length, n_instances, meta_domain_mapping, meta_domain_annotation):
+    def __init__(self, domain_id, genome_build, consensus_length, n_instances, meta_domain_mapping, meta_domain_annotation):
         self.domain_id = domain_id
+        self.genome_build = genome_build
         self.consensus_length = consensus_length
         self.n_instances = n_instances
         self.meta_domain_mapping = meta_domain_mapping
@@ -204,28 +210,32 @@ class MetaDomain(object):
         self.n_transcripts = len(pd.unique(self.meta_domain_mapping.gencode_transcription_id))
         
     @classmethod
-    def initializeFromDomainID(cls, domain_id, recreate=False):        
+    def initializeFromDomainID(cls, domain_id, genome_build, recreate=False):
         _log.info('Start initialization of MetaDomain for domain id: '+str(domain_id))
         
         # Set values needed for construction of this class
         consensus_length = 0
         meta_domain_mapping = []
 
+        # check if genome build is GenomeBuild - an enum defined in gene_region
+        if not (genome_build is GenomeBuild.GRCh37 or genome_build is GenomeBuild.GRCh38):
+            raise MetaDomainException("Expected genome_build to be of type GenomeBuild, instead received '"+str(type(genome_build))+"'")
+
         # Double check this conserns a Pfam domain
         if domain_id.startswith('PF'):
             # check if a Meta Domain is already mapped
-            meta_domain_dir = METADOMAIN_DIR+domain_id
+            meta_domain_dir = METADOMAIN_DIR+genome_build.value+'/'+domain_id
             meta_domain_details_file = meta_domain_dir+'/'+METADOMAIN_DETAILS_FILE_NAME
             meta_domain_mapping_file = meta_domain_dir+'/'+METADOMAIN_MAPPING_FILE_NAME
             
             # first check if the metadomain dir exist
             if not os.path.isdir(meta_domain_dir):
-                raise UnsupportedMetaDomainIdentifier("For Pfam ID '"+str(domain_id)+"' there was no metadomain alignment present")
+                os.makedirs(meta_domain_dir)
             
             # Check if the mapping has previously been build already
             if os.path.exists(meta_domain_mapping_file) and os.path.exists(meta_domain_details_file) and not recreate:
                 # The mapping exists, load it
-                _log.info('Loading previously build creation of MetaDomain for domain id: '+str(domain_id))
+                _log.info('Loading previously build creation of MetaDomain for domain id: '+str(domain_id)+' genome build: '+str(genome_build.value))
                 # Read the files
                 _log.info("Reading '{}'".format(meta_domain_mapping_file))
                 meta_domain_mapping = pd.read_csv(meta_domain_mapping_file)
@@ -237,10 +247,10 @@ class MetaDomain(object):
                 n_instances = meta_domain_details['n_instances']
             else:
                 # The mapping does not exists yet, we need to create it
-                _log.info('Start creation of MetaDomain for domain id: '+str(domain_id))
+                _log.info('Start creation of MetaDomain for domain id: '+str(domain_id)+' genome build: '+str(genome_build.value))
                
                 # create the meta domain mapping alignment
-                meta_codons_per_consensus_pos, consensus_length, n_instances = generate_pfam_aligned_codons(domain_id)
+                meta_codons_per_consensus_pos, consensus_length, n_instances = retrieve_pfam_aligned_codons(domain_id, genome_build.value)
                 
                 # create the meta_domain_details
                 meta_domain_details = {}
@@ -270,7 +280,7 @@ class MetaDomain(object):
             raise UnsupportedMetaDomainIdentifier("Expected a Pfam domain, instead the identifier '"+str(domain_id)+"' was received")
         
         # Attempt to create the object
-        meta_domain = cls(domain_id, consensus_length, n_instances, meta_domain_mapping, pd.DataFrame())
+        meta_domain = cls(domain_id, genome_build, consensus_length, n_instances, meta_domain_mapping, pd.DataFrame())
         
         # Annotate this meta domain
         meta_domain.annotate_metadomain()
