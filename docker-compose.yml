@@ -76,6 +76,8 @@ services:
         restart: always
         image: rabbitmq:4.1.0
         platform: linux/arm64
+        volumes:
+          - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
         depends_on:
             - db
         ports:
