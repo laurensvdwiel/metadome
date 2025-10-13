@@ -17,7 +17,7 @@ services:
             - data:/usr/data
             - clinvar:/usr/data/ClinVar
             - gencode:/usr/data/Gencode
-            - gnomad:/usr/data/gnoMAD
+            - gnomad:/usr/data/gnomAD
             - pfam:/usr/data/PFAM
             - uniprot:/usr/data/UniProt
             - /usr/bin/docker:/usr/bin/docker               # Point the local file to where your docker executable is located
@@ -42,7 +42,7 @@ services:
             - data:/usr/data
             - clinvar:/usr/data/ClinVar
             - gencode:/usr/data/Gencode
-            - gnomad:/usr/data/gnoMAD
+            - gnomad:/usr/data/gnomAD
             - pfam:/usr/data/PFAM
             - uniprot:/usr/data/UniProt
             - /usr/bin/docker:/usr/bin/docker               # Point the local file to where your docker executable is located
