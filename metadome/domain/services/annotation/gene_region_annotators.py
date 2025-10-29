@@ -67,8 +67,10 @@ def GRCh37_annotateTranscriptWithClinvarData(chromosome, regions):
                 clinvar_record = {'CHROM': tabix_record.CHROM, 'POS': tabix_record.POS, 'REF':tabix_record.REF, 'ALT':item, 'INFO':clinvar_info}
                 
                 if not clinvar_record['INFO']['CLNSIG'] is None and\
-                    len( clinvar_record['INFO']['CLNSIG'] ) == 1 and\
-                    clinvar_record['INFO']['CLNSIG'][0] in CLINVAR_CONSIDERED_CLINSIG:
+                        len( clinvar_record['INFO']['CLNSIG'] ) == 1 and\
+                        clinvar_record['INFO']['CLNSIG'][0] in CLINVAR_CONSIDERED_CLINSIG and \
+                        clinvar_record['ALT'] != 'N' and \
+                        clinvar_record['REF'] != 'N':
                     yield clinvar_record
 
 
@@ -136,7 +138,9 @@ def GRCh38_annotateTranscriptWithClinvarData(chromosome, regions):
 
                 if not clinvar_record['INFO']['CLNSIG'] is None and \
                         len(clinvar_record['INFO']['CLNSIG']) == 1 and \
-                        clinvar_record['INFO']['CLNSIG'][0] in CLINVAR_CONSIDERED_CLINSIG:
+                        clinvar_record['INFO']['CLNSIG'][0] in CLINVAR_CONSIDERED_CLINSIG and \
+                        clinvar_record['ALT'] != 'N' and \
+                        clinvar_record['REF'] != 'N':
                     yield clinvar_record
 
 def GRCh37_annotateTranscriptWithGnomADData(chromosome, regions):
