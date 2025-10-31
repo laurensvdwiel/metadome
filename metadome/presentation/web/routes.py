@@ -8,7 +8,7 @@ from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.mail.mail import mail
 from metadome.presentation.api.routes import get_transcript_ids_for_gene
 from metadome.presentation.web.forms import SupportForm
-from metadome.default_settings import DEFAULT_RECIPIENT, MAIL_SERVER
+from metadome.default_settings import MAIL_SERVER, MAIL_DEFAULT_SENDER, SUPPORT_EMAIL
 
 import logging
 
@@ -156,20 +156,23 @@ def transcript(genome_build, gene_name, transcript_id):
 
 @bp.route('/contact', methods=['GET', 'POST'])
 def contact():
-    if DEFAULT_RECIPIENT is None or MAIL_SERVER is None:
+    if MAIL_SERVER is None or MAIL_DEFAULT_SENDER is None or SUPPORT_EMAIL is None:
         return render_template('error.html', msg="Mail server is not configured, therefore there can be no mails sent to support."), 500
     
     form = SupportForm()
     if form.validate_on_submit():
         email = form.email.data
         body = form.body.data
-        
-        msg = Message(subject="Support Request",
-                  sender=email,
-                  recipients=[DEFAULT_RECIPIENT])
-        
+
+        msg = Message(
+            subject="Support Request",
+            sender=('MetaDome Support', MAIL_DEFAULT_SENDER),
+            recipients=[SUPPORT_EMAIL],
+            reply_to=email
+        )
+
         msg.body = body
-        
+
         mail.send(msg)
 
         return render_template('contact_sent.html')
