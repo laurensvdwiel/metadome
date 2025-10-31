@@ -164,16 +164,43 @@ def contact():
         email = form.email.data
         body = form.body.data
 
-        msg = Message(
+        # 1. Send to support team
+        support_msg = Message(
             subject="Support Request",
             sender=('MetaDome Support', MAIL_DEFAULT_SENDER),
             recipients=[SUPPORT_EMAIL],
             reply_to=email
         )
+        support_msg.body = f"""New support request from: {email}
 
-        msg.body = body
+        {body}"""
 
-        mail.send(msg)
+        # 2. Send confirmation to user with HTML template
+        user_msg = Message(
+            subject="We received your message - MetaDome Support",
+            sender=('MetaDome Support', MAIL_DEFAULT_SENDER),
+            recipients=[email],
+            reply_to=SUPPORT_EMAIL
+        )
+
+        # Render HTML template
+        # For emails, we need absolute URLs for images
+        logo_url = url_for('static', filename='img/metadome_logo.png', _external=True)
+
+        user_msg.html = render_template(
+            'emails/default_support_email.html',
+            body=body,
+            logo_url=logo_url
+        )
+
+        # Send both emails
+        try:
+            mail.send(support_msg)
+            mail.send(user_msg)
+        except Exception as e:
+            error = f'Failed to send email: {str(e)}'
+            render_template('error.html', msg=error, stack_trace=traceback.format_exc())
+            return render_template('contact.html', form=form)
 
         return render_template('contact_sent.html')
 
