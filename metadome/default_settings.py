@@ -24,9 +24,15 @@ SLIDING_WINDOW_SIZE = 10
 # Debug toolbar
 DEBUG_TB_ENABLED = DEBUG
 
-# E-mail
-MAIL_SERVER = None # add your smtp server here if needed
-DEFAULT_RECIPIENT = None # where should the support emails be sent to
+# E-mail configuration
+MAIL_SERVER = os.environ.get('MAIL_SERVER')
+MAIL_PORT = int(os.environ.get('MAIL_PORT', 25))
+MAIL_USE_TLS = False
+MAIL_USE_SSL = False
+# Email addresses from environment
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL')
+ISSUES_EMAIL = os.environ.get('ISSUES_EMAIL')
+MAIL_DEFAULT_SENDER = os.environ.get('DEFAULT_FROM_EMAIL')
 
 # local data directory
 DATA_DIR = "/usr/data/"
