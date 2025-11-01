@@ -1,0 +1,39 @@
+<div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+    <div style="background-color: #e74c3c; padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">⚠️ MetaDome Error Alert</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f8f9fa;">
+        <h2 style="color: #2c3e50;">Visualization Error Detected</h2>
+
+        <div style="background-color: white; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Transcript ID:</strong></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;"><code>{{ transcript_id }}</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Genome Build:</strong></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;"><code>{{ genome_build }}</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Error Time:</strong></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ error_time }}</td>
+                </tr>
+            </table>
+        </div>
+
+        <h3 style="color: #2c3e50;">Stack Trace:</h3>
+        <div style="background-color: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 5px; overflow-x: auto;">
+            <pre style="margin: 0; white-space: pre-wrap; word-wrap: break-word;">{{ error_content }}</pre>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+
+        <p style="color: #999; font-size: 12px; text-align: center;">
+            <img src="{{ logo_url }}" alt="MetaDome" style="height: 30px; vertical-align: middle; margin-right: 10px;">
+            MetaDome Error Monitoring System<br>
+            <a href="https://metadome.app" style="color: #3498db;">https://metadome.app</a>
+        </p>
+    </div>
+</div>
