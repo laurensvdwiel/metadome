@@ -121,9 +121,12 @@ def retrieve_error(transcript_id, genome_build):
     with _get_lock_for(transcript_id, genome_build):
         if os.path.isfile(error_path):
             with open(error_path, 'r') as f:
-                return f.read()
+                # Get file modification time
+                error_timestamp = os.path.getmtime(error_path)
+
+                return f.read(), error_timestamp
         else:
-            return 'unknown'
+            return 'unknown', None
 
 
 def store_visualization(transcript_id, genome_build, result):

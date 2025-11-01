@@ -33,6 +33,11 @@ MAIL_USE_SSL = False
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL')
 ISSUES_EMAIL = os.environ.get('ISSUES_EMAIL')
 MAIL_DEFAULT_SENDER = os.environ.get('DEFAULT_FROM_EMAIL')
+# Error timestamp notification window
+ERROR_EMAIL_NOTIFICATION_WINDOW=300
+
+# Flask-Caching Settings
+CACHE_TYPE = 'simple'
 
 # local data directory
 DATA_DIR = "/usr/data/"

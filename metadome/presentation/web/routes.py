@@ -1,14 +1,17 @@
-from flask import Blueprint, g, render_template, redirect, url_for, session, jsonify
+from flask import Blueprint, g, render_template, redirect, url_for, session, jsonify, current_app
 from flask_mail import Message
-import json
-import traceback
 from metadome import get_version
 from metadome.controllers.job import retrieve_error
 from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.mail.mail import mail
 from metadome.presentation.api.routes import get_transcript_ids_for_gene
 from metadome.presentation.web.forms import SupportForm
-from metadome.default_settings import MAIL_SERVER, MAIL_DEFAULT_SENDER, SUPPORT_EMAIL
+from metadome.default_settings import MAIL_SERVER, MAIL_DEFAULT_SENDER, SUPPORT_EMAIL, ERROR_EMAIL_NOTIFICATION_WINDOW, \
+    ISSUES_EMAIL
+import json
+import traceback
+import time
+from datetime import datetime
 
 import logging
 
@@ -220,9 +223,71 @@ def help_page():
 
 @bp.route('/visualization_error/<genome_build>/<transcript_id>/', methods=['GET'])
 def visualization_error(genome_build, transcript_id):
-    stacktrace = retrieve_error(transcript_id, genome_build)
+    stacktrace, error_timestamp = retrieve_error(transcript_id, genome_build)
     error = "error during visualization generation"
+
+    # Handle sending error notification email if the error is recent
+    if error_timestamp:
+        send_error_notification(transcript_id, genome_build, stacktrace, error_timestamp)
+
     return render_template('error.html', msg=error, stack_trace=stacktrace)
+
+def send_error_notification(transcript_id, genome_build, error_content, error_timestamp):
+    """Send email notification for recent error"""
+    if ISSUES_EMAIL is None or MAIL_SERVER is None:
+        _log.error("Mail server not configured, cannot send error notification")
+        return
+
+    # Create a unique key for this error
+    cache_key = f"error_email:{transcript_id}:{genome_build}:{int(error_timestamp)}"
+
+    # Check if error is recent (within last 5 minutes)
+    if (time.time() - error_timestamp) >= ERROR_EMAIL_NOTIFICATION_WINDOW:
+        _log.error(f"Error '{cache_key}' occurred to long ago for mail to be send not configured, cannot send error notification")
+        return
+
+    # Get cache from current app
+    cache = current_app.cache
+
+    # Check if we've already sent this exact error
+    if cache.get(cache_key) is not None:
+        _log.info(f"Already sent email for {cache_key} recently")
+        return
+
+    try:
+        # Create error notification email
+        msg = Message(
+            subject=f"MetaDome Error: {transcript_id} ({genome_build})",
+            sender=('MetaDome Automated', MAIL_DEFAULT_SENDER),
+            recipients=[ISSUES_EMAIL]
+        )
+
+        # Format timestamp
+        error_time = datetime.fromtimestamp(error_timestamp).strftime('%Y-%m-%d %H:%M:%S UTC')
+
+        # Get logo URL (absolute URL for email)
+        logo_url = url_for('static', filename='img/metadome_logo.png', _external=True)
+
+        # Render HTML template
+        msg.html = render_template(
+            'emails/default_issue_email.html',
+            transcript_id=transcript_id,
+            genome_build=genome_build,
+            error_time=error_time,
+            error_content=error_content,
+            logo_url=logo_url
+        )
+
+        mail.send(msg)
+
+        # Add the cache key to prevent sending duplicate emails for the same error within the notification window.
+        # This will help avoid spamming the support team with multiple emails for the same issue.
+        cache.set(cache_key, True, timeout=3600)  # Remember for 1 hour
+
+        _log.info(f"Error notification sent for {transcript_id} ({genome_build})")
+
+    except Exception as e:
+        _log.error(f"Failed to send error notification: {str(e)}")
 
 @bp.before_request
 def before_request():

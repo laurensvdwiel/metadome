@@ -132,9 +132,9 @@ def get_visualization_result_for_transcript(genome_build, transcript_id):
 
 @bp.route('/error/<genome_build>/<transcript_id>', methods=['GET'])
 def get_visualization_error_for_transcript(genome_build, transcript_id):
-    stacktrace = retrieve_error(transcript_id, genome_build)
+    stacktrace, timestamp = retrieve_error(transcript_id, genome_build)
     error = "error running visualization job"
-    return jsonify({'error': error, 'stacktrace': stacktrace})
+    return jsonify({'error': error, 'stacktrace': stacktrace, 'timestamp': timestamp})
 
 
 @bp.errorhandler(Exception)
