@@ -65,10 +65,10 @@ var main_yAxis = d3.axisLeft(main_y).ticks(0);
 // add the brush element
 var brush = d3.brushX().extent([ [ 0, 0 ], [ main_width, main_heightContext ] ]).on("brush end", brushed);
 // Define the brushed function
-function brushed() {
-	var s = d3.event.selection || main_x2.range();
-	main_x.domain(s.map(main_x2.invert, main_x2));
-	rescaleLandscape();
+function brushed(event) {
+    var s = event.selection || main_x2.range();
+    main_x.domain(s.map(main_x2.invert, main_x2));
+    rescaleLandscape();
 }
 /*******************************************************************************
  * Config variables for visuals
@@ -142,7 +142,7 @@ var toleranceLine = d3.line().x(function(d) {
 var domainTip = d3.tip()
 	.attr('class', 'd3-tip')
 	.offset([ -10, 0 ])
-	.html(function(d) {
+	.html(function(event, d) {
 	    return "<span><div style='text-align: center;'> Domain " + d.Name + " ("+d.ID+") </br> click for more information </div></span>";
 	});
 
@@ -150,7 +150,7 @@ var domainTip = d3.tip()
 var domain_details_position_tip = d3.tip()
 	.attr('class', 'd3-tip')
 	.offset([ -10, 0 ])
-	.html(function(d) {
+	.html(function(event, d) {
 	    return "<span> "+ d +"</span>";
 	});
 
@@ -159,7 +159,7 @@ var domain_details_position_tip = d3.tip()
 var positionTip = d3.tip()
 	.attr('class', 'd3-tip')
 	.offset([ -10, 0 ])
-	.html(function(d, i) {
+	.html(function(event, d) {
 	    var positionTip_str = "<span>";
 	    positionTip_str += "Position: p." + d.values[0].protein_pos + " " + d.values[0].cdna_pos + "</br>";
 	    positionTip_str += "Codon: " + d.values[0].ref_codon + "</br>";
@@ -234,9 +234,8 @@ function createGraph(obj) {
 	main_x2.domain(main_x .domain());
 
 	// create a group from the tolerance data
-	var dataGroup = d3.nest().key(function(d) {
-	    return d.protein_pos;
-	}).entries(positional_annotation);
+	var dataGroup = d3.groups(positional_annotation, d => d.protein_pos)
+    .map(([key, values]) => ({key: key, values: values}));
 
 	// add two consecutive data values per group, so these can be used in
 	// drawing rectangles
@@ -356,11 +355,11 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
 		})
 	.style("clip-path", "url(#clip)")
 	.style("fill", "green")
-	.on("click", function(d) {
+	.on("click",  function(event, d)  {
 	    // Call this method found in dashboard.js
 	    createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
 	})
-	.on("mouseover", function(d) {
+	.on("mouseover",  function(event, d)  {
 		if (metadomain_graph_visible){
 			var normal_missense_variant_count = 0;
 			if (d.values[0].domains != null){
@@ -371,16 +370,16 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
 				});
 			}
 		   // show the tooltip
-		   domain_details_position_tip.show("Homologous gnomAD missense count: "+normal_missense_variant_count);
+		   domain_details_position_tip.show(event, "Homologous gnomAD missense count: "+normal_missense_variant_count);
 		   // amplify the element
 		   d3.select(this).style("fill", "orange");
 		   // move the element to front
 		   d3.select(this).moveToFront();
 		}
 	})
-	.on("mouseout", function(d) {
+	.on("mouseout",  function(event, d)  {
 	   // hide the tooltip
-	   domain_details_position_tip.hide(d);
+	   domain_details_position_tip.hide();
 	   // reset the color
 	   d3.select(this).style("fill", "green");
 	   // move the element to the back
@@ -427,11 +426,11 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
 		})
 	.style("clip-path", "url(#clip)")
 	.style("fill", "red")
-	.on("click", function(d) {
+	.on("click",  function(event, d)  {
 	    // Call this method found in dashboard.js
 	    createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
 	})
-	.on("mouseover", function(d) {
+	.on("mouseover",  function(event, d)  {
 		if (metadomain_graph_visible){
 			var pathogenic_missense_variant_count = 0;
 			if (d.values[0].domains != null){
@@ -442,16 +441,16 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
 				});
 			}
 		   // show the tooltip
-		   domain_details_position_tip.show("Homologous pathogenic missense count: "+pathogenic_missense_variant_count);
+		   domain_details_position_tip.show(event, "Homologous pathogenic missense count: "+pathogenic_missense_variant_count);
 		   // amplify the element
 		   d3.select(this).style("fill", "orange");
 		   // move the element to front
 		   d3.select(this).moveToFront();
 		}
 	})
-	.on("mouseout", function(d) {
+	.on("mouseout",  function(event, d)  {
 	   // hide the tooltip
-	   domain_details_position_tip.hide(d);
+	   domain_details_position_tip.hide();
 	   // reset the color
 	   d3.select(this).style("fill", "red");
 	   // move the element to the back
@@ -493,7 +492,7 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
 		})
 	.style("clip-path", "url(#clip)")
 	.style("fill", "black")
-	.on("mouseover", function(d) {
+	.on("mouseover",  function(event, d)  {
 		if (metadomain_graph_visible){
 			var pathogenic_missense_variant_count = 0;
 			if (d.values[0].domains != null){
@@ -504,16 +503,16 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
 				});
 			}
 		   // show the tooltip
-		   domain_details_position_tip.show("Residue is not aligned to homologues");
+		   domain_details_position_tip.show(event, "Residue is not aligned to homologues");
 		   // amplify the element
 		   d3.select(this).style("fill", "orange");
 		   // move the element to front
 		   d3.select(this).moveToFront();
 		}
 	})
-	.on("mouseout", function(d) {
+	.on("mouseout",  function(event, d)  {
 	   // hide the tooltip
-	   domain_details_position_tip.hide(d);
+	   domain_details_position_tip.hide();
 	   // reset the color
 	   d3.select(this).style("fill", "black");
 	   // move the element to the back
@@ -654,21 +653,21 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
 		.style("fill-opacity", 0.2)
 		.style("fill", "grey")
 		.style("clip-path","url(#clip)")
-		.on("mouseover", function(d, i) {
+		.on("mouseover", function(event, d) {
 		    if (!d.values[0].selected) {
 		    	d3.select(this).style("fill", "orange").style("fill-opacity", 0.5);
 		    }
 		    // show the tooltip
-		    positionTip.show(d);
+		    positionTip.show(event, d);
 		    // change the cursor
 		    d3.select(this).style("cursor", "pointer");
-		}).on("mouseout", function(d, i) {			
+		}).on("mouseout", function(event, d) {
 		    if (!d.values[0].selected) {
 				d3.select(this).style("fill", draw_position_schematic_protein(d, this));
 		    }
 		    // hide the tooltip
-		    positionTip.hide(d);
-		}).on("click", function(d, i) {
+		    positionTip.hide();
+		}).on("click", function(event, d) {
 		    if (!d.values[0].selected) {
 				d3.select(this).style("fill", "green").style("fill-opacity", 0.7);
 				d.values[0].selected = true;
@@ -729,9 +728,9 @@ function annotateDomains(protDomain, tolerance_data, domain_metadomain_coverage)
 		.style('fill', '#c014e2')
 		.style('stroke', 'black')
 		.style("clip-path", "url(#clip)")
-		.on("mouseover", function(d) {
+		.on("mouseover",  function(event, d)  {
 		    // show the tooltip
-		    domainTip.show(d);
+		    domainTip.show(event, d);
 		    // amplify the element
 		    d3.select(this).style("fill", "yellow");
 		    // move the element to front
@@ -739,9 +738,9 @@ function annotateDomains(protDomain, tolerance_data, domain_metadomain_coverage)
 		    // change the cursor
 		    d3.select(this).style("cursor", "pointer");
 		})
-		.on("mouseout", function(d) {
+		.on("mouseout",  function(event, d)  {
 		    // hide the tooltip
-		    domainTip.hide(d);
+		    domainTip.hide();
 		    // reset the color
 		    d3.select(this).style("fill", "#c014e2");
 		    // move the element to the back
@@ -749,7 +748,7 @@ function annotateDomains(protDomain, tolerance_data, domain_metadomain_coverage)
 		    // change the cursor
 		    d3.select(this).style("cursor", "default");
 		})
-		.on("click", function(d) {
+		.on("click",  function(event, d)  {
 			// Activate the overlay
 		    $("#domain_information_overlay").addClass('is-active');
 		    
