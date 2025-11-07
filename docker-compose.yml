@@ -54,7 +54,7 @@ services:
             - interpro_temp:/usr/interpro_temp
     db:
         restart: always
-        image: postgres:17.5
+        image: postgres:17.6
         platform: linux/arm64
         env_file:
            - metadome/database.env
@@ -70,7 +70,7 @@ services:
              start_period: 10s
     redis:
         restart: always
-        image: redis:8.0.1
+        image: redis:8.2.3
         platform: linux/arm64
         depends_on:
             - db
@@ -78,7 +78,7 @@ services:
           - "6379:6379"
     rabbitmq:
         restart: always
-        image: rabbitmq:4.1.0
+        image: rabbitmq:4.2.0
         platform: linux/arm64
         volumes:
           - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
@@ -87,7 +87,7 @@ services:
         ports:
           - "15672:15672"
     mailserver:
-        image:  boky/postfix
+        image:  boky/postfix:4.4.0
         restart: always
         env_file:
            - metadome/mailserver.env
