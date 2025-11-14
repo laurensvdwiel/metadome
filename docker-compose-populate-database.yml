@@ -11,14 +11,14 @@ services:
             - ${PWD}:/usr/src/app
     db:
         restart: always
-        image: postgres:17.5
+        image: postgres:18.0
         platform: linux/arm64
         env_file:
            - metadome/database.env
         ports:
             - "5432:5432"
         volumes:
-            - metadome_postgres_db:/var/lib/postgresql/data
+            - metadome_postgres_db:/var/lib/postgresql
         healthcheck:
              test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
              interval: 30s
