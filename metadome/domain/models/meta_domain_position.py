@@ -8,8 +8,9 @@ class MetaDomainPosition(db.Model):
     Fields
     id                        identifier
     consensus_position        Integer indicating the consensus position in the protein domain
+    consensus_length          Integer indicating the length of the consensus domain
     ext_db_id                 External domain database identifier code
-    
+
     Relationships
     one to many               meta_domain_mapping_association
     """
@@ -19,8 +20,9 @@ class MetaDomainPosition(db.Model):
     # Fields
     id = db.Column(db.Integer, primary_key=True)
     consensus_position = db.Column(db.Integer, nullable=False)
+    consensus_length = db.Column(db.Integer, nullable=False)
     ext_db_id = db.Column(db.String, nullable=False)
-    
+
     # Relationships
     meta_domain_mappings = db.relationship("MetaDomainMapping",
                                               back_populates="meta_domain_position")

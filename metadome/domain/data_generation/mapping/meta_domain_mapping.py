@@ -96,8 +96,16 @@ def retrieve_pfam_aligned_codons(pfam_id, genome_build):
         # Dict to convert uniprot_acs to protein ids
         uniprot_acs_to_ids = {}
 
+        # the consensus length
+        consensus_length = None
+
         # first pass over results to retrieve consensus length and unique interpro ids and
         for mapping, gene, mdm, mdp, protein in meta_domain_results:
+            if consensus_length is None:
+                consensus_length = mdp.consensus_length
+            elif consensus_length != mdp.consensus_length:
+                raise MalformedMappingsForAlignedCodonsPosition("Inconsistent consensus lengths found for domain '"+str(pfam_id)+"': '"+str(consensus_length)+"' and '"+str(mdp.consensus_length)+"'")
+
             consensus_positions.add(mdp.consensus_position)
             if mdm.interpro_id:
                 unique_interpro_ids.add(mdm.interpro_id)
@@ -131,9 +139,6 @@ def retrieve_pfam_aligned_codons(pfam_id, genome_build):
             # Add the uniprot_ac to protein_id mapping
             if not protein.uniprot_ac in uniprot_acs_to_ids.keys():
                 uniprot_acs_to_ids[protein.uniprot_ac] = mapping.protein_id
-
-        # the consensus length
-        consensus_length = max(consensus_positions) if consensus_positions else 0
 
         # the amount of domain occurrences found
         n_instances = len(unique_interpro_ids)
