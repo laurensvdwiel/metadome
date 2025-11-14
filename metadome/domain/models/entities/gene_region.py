@@ -68,7 +68,7 @@ class GeneRegion(object):
             mappings_per_chromosome[chromosome_position] = {}
             mappings_per_chromosome[chromosome_position]['base_pair_representation'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].codon
             mappings_per_chromosome[chromosome_position]['codon_base_pair_position'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].codon_base_pair_position
-            mappings_per_chromosome[chromosome_position]['amino_acid_position'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].amino_acid_position
+            mappings_per_chromosome[chromosome_position]['uniprot_position'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].uniprot_position
             mappings_per_chromosome[chromosome_position]['base_pair'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].base_pair
             mappings_per_chromosome[chromosome_position]['gencode_transcription_id'] = self.gencode_transcription_id
         return mappings_per_chromosome

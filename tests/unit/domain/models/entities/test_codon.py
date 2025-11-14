@@ -5,7 +5,7 @@ from metadome.domain.models.gene import Strand
 
 class mock_Mapping(object):
     strand = Strand.plus
-    amino_acid_position = 125
+    uniprot_position = 125
     chromosome = 'chr1'
     gene_id = 1
     protein_id = 1
@@ -52,7 +52,7 @@ class Test_codon(unittest.TestCase):
         _codon_from_mapping = Codon.initializeFromMapping(_mappings=_mappings, _gencode_transcription_id=_transcript, _uniprot_ac=_protein_ac)
         _codon_from_init = Codon(_gencode_transcription_id=_transcript, _uniprot_ac=_protein_ac,
                                  _strand=_strand, _base_pair_representation=_codon_repr,
-                                 _amino_acid_residue=_residue, _amino_acid_position=mock_Mapping.amino_acid_position,
+                                 _amino_acid_residue=_residue, _uniprot_position=mock_Mapping.uniprot_position,
                                  _chr=mock_Mapping.chromosome, _chromosome_position_base_pair_one=_chromosome_position_base_pair_one,
                                  _chromosome_position_base_pair_two=_chromosome_position_base_pair_two,
                                  _chromosome_position_base_pair_three=_chromosome_position_base_pair_three,
@@ -66,7 +66,7 @@ class Test_codon(unittest.TestCase):
         self.assertTrue(_codon_from_init.strand == _codon_from_mapping.strand == mock_Mapping.strand)
         self.assertTrue(_codon_from_init.base_pair_representation == _codon_from_mapping.base_pair_representation == _codon_repr) 
         self.assertTrue(_codon_from_init.amino_acid_residue == _codon_from_mapping.amino_acid_residue == _residue)
-        self.assertTrue(_codon_from_init.amino_acid_position == _codon_from_mapping.amino_acid_position == mock_Mapping.amino_acid_position)
+        self.assertTrue(_codon_from_init.uniprot_position == _codon_from_mapping.uniprot_position == mock_Mapping.uniprot_position)
         self.assertTrue(_codon_from_init.chr == _codon_from_mapping.chr == mock_Mapping.chromosome)
         self.assertTrue(_codon_from_init.chromosome_position_base_pair_one == _codon_from_mapping.chromosome_position_base_pair_one == _chromosome_position_base_pair_one)
         self.assertTrue(_codon_from_init.chromosome_position_base_pair_two == _codon_from_mapping.chromosome_position_base_pair_two == _chromosome_position_base_pair_two)
@@ -86,7 +86,7 @@ class Test_codon(unittest.TestCase):
         self.assertTrue(_codon_from_dict.strand == _codon_from_mapping.strand)
         self.assertTrue(_codon_from_dict.base_pair_representation == _codon_from_mapping.base_pair_representation) 
         self.assertTrue(_codon_from_dict.amino_acid_residue == _codon_from_mapping.amino_acid_residue)
-        self.assertTrue(_codon_from_dict.amino_acid_position == _codon_from_mapping.amino_acid_position)
+        self.assertTrue(_codon_from_dict.uniprot_position == _codon_from_mapping.uniprot_position)
         self.assertTrue(_codon_from_dict.chr == _codon_from_mapping.chr)
         self.assertTrue(_codon_from_dict.chromosome_position_base_pair_one == _codon_from_mapping.chromosome_position_base_pair_one)
         self.assertTrue(_codon_from_dict.chromosome_position_base_pair_two == _codon_from_mapping.chromosome_position_base_pair_two)

@@ -273,7 +273,7 @@ def analyse_transcript(transcript_id, genome_build):
 
         for chrom_pos in ClinVar_annotation.keys():
             for variant in ClinVar_annotation[chrom_pos]:
-                protein_pos = _mappings_per_chromosome[chrom_pos]['amino_acid_position']
+                protein_pos = _mappings_per_chromosome[chrom_pos]['uniprot_position']
 
                 if not 'ClinVar' in region_positional_annotation[protein_pos].keys():
                     region_positional_annotation[protein_pos]['ClinVar'] = []

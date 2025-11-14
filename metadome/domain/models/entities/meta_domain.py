@@ -78,7 +78,7 @@ class MetaDomain(object):
         consensus_positions = []
         # Retrieve all codons aligned to the consensus position
         aligned_to_position = self.meta_domain_mapping[(self.meta_domain_mapping.uniprot_ac == uniprot_ac) &\
-                                                       (self.meta_domain_mapping.amino_acid_position == uniprot_position)]
+                                                       (self.meta_domain_mapping.uniprot_position == uniprot_position)]
         
         # check if there are any matches
         if len(aligned_to_position) > 0:
@@ -99,7 +99,7 @@ class MetaDomain(object):
     def get_codon_for_transcript_and_position(self, transcript_id, protein_position):
         """Construct the codon for a provided position"""
         # Retrieve all codons aligned to the consensus position
-        aligned_to_position = self.meta_domain_mapping[(self.meta_domain_mapping.gencode_transcription_id == transcript_id) & (self.meta_domain_mapping.amino_acid_position == protein_position)].to_dict('records')
+        aligned_to_position = self.meta_domain_mapping[(self.meta_domain_mapping.gencode_transcription_id == transcript_id) & (self.meta_domain_mapping.uniprot_position == protein_position)].to_dict('records')
         
         if len(aligned_to_position) == 0:
             raise NotInMetaDomain("No codons found to be aligned for metadomain '"+str(self.domain_id)+"' for transcript '"+str(transcript_id)+"' at position '"+str(protein_position)+"'")

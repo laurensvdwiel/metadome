@@ -17,7 +17,7 @@ class Codon(object):
     strand                                 Enum the strand represented as models.gene.Strand
     base_pair_representation               str the base pair representation of this codon (e.g. ATG)
     amino_acid_residue                     str the amino acid residue of this codon
-    amino_acid_position                    int the amino acid position of this codon in the protein or gene translation
+    uniprot_position                       int the amino acid position of this codon in the protein or gene translation
     chr                                    str the chromosome
     regions                                tuple the range of chromosomal positions of this codon
     chromosome_position_base_pair_one      int the position corresponding to the first base pair in the chromosome
@@ -50,7 +50,7 @@ class Codon(object):
         mappings_per_chromosome[self.chromosome_position_base_pair_one] = {}
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['base_pair_representation'] = self.base_pair_representation
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['codon_base_pair_position'] = 0
-        mappings_per_chromosome[self.chromosome_position_base_pair_one]['amino_acid_position'] = self.amino_acid_position
+        mappings_per_chromosome[self.chromosome_position_base_pair_one]['uniprot_position'] = self.uniprot_position
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['base_pair'] = self.base_pair_representation[0]
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['gencode_transcription_id'] = self.gencode_transcription_id
 
@@ -58,7 +58,7 @@ class Codon(object):
         mappings_per_chromosome[self.chromosome_position_base_pair_two] = {}
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['base_pair_representation'] = self.base_pair_representation
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['codon_base_pair_position'] = 1
-        mappings_per_chromosome[self.chromosome_position_base_pair_two]['amino_acid_position'] = self.amino_acid_position
+        mappings_per_chromosome[self.chromosome_position_base_pair_two]['uniprot_position'] = self.uniprot_position
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['base_pair'] = self.base_pair_representation[1]
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['gencode_transcription_id'] = self.gencode_transcription_id
 
@@ -66,7 +66,7 @@ class Codon(object):
         mappings_per_chromosome[self.chromosome_position_base_pair_three] = {}
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['base_pair_representation'] = self.base_pair_representation
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['codon_base_pair_position'] = 2
-        mappings_per_chromosome[self.chromosome_position_base_pair_three]['amino_acid_position'] = self.amino_acid_position
+        mappings_per_chromosome[self.chromosome_position_base_pair_three]['uniprot_position'] = self.uniprot_position
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['base_pair'] = self.base_pair_representation[2]
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['gencode_transcription_id'] = self.gencode_transcription_id
 
@@ -85,7 +85,7 @@ class Codon(object):
 
     def __init__(self, _gencode_transcription_id, _uniprot_ac, 
                              _strand, _base_pair_representation, 
-                             _amino_acid_residue, _amino_acid_position, 
+                             _amino_acid_residue, _uniprot_position,
                              _chr, _chromosome_position_base_pair_one, 
                              _chromosome_position_base_pair_two, 
                              _chromosome_position_base_pair_three,
@@ -103,7 +103,7 @@ class Codon(object):
             raise MalformedCodonException('Strand cold not be converted to domain.models.Gene.Strand(Enum) for provided: '+str(_strand))
         self.base_pair_representation = _base_pair_representation
         self.amino_acid_residue = _amino_acid_residue
-        self.amino_acid_position = _amino_acid_position
+        self.uniprot_position = _uniprot_position
         self.chr = _chr
         self.chromosome_position_base_pair_one = _chromosome_position_base_pair_one
         self.chromosome_position_base_pair_two = _chromosome_position_base_pair_two
@@ -135,13 +135,13 @@ class Codon(object):
         if not(_mappings[0].protein_id == _mappings[1].protein_id == _mappings[2].protein_id):
             raise MalformedCodonException("Malformed codon mapping: The protein ids are not the same for mapping ids: '"+str(_mapping_ids)+"'.")
         
-        # double check the mapping for amino_acid_residue
-        if not(_mappings[0].amino_acid_residue == _mappings[1].amino_acid_residue == _mappings[2].amino_acid_residue):
-            raise MalformedCodonException("Malformed codon mapping: The encoded amino acid residue does not correspond for mapping ids: '"+str(_mapping_ids)+"'.")
+        # double check the mapping for uniprot_residue
+        if not(_mappings[0].uniprot_residue == _mappings[1].uniprot_residue == _mappings[2].uniprot_residue):
+            raise MalformedCodonException("Malformed codon mapping: The encoded uniprot residue does not correspond for mapping ids: '"+str(_mapping_ids)+"'.")
         
-        # double check the mapping for amino_acid_position
-        if not(_mappings[0].amino_acid_position == _mappings[1].amino_acid_position == _mappings[2].amino_acid_position):
-            raise MalformedCodonException("Malformed codon mapping: The encoded amino acid position does not correspond for mapping ids: '"+str(_mapping_ids)+"'.")
+        # double check the mapping for uniprot_position
+        if not(_mappings[0].uniprot_position == _mappings[1].uniprot_position == _mappings[2].uniprot_position):
+            raise MalformedCodonException("Malformed codon mapping: The encoded uniprot position does not correspond for mapping ids: '"+str(_mapping_ids)+"'.")
         
         # double check the mapping for chromosome
         if not(_mappings[0].chromosome == _mappings[1].chromosome == _mappings[2].chromosome):
@@ -157,8 +157,8 @@ class Codon(object):
         
         # set the checked values
         _strand = _mappings[0].strand.value
-        _amino_acid_residue = _mappings[0].amino_acid_residue
-        _amino_acid_position = _mappings[0].amino_acid_position
+        _amino_acid_residue = _mappings[0].uniprot_residue
+        _uniprot_position = _mappings[0].uniprot_position
         if _mappings[0].chromosome.lower().startswith('chr'):
             _chr = 'chr'+_mappings[0].chromosome[3:]
         else:
@@ -181,7 +181,7 @@ class Codon(object):
                       _uniprot_ac=_uniprot_ac, _strand=_strand, 
                       _base_pair_representation=_base_pair_representation,
                       _amino_acid_residue=_amino_acid_residue, 
-                      _amino_acid_position=_amino_acid_position, 
+                      _uniprot_position=_uniprot_position,
                       _chr=_chr, _chromosome_position_base_pair_one=_chromosome_position_base_pair_one, 
                       _chromosome_position_base_pair_two=_chromosome_position_base_pair_two, 
                       _chromosome_position_base_pair_three=_chromosome_position_base_pair_three,
@@ -203,7 +203,7 @@ class Codon(object):
             _strand = _d['strand']
             _base_pair_representation = _d['base_pair_representation']
             _amino_acid_residue = _d['amino_acid_residue']
-            _amino_acid_position = _d['amino_acid_position']
+            _uniprot_position = _d['uniprot_position']
             if _d['chr'].lower().startswith('chr'):
                 _chr = 'chr' + _d['chr'][3:]
             else:
@@ -219,7 +219,7 @@ class Codon(object):
                       _uniprot_ac=_uniprot_ac, _strand=_strand, 
                       _base_pair_representation=_base_pair_representation,
                       _amino_acid_residue=_amino_acid_residue, 
-                      _amino_acid_position=_amino_acid_position, 
+                      _uniprot_position=_uniprot_position,
                       _chr=_chr, _chromosome_position_base_pair_one=_chromosome_position_base_pair_one, 
                       _chromosome_position_base_pair_two=_chromosome_position_base_pair_two, 
                       _chromosome_position_base_pair_three=_chromosome_position_base_pair_three,
@@ -239,7 +239,7 @@ class Codon(object):
         _d['strand'] = self.strand.value
         _d['base_pair_representation'] = self.base_pair_representation
         _d['amino_acid_residue'] = self.amino_acid_residue
-        _d['amino_acid_position'] = self.amino_acid_position
+        _d['uniprot_position'] = self.uniprot_position
         _d['chr'] = self.chr
         _d['chromosome_position_base_pair_one'] = self.chromosome_position_base_pair_one
         _d['chromosome_position_base_pair_two'] = self.chromosome_position_base_pair_two
@@ -255,7 +255,7 @@ class Codon(object):
         
         # Add positional information
         json_entry['strand'] = self.strand.value
-        json_entry['protein_pos'] = self.amino_acid_position
+        json_entry['protein_pos'] = self.uniprot_position
         json_entry['cdna_pos'] = self.pretty_print_cDNA_region()
         json_entry['chr'] = self.chr
         json_entry['chr_positions'] = self.pretty_print_chr_region()

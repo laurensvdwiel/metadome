@@ -12,10 +12,6 @@ class Mapping(db.Model):
     base_pair                    'A', 'T', 'C', 'G'
     codon                     all triplet combinations of the alleles 
     codon_base_pair_position     0, 1, 2, or None
-    amino_acid_residue        one of the 20 amino acids in the gene translation,
-                              * or None
-    amino_acid_position       the position in the amino acid sequence of the 
-                              gene translation
     cDNA_position             the position in the cDNA
     uniprot_residue           one of the 20 amino acids in the uniprot sequence,
                               * or None
@@ -39,8 +35,6 @@ class Mapping(db.Model):
     codon = db.Column(db.String(3))
     codon_base_pair_position = db.Column(db.Integer)
     strand = db.Column(db.Enum(Strand), nullable=False)
-    amino_acid_residue = db.Column(db.String(1))
-    amino_acid_position = db.Column(db.Integer)
     cDNA_position = db.Column(db.Integer)
     uniprot_residue = db.Column(db.String(1))
     uniprot_position = db.Column(db.Integer)
@@ -57,6 +51,6 @@ class Mapping(db.Model):
                                                back_populates="mapping")
     
     def __repr__(self):
-        return "<Mapping(chr='%s', chr_pos='%s' base_pair='%s', codon='%s', codon_base_pair_position='%s', amino_acid_residue='%s', cDNA_position='%s', uniprot_position='%s')>" % (
-                            self.chromosome, self.chromosome_position, self.base_pair, self.codon, self.codon_base_pair_position, self.amino_acid_residue, self.cDNA_position, self.uniprot_position)
+        return "<Mapping(chr='%s', chr_pos='%s' base_pair='%s', codon='%s', codon_base_pair_position='%s', uniprot_residue='%s', cDNA_position='%s', uniprot_position='%s')>" % (
+                            self.chromosome, self.chromosome_position, self.base_pair, self.codon, self.codon_base_pair_position, self.uniprot_residue, self.cDNA_position, self.uniprot_position)
     

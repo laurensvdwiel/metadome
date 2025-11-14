@@ -7,7 +7,7 @@ from builtins import NotImplementedError
 class mock_Codon(Codon):
     @classmethod
     def mock_Methionine(cls):
-        _d = {'chr': 'chr1', 'gencode_transcription_id': 'test_transcript', 'cDNA_position_three': 3, 'amino_acid_position': 125, 'chromosome_position_base_pair_three': 3, 'cDNA_position_one': 1, 'strand': '+', 'uniprot_ac': 'test_protein_ac', 'base_pair_representation': 'ATG', 'chromosome_position_base_pair_two': 2, 'cDNA_position_two': 2, 'chromosome_position_base_pair_one': 1, 'amino_acid_residue': 'M'}
+        _d = {'chr': 'chr1', 'gencode_transcription_id': 'test_transcript', 'cDNA_position_three': 3, 'uniprot_position': 125, 'chromosome_position_base_pair_three': 3, 'cDNA_position_one': 1, 'strand': '+', 'uniprot_ac': 'test_protein_ac', 'base_pair_representation': 'ATG', 'chromosome_position_base_pair_two': 2, 'cDNA_position_two': 2, 'chromosome_position_base_pair_one': 1, 'amino_acid_residue': 'M'}
         return super(mock_Codon, cls).initializeFromDict(_d)
     
 class Test_SingleNucleotideVariant(unittest.TestCase):
@@ -42,7 +42,7 @@ class Test_SingleNucleotideVariant(unittest.TestCase):
                                 _uniprot_ac=_codon.uniprot_ac, _strand=_codon.strand.value,
                                 _base_pair_representation=_codon.base_pair_representation, 
                                 _amino_acid_residue=_codon.amino_acid_residue, 
-                                _amino_acid_position=_codon.amino_acid_position, 
+                                _uniprot_position=_codon.uniprot_position,
                                 _chr=_codon.chr, 
                                 _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one, 
                                 _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two, 
@@ -107,7 +107,7 @@ class Test_SingleNucleotideVariant(unittest.TestCase):
                                     _uniprot_ac=_codon.uniprot_ac, _strand=_codon.strand.value,
                                     _base_pair_representation=_codon.base_pair_representation, 
                                     _amino_acid_residue=_codon.amino_acid_residue, 
-                                    _amino_acid_position=_codon.amino_acid_position, 
+                                    _uniprot_position=_codon.uniprot_position,
                                     _chr=_codon.chr, 
                                     _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one, 
                                     _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two, 
@@ -126,7 +126,7 @@ class Test_SingleNucleotideVariant(unittest.TestCase):
                                     _uniprot_ac=_codon.uniprot_ac, _strand=_codon.strand.value,
                                     _base_pair_representation=_codon.base_pair_representation, 
                                     _amino_acid_residue=_codon.amino_acid_residue, 
-                                    _amino_acid_position=_codon.amino_acid_position, 
+                                    _uniprot_position=_codon.uniprot_position,
                                     _chr=_codon.chr, 
                                     _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one, 
                                     _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two, 
@@ -143,7 +143,7 @@ class Test_SingleNucleotideVariant(unittest.TestCase):
                                     _uniprot_ac=_codon.uniprot_ac, _strand=_codon.strand.value,
                                     _base_pair_representation=_codon.base_pair_representation, 
                                     _amino_acid_residue=_codon.amino_acid_residue, 
-                                    _amino_acid_position=_codon.amino_acid_position, 
+                                    _uniprot_position=_codon.uniprot_position,
                                     _chr=_codon.chr, 
                                     _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one, 
                                     _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two, 
@@ -162,7 +162,7 @@ class Test_SingleNucleotideVariant(unittest.TestCase):
                                     _uniprot_ac=_codon.uniprot_ac, _strand=_codon.strand.value,
                                     _base_pair_representation=_codon.base_pair_representation, 
                                     _amino_acid_residue=_codon.amino_acid_residue, 
-                                    _amino_acid_position=_codon.amino_acid_position, 
+                                    _uniprot_position=_codon.uniprot_position,
                                     _chr=_codon.chr, 
                                     _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one, 
                                     _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two, 
@@ -181,7 +181,7 @@ class Test_SingleNucleotideVariant(unittest.TestCase):
                                     _uniprot_ac=_codon.uniprot_ac, _strand=_codon.strand.value,
                                     _base_pair_representation=_codon.base_pair_representation, 
                                     _amino_acid_residue=_codon.amino_acid_residue, 
-                                    _amino_acid_position=_codon.amino_acid_position, 
+                                    _uniprot_position=_codon.uniprot_position,
                                     _chr=_codon.chr, 
                                     _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one, 
                                     _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two, 
@@ -200,7 +200,7 @@ class Test_SingleNucleotideVariant(unittest.TestCase):
                                     _uniprot_ac=_codon.uniprot_ac, _strand=_codon.strand.value,
                                     _base_pair_representation=_codon.base_pair_representation, 
                                     _amino_acid_residue=_codon.amino_acid_residue, 
-                                    _amino_acid_position=_codon.amino_acid_position, 
+                                    _uniprot_position=_codon.uniprot_position,
                                     _chr=_codon.chr, 
                                     _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one, 
                                     _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two, 

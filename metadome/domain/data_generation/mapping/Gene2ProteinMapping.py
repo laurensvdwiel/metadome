@@ -76,8 +76,6 @@ def createMappingOfGeneTranscriptionToTranslationToProtein(gene_transcription, m
                 strand = strand,
                 codon = codon,
                 codon_base_pair_position = codon_base_pair_position,
-                amino_acid_residue = amino_acid_residue,
-                amino_acid_position = aa_pos,
                 uniprot_position = uniprot_position,
                 uniprot_residue = uniprot_residue,
                 chromosome = str(cd.seqid),

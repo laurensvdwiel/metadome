@@ -179,7 +179,7 @@ def retrieve_pfam_aligned_codons(pfam_id, genome_build):
                             raise MalformedMappingsForAlignedCodonsPosition(
                                 "Encountered a malformed codon mapping for domain '"
                                 + str(pfam_id) + "' in gene '" + str(gene_id)
-                                + "', at amino_acid_position '" + str(uniprot_pos)
+                                + "', at uniprot_position '" + str(uniprot_pos)
                                 + "':" + str(e))
     else:
         _log.info("No mappings found for domain '" + str(pfam_id) + "' in genome build '" + str(genome_build) + "'")
@@ -306,7 +306,7 @@ def generate_pfam_aligned_codons(pfam_id): #@todo mark for deletion
                         except MalformedCodonException as e:
                             raise MalformedMappingsForAlignedCodonsPosition("Encountered a malformed codon mapping for domain '"
                                                                          +str(pfam_id)+"' in gene '"+str(gene_id)
-                                                                         +"', at amino_acid_position '"+str(uniprot_pos)
+                                                                         +"', at uniprot_position '"+str(uniprot_pos)
                                                                          +"':" + str(e))
    
     time_step = time.perf_counter()
