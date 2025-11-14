@@ -209,7 +209,9 @@ def analyse_transcript(transcript_id, genome_build):
     gene_region = GeneRegion(gene)
     
     # Retrieve the refseq ids    
-    refseq_ids = retrieve_refseq_identifiers_for_transcript(transcript_id)
+    refseq_ids = gene.refseq_transcript_id
+    if refseq_ids is None:
+        refseq_ids = []
 
     if not gene_region is None:
         # generate the positional annotation for this gene by first computing the tolerance landscape
