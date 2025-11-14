@@ -1,10 +1,8 @@
 import csv
 import logging
 import traceback
-import enum 
 import argparse
 import os
-import sys
 import gzip
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -130,7 +128,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=5000):
                                         _gencode_version=gencode_tr_version,
                                         _gencode_basic=safe_bool_conversion(row.get('GencodeBasic'), False),
                                         _genome_build=get_cleaned_str(row, 'genome_build'),
-                                        _refseq_transcript_id=get_cleaned_str(row, 'refseq_transcript_id'),
+                                        _refseq_transcript_id=get_cleaned_str(row, 'RefSeq'),
                                         _havana_gene_id=get_cleaned_str(row, 'havana_gene_id'),
                                         _havana_translation_id=get_cleaned_str(row, 'havana_translation_id'),
                                         _mane_transcript_type=get_cleaned_str(row, 'MANE'),
@@ -181,8 +179,6 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=5000):
                                 base_pair=get_cleaned_str(row, 'base_pair'),
                                 codon=get_cleaned_str(row, 'codon'),
                                 codon_base_pair_position=safe_int_conversion(row.get('codon_base_pair_position')),
-                                amino_acid_residue=get_cleaned_str(row, 'amino_acid_residue'),
-                                amino_acid_position=safe_int_conversion(row.get('amino_acid_position')),
                                 cDNA_position=safe_int_conversion(row.get('cDNA_position')),
                                 uniprot_residue=get_cleaned_str(row, 'uniprot_residue'),
                                 uniprot_position=safe_int_conversion(row.get('uniprot_position')),
@@ -197,6 +193,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=5000):
                     if current_interpro is not None and current_mapping is not None:
                         # Check if there is a meta-domain mapping
                         PFAM_consensus_pos_val = safe_int_conversion(row.get('PFAM_consensus_pos'))
+                        PFAM_consensus_length_val = safe_int_conversion(row.get('PFAM_consensus_length'))
 
                         if PFAM_consensus_pos_val is not None:
                             # Add meta-domain position to DB if not already present
@@ -207,7 +204,9 @@ def batch_load_data(csv_filepath, sqlalchemy_session, batch_size=5000):
                                         consensus_position=PFAM_consensus_pos_val, ext_db_id=ext_db_id_val).one_or_none()
                                 if not current_meta_domain_position:
                                     current_meta_domain_position = MetaDomainPosition(
-                                        consensus_position=PFAM_consensus_pos_val, ext_db_id=current_interpro.ext_db_id)
+                                        consensus_position=PFAM_consensus_pos_val,
+                                        consensus_length=PFAM_consensus_length_val,
+                                        ext_db_id=current_interpro.ext_db_id)
                                     sqlalchemy_session.add(current_meta_domain_position)
                                     metadomain_position_cache[metadomain_position_cache_key] = current_meta_domain_position
                                 else:
