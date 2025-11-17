@@ -140,9 +140,6 @@ def retrieve_metadomain_annotation(transcript_id, protein_position, domain_posit
         current_codon = meta_domain.get_codon_for_transcript_and_position(transcript_id, protein_position)
 
         for consensus_position in domain_positions[domain_id]:
-            # first correct the consensus_position
-            consensus_position -= 1
-
             # Retrieve the meta codons for this position
             meta_codons = meta_domain.get_codons_aligned_to_consensus_position(consensus_position)
             alignment_depth += len(meta_codons)
@@ -226,7 +223,7 @@ def analyse_transcript(transcript_id, genome_build):
                 pfam_domain = {}
                 pfam_domain["ID"] = domain.ext_db_id
                 pfam_domain["Name"] = domain.region_name
-                pfam_domain["start"] = domain.uniprot_start
+                pfam_domain["start"] = domain.uniprot_start+1 # adjust to +1
                 pfam_domain["stop"] = domain.uniprot_stop
 
                 try:
@@ -312,8 +309,7 @@ def analyse_transcript(transcript_id, genome_build):
 
 def create_meta_domain_entry(gene_region, metadomain, consensus_positions, protein_pos):
     metadom_entry = {}
-    # update the consensus positions to abide the users' expectation (start at 1, not zero)
-    metadom_entry['consensus_pos'] = [int(x) for x in np.array(consensus_positions)+1]
+    metadom_entry['consensus_pos'] = consensus_positions
     metadom_entry['normal_missense_variant_count'] = 0
     metadom_entry['normal_variant_count'] = 0
     metadom_entry['pathogenic_missense_variant_count'] = 0
