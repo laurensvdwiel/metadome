@@ -23,3 +23,5 @@ body {
 {
 	color: red;
 }
+
+.notification:empty, .notification:has(button.delete:only-child) { display: none !important; }

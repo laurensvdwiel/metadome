@@ -1,4 +1,6 @@
-from flask import Blueprint, g, render_template, redirect, url_for, session, jsonify, current_app
+from flask import Blueprint, g, render_template, redirect, url_for, session, jsonify, current_app, request, flash
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_mail import Message
 from metadome import get_version
 from metadome.controllers.job import retrieve_error
@@ -11,6 +13,7 @@ from metadome.default_settings import MAIL_SERVER, MAIL_DEFAULT_SENDER, SUPPORT_
 import json
 import traceback
 import time
+import requests
 from datetime import datetime
 
 import logging
@@ -18,6 +21,12 @@ import logging
 _log = logging.getLogger(__name__)
 
 bp = Blueprint('web', __name__)
+
+# Initialize limiter at the top of your routes file
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"]
+)
 
 @bp.route('/', methods=['GET'])
 def index():
@@ -158,11 +167,45 @@ def transcript(genome_build, gene_name, transcript_id):
     return dashboard_gene_name(genome_build, gene_name)
 
 @bp.route('/contact', methods=['GET', 'POST'])
+@limiter.limit("5 per minute; 30 per hour")
 def contact():
     if MAIL_SERVER is None or MAIL_DEFAULT_SENDER is None or SUPPORT_EMAIL is None:
         return render_template('error.html', msg="Mail server is not configured, therefore there can be no mails sent to support."), 500
     
     form = SupportForm()
+    if request.method == 'POST':
+        # 1. Check honeypot first
+        if request.form.get('website'):
+            _log.warning(f"Honeypot triggered from IP: {request.remote_addr}")
+            # Fake success to confuse bots
+            flash('Thank you for your message! We will get back to you soon.', 'success')
+            return redirect(url_for('web.index'))
+
+        # 2. Verify reCAPTCHA
+        recaptcha_token = request.form.get('recaptcha_token')
+        if current_app.config.get('RECAPTCHA_SECRET_KEY'):
+            try:
+                verify_response = requests.post(
+                    'https://www.google.com/recaptcha/api/siteverify',
+                    data={
+                        'secret': current_app.config['RECAPTCHA_SECRET_KEY'],
+                        'response': recaptcha_token
+                    },
+                    timeout=5
+                )
+
+                result = verify_response.json()
+                score = result.get('score', 0)
+
+                if not result.get('success') or score < current_app.config.get('RECAPTCHA_THRESHOLD', 0.5):
+                    _log.warning(f"reCAPTCHA failed - IP: {request.remote_addr}, Score: {score}")
+                    flash('Security verification failed. Please try again.', 'error')
+                    return render_template('contact.html', form=form)
+
+            except Exception as e:
+                _log.error(f"reCAPTCHA error: {str(e)}")
+                # Continue anyway but log the error
+
     if form.validate_on_submit():
         email = form.email.data
         body = form.body.data

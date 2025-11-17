@@ -1,7 +1,14 @@
+# Credentials
+import metadome.flask_app_credentials as credentials
+SECRET_KEY = credentials.SECRET_KEY_CRED
+GOOGLE_SITE_VERIFICATION = credentials.GOOGLE_SITE_VERIFICATION
+GOOGLE_ANALYTICS_ID = credentials.GOOGLE_ANALYTICS_ID
+RECAPTCHA_SITE_KEY =  credentials.RECAPTCHA_SITE_KEY
+RECAPTCHA_SECRET_KEY = credentials.RECAPTCHA_SECRET_KEY
+RECAPTCHA_THRESHOLD = credentials.RECAPTCHA_THRESHOLD
+
 # Flask settings
-from metadome.flask_app_credentials import SECRET_KEY_CRED
 DEBUG = False
-SECRET_KEY = SECRET_KEY_CRED
 
 # FLask-SQLAchemy settings
 import os

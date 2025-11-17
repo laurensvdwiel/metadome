@@ -14,6 +14,7 @@
       </ul>
       </p>
       <hr>
+        <div class="notification is-{{ 'danger' if category == 'error' else category }}"> <button class="delete"></button> {{ message }} </div>
       <form id="metadom_contact_form" method="post"
         action="{{ url_for('web.contact') }}" role="form"
         enctype="multipart/form-data">
@@ -30,9 +31,11 @@
           <div class="control">{{ form.body(class_='textarea',
             placeholder='Please provide a description', rows='10') }}</div>
         </div>
+          <div style="position: absolute; left: -5000px;" aria-hidden="true"> <input type="text" name="website" tabindex="-1" autocomplete="off"> </div>
+          <input type="hidden" name="recaptcha_token" id="recaptcha_token">
         <hr>
         <div class="control is-expanded has-text-centered">
-          <button class="button is-info is-medium" type="submit">
+          <button class="button is-info is-medium" type="submit" id="submit-button">
             Submit</button>
         </div>
         
@@ -42,4 +45,12 @@
 </section>
 
 
-{% endblock %} {% block js %} {% endblock %}
+{% endblock %}
+{% block js %}
+
+<script> document.addEventListener('DOMContentLoaded', () => { (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => { const $notification = $delete.parentNode; $delete.addEventListener('click', () => { $notification.parentNode.removeChild($notification); }); }); });
+document.getElementById('metadom_contact_form').addEventListener('submit', function(e) { e.preventDefault(); const submitBtn = document.getElementById('submit-button'); submitBtn.classList.add('is-loading'); submitBtn.disabled = true;
+grecaptcha.ready(function() { grecaptcha.execute('{{ config.RECAPTCHA_SITE_KEY }}', {action: 'contact'}) .then(function(token) { document.getElementById('recaptcha_token').value = token; document.getElementById('metadom_contact_form').submit(); }); }); });
+</script>
+
+{% endblock %}

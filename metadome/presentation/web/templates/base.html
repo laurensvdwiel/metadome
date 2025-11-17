@@ -12,18 +12,27 @@
 
 <title>{% block title %}MetaDome web server{% endblock %}</title>
 
+<!-- recaptcha v3 -->
+{% if config.RECAPTCHA_SITE_KEY %}
+<script src="https://www.google.com/recaptcha/api.js?render={{ config.RECAPTCHA_SITE_KEY }}"></script>
+{% endif %}
+
 <!-- Needed for ownership verification in Google -->
-<meta name="google-site-verification" content="kH6XbXRGjfsUufCNeykbKHPK9DfQebMHAVdgHYzxVII" />
+{% if config.GOOGLE_SITE_VERIFICATION %}
+<meta name="google-site-verification" content="{{ config.GOOGLE_SITE_VERIFICATION }}" />
+{% endif %}
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-127082123-1"></script>
+{% if config.GOOGLE_ANALYTICS_ID %}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ config.GOOGLE_ANALYTICS_ID }}"></script>
 <script>
 	 window.dataLayer = window.dataLayer || [];
 	 function gtag(){dataLayer.push(arguments);}
 	 gtag('js', new Date());
 	
-	 gtag('config', 'UA-127082123-1');
+	 gtag('config', '{{ config.GOOGLE_ANALYTICS_ID }}');
 </script>
+{% endif %}
 
 <script>
 	$(document).ready(function() {
