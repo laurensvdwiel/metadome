@@ -41,6 +41,7 @@ def get_transcript_ids_for_gene(genome_build, gene_name):
             transcript_entry['refseq_nm_numbers'] = ""
         else:
             transcript_entry['refseq_nm_numbers'] = ", ".join(nm_number for nm_number in t.refseq_transcript_id.split(','))
+        transcript_entry['mane_transcript_type'] = t.mane_transcript_type if not t.mane_transcript_type is None else ""
         transcript_entry['has_protein_data'] = not t.protein_id is None
         transcript_results.append(transcript_entry)
 

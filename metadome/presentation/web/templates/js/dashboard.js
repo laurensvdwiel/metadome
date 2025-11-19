@@ -397,13 +397,13 @@ tour.init();
 
 // Function to handle receiving all transcripts belonging to a gene name from the webserver
 function getTranscript(geneName, genomeBuild, transcript_id_results) {
-	if (global_debugging) {console.info('%c Function getTranscript(geneName, genomeBuild, transcript_id_results) called, with geneName='+geneName+', genomeBuild='+genomeBuild+', transcript_id_results='+ transcript_id_results, info_style);}
+    if (global_debugging) {console.info('%c Function getTranscript(geneName, genomeBuild, transcript_id_results) called, with geneName='+geneName+', genomeBuild='+genomeBuild+', transcript_id_results='+ transcript_id_results, info_style);}
 
     // Clear any previous transcripts in user interface
-	clearTranscripts();
+    clearTranscripts();
 
     // Check if there are any transcripts retrieved
-	if (typeof geneName !== 'undefined' && geneName.length > 0) {
+    if (typeof geneName !== 'undefined' && geneName.length > 0) {
 
         // Check if there are any messages to be displayed
         document.getElementById("geneNameHelpMessage").innerHTML = transcript_id_results.message;
@@ -418,36 +418,69 @@ function getTranscript(geneName, genomeBuild, transcript_id_results) {
             $("#getToleranceButton").removeClass('is-static');
             var dropdown = document.getElementById("gtID");
             dropdown.setAttribute('class', 'dropdown');
-            // Sort the results by sequence length
+
+            // Sort the results by sequence length (longest first)
             transcript_id_results.transcript_ids.sort(function(a,b){return (a.aa_length<b.aa_length) ? 1 : ((b.aa_length<a.aa_length) ? -1: 0);});
+
+            var maneSelectIndex = -1; // Track MANE_Select transcript index
 
             // Add the transcripts as options
             for (var i = 0; i < transcript_id_results.transcript_ids.length; i++) {
                 var opt = new Option();
                 opt.value = i;
-                if ( transcript_id_results.transcript_ids[i].refseq_nm_numbers === ""){
-                    opt.text = transcript_id_results.transcript_ids[i].gencode_id + " ("+ transcript_id_results.transcript_ids[i].aa_length +"aa)" ;
-                }
-                else {
-                    opt.text = transcript_id_results.transcript_ids[i].gencode_id + " / "+ transcript_id_results.transcript_ids[i].refseq_nm_numbers+" ("+ transcript_id_results.transcript_ids[i].aa_length +"aa)" ;
+
+                // Build the display text
+                var displayText = transcript_id_results.transcript_ids[i].gencode_id;
+
+                if (transcript_id_results.transcript_ids[i].refseq_nm_numbers !== "") {
+                    displayText += " / " + transcript_id_results.transcript_ids[i].refseq_nm_numbers;
                 }
 
-                if (!transcript_id_results.transcript_ids[i].has_protein_data){
+                displayText += " (" + transcript_id_results.transcript_ids[i].aa_length + "aa)";
+
+                // Add MANE transcript type if available and not empty
+                if (transcript_id_results.transcript_ids[i].mane_transcript_type &&
+                    transcript_id_results.transcript_ids[i].mane_transcript_type !== "") {
+                    displayText += " [" + transcript_id_results.transcript_ids[i].mane_transcript_type + "]";
+
+                    // Check if this is MANE_Select (note the capital S)
+                    if (transcript_id_results.transcript_ids[i].mane_transcript_type === "MANE_Select") {
+                        maneSelectIndex = i;
+                    }
+                }
+
+                opt.text = displayText;
+
+                if (!transcript_id_results.transcript_ids[i].has_protein_data) {
                     opt.disabled = true;
                 }
 
                 dropdown.options.add(opt);
             }
-        } else{
+
+            // Select MANE_Select transcript by default if available and has protein data
+            if (maneSelectIndex !== -1 && transcript_id_results.transcript_ids[maneSelectIndex].has_protein_data) {
+                dropdown.selectedIndex = maneSelectIndex;
+            } else {
+                // Fallback to first available transcript with protein data
+                for (var i = 0; i < transcript_id_results.transcript_ids.length; i++) {
+                    if (transcript_id_results.transcript_ids[i].has_protein_data) {
+                        dropdown.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+        } else {
             $("#geneName").addClass('is-danger');
             $("#geneName").removeClass('is-success');
             $("#geneNameHelpMessage").addClass('is-danger');
             $("#geneNameHelpMessage").removeClass('is-success');
             $("#getToleranceButton").addClass('is-static');
             $("#getToleranceButton").removeClass('is-info');
-            resetDropdown()
+            resetDropdown();
         }
-	}
+    }
 }
 
 // function to clear all items in the transcript dropdown
