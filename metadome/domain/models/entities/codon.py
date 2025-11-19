@@ -20,6 +20,9 @@ class Codon(object):
     uniprot_position                       int the amino acid position of this codon in the protein or gene translation
     chr                                    str the chromosome
     regions                                tuple the range of chromosomal positions of this codon
+    exon_number_base_pair_one              int corresponding to exon number for the first base pair in the chromosome
+    exon_number_base_pair_two              int corresponding to exon number for the second base pair in the chromosome
+    exon_number_base_pair_three            int corresponding to exon number for the third base pair in the chromosome
     chromosome_position_base_pair_one      int the position corresponding to the first base pair in the chromosome
     chromosome_position_base_pair_two      int the position corresponding to the second base pair in the chromosome
     chromosome_position_base_pair_three    int the position corresponding to the third base pair in the chromosome
@@ -50,6 +53,7 @@ class Codon(object):
         mappings_per_chromosome[self.chromosome_position_base_pair_one] = {}
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['base_pair_representation'] = self.base_pair_representation
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['codon_base_pair_position'] = 0
+        mappings_per_chromosome[self.chromosome_position_base_pair_one]['exon_number'] = self.exon_number_base_pair_one
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['uniprot_position'] = self.uniprot_position
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['base_pair'] = self.base_pair_representation[0]
         mappings_per_chromosome[self.chromosome_position_base_pair_one]['gencode_transcription_id'] = self.gencode_transcription_id
@@ -58,6 +62,7 @@ class Codon(object):
         mappings_per_chromosome[self.chromosome_position_base_pair_two] = {}
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['base_pair_representation'] = self.base_pair_representation
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['codon_base_pair_position'] = 1
+        mappings_per_chromosome[self.chromosome_position_base_pair_two]['exon_number'] = self.exon_number_base_pair_two
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['uniprot_position'] = self.uniprot_position
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['base_pair'] = self.base_pair_representation[1]
         mappings_per_chromosome[self.chromosome_position_base_pair_two]['gencode_transcription_id'] = self.gencode_transcription_id
@@ -66,6 +71,7 @@ class Codon(object):
         mappings_per_chromosome[self.chromosome_position_base_pair_three] = {}
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['base_pair_representation'] = self.base_pair_representation
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['codon_base_pair_position'] = 2
+        mappings_per_chromosome[self.chromosome_position_base_pair_three]['exon_number'] = self.exon_number_base_pair_three
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['uniprot_position'] = self.uniprot_position
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['base_pair'] = self.base_pair_representation[2]
         mappings_per_chromosome[self.chromosome_position_base_pair_three]['gencode_transcription_id'] = self.gencode_transcription_id
@@ -75,7 +81,15 @@ class Codon(object):
     def three_letter_amino_acid_residue(self):
         """Returns a three letter representation of the amino acid residue for this codon"""
         return Codon.one_to_three_letter_amino_acid_residue(self.amino_acid_residue)
-    
+
+    def pretty_print_exon_numbers(self):
+        """Returns 'Exon x' for a codon spanning one exon or 'Exon x,y'/'Exon x,y,z' for a codon spanning multiple exons"""
+        exon_numbers = list()
+        exon_numbers.append(self.exon_number_base_pair_one)
+        exon_numbers.append(self.exon_number_base_pair_two)
+        exon_numbers.append(self.exon_number_base_pair_three)
+        return ", ".join(str(exon_number) for exon_number in exon_numbers)
+
     def pretty_print_cDNA_region(self):
         return "c."+str(self.cDNA_position_one)+"-"+str(self.cDNA_position_three)
     
@@ -86,7 +100,10 @@ class Codon(object):
     def __init__(self, _gencode_transcription_id, _uniprot_ac, 
                              _strand, _base_pair_representation, 
                              _amino_acid_residue, _uniprot_position,
-                             _chr, _chromosome_position_base_pair_one, 
+                             _chr, _exon_number_base_pair_one,
+                             _exon_number_base_pair_two,
+                             _exon_number_base_pair_three,
+                             _chromosome_position_base_pair_one,
                              _chromosome_position_base_pair_two, 
                              _chromosome_position_base_pair_three,
                              _cDNA_position_one, _cDNA_position_two,
@@ -105,6 +122,9 @@ class Codon(object):
         self.amino_acid_residue = _amino_acid_residue
         self.uniprot_position = _uniprot_position
         self.chr = _chr
+        self.exon_number_base_pair_one = _exon_number_base_pair_one
+        self.exon_number_base_pair_two = _exon_number_base_pair_two
+        self.exon_number_base_pair_three = _exon_number_base_pair_three
         self.chromosome_position_base_pair_one = _chromosome_position_base_pair_one
         self.chromosome_position_base_pair_two = _chromosome_position_base_pair_two
         self.chromosome_position_base_pair_three = _chromosome_position_base_pair_three
@@ -166,7 +186,12 @@ class Codon(object):
         _cDNA_position_one = _mappings[0].cDNA_position
         _cDNA_position_two = _mappings[1].cDNA_position
         _cDNA_position_three = _mappings[2].cDNA_position
-        
+
+        # Add the exon numbers for each basepair
+        _exon_number_base_pair_one = _mappings[0].exon_number
+        _exon_number_base_pair_two = _mappings[1].exon_number
+        _exon_number_base_pair_three = _mappings[2].exon_number
+
         # Add the chromosome positions for each basepair
         _chromosome_position_base_pair_one = _mappings[0].chromosome_position
         _chromosome_position_base_pair_two = _mappings[1].chromosome_position
@@ -182,7 +207,10 @@ class Codon(object):
                       _base_pair_representation=_base_pair_representation,
                       _amino_acid_residue=_amino_acid_residue, 
                       _uniprot_position=_uniprot_position,
-                      _chr=_chr, _chromosome_position_base_pair_one=_chromosome_position_base_pair_one, 
+                      _chr=_chr, _exon_number_base_pair_one=_exon_number_base_pair_one,
+                      _exon_number_base_pair_two=_exon_number_base_pair_two,
+                      _exon_number_base_pair_three=_exon_number_base_pair_three,
+                      _chromosome_position_base_pair_one=_chromosome_position_base_pair_one,
                       _chromosome_position_base_pair_two=_chromosome_position_base_pair_two, 
                       _chromosome_position_base_pair_three=_chromosome_position_base_pair_three,
                       _cDNA_position_one=_cDNA_position_one,
@@ -208,6 +236,9 @@ class Codon(object):
                 _chr = 'chr' + _d['chr'][3:]
             else:
                 _chr = 'chr'+_d['chr']
+            _exon_number_base_pair_one = _d['exon_number_base_pair_one']
+            _exon_number_base_pair_two = _d['exon_number_base_pair_two']
+            _exon_number_base_pair_three = _d['exon_number_base_pair_three']
             _chromosome_position_base_pair_one = _d['chromosome_position_base_pair_one']
             _chromosome_position_base_pair_two = _d['chromosome_position_base_pair_two']
             _chromosome_position_base_pair_three = _d['chromosome_position_base_pair_three']
@@ -220,7 +251,10 @@ class Codon(object):
                       _base_pair_representation=_base_pair_representation,
                       _amino_acid_residue=_amino_acid_residue, 
                       _uniprot_position=_uniprot_position,
-                      _chr=_chr, _chromosome_position_base_pair_one=_chromosome_position_base_pair_one, 
+                      _chr=_chr, _exon_number_base_pair_one=_exon_number_base_pair_one,
+                      _exon_number_base_pair_two=_exon_number_base_pair_two,
+                      _exon_number_base_pair_three=_exon_number_base_pair_three,
+                      _chromosome_position_base_pair_one=_chromosome_position_base_pair_one,
                       _chromosome_position_base_pair_two=_chromosome_position_base_pair_two, 
                       _chromosome_position_base_pair_three=_chromosome_position_base_pair_three,
                       _cDNA_position_one=_cDNA_position_one,
@@ -241,6 +275,9 @@ class Codon(object):
         _d['amino_acid_residue'] = self.amino_acid_residue
         _d['uniprot_position'] = self.uniprot_position
         _d['chr'] = self.chr
+        _d['exon_number_base_pair_one'] = self.exon_number_base_pair_one
+        _d['exon_number_base_pair_two'] = self.exon_number_base_pair_two
+        _d['exon_number_base_pair_three'] = self.exon_number_base_pair_three
         _d['chromosome_position_base_pair_one'] = self.chromosome_position_base_pair_one
         _d['chromosome_position_base_pair_two'] = self.chromosome_position_base_pair_two
         _d['chromosome_position_base_pair_three'] = self.chromosome_position_base_pair_three
@@ -257,6 +294,7 @@ class Codon(object):
         json_entry['strand'] = self.strand.value
         json_entry['protein_pos'] = self.uniprot_position
         json_entry['cdna_pos'] = self.pretty_print_cDNA_region()
+        json_entry['exon_numbers'] = self.pretty_print_exon_numbers()
         json_entry['chr'] = self.chr
         json_entry['chr_positions'] = self.pretty_print_chr_region()
         
