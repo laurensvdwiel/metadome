@@ -34,6 +34,12 @@ var main_marginAnnotations = {
 	bottom : 120,
 	left : 80
 };
+var main_marginExons = {
+    top: 390,
+    right: 20,
+    bottom: 80,
+    left: 80
+};
 var main_marginContext = {
 	top : 410,
 	right : 20,
@@ -51,6 +57,7 @@ var main_heightMarginPositionInfo = main_outerHeight - main_marginPositionInfo.t
 var main_heightContext = main_outerHeight - main_marginContext.top - main_marginContext.bottom;
 var main_heightAnnotations = main_outerHeight - main_marginAnnotations.top
 		- main_marginAnnotations.bottom;
+var main_heightExons = main_outerHeight - main_marginExons.top - main_marginExons.bottom;
 
 // Scale the axis
 var main_x = d3.scaleLinear().range([ 40, main_width -40 ]).nice();
@@ -99,6 +106,9 @@ var maxTolerance = 1.8;
 // indicates if the metadomain landscape is visible
 var metadomain_graph_visible = true;
 
+// indicates if the exons are visible
+var exons_visible = false;
+
 // indicates if clinvar variants are annotated in the schematic protein representation
 var clinvar_variants_visible = false;
 
@@ -137,11 +147,46 @@ var toleranceColorGradient = [ {
 
 // Define a color scale for domains (can be placed at the top with other global variables)
 const domainColorScale = d3.scaleOrdinal()
-    .range([ // c014e2
-        '#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00',
-        '#ffff33', '#a65628', '#f781bf', '#999999', '#66c2a5',
-        '#fc8d62', '#8da0cb', '#e78ac3', '#a6d854', '#ffd92f',
-        '#e5c494', '#b3b3b3', '#8dd3c7', '#ffffb3', '#bebada'
+    .range([
+        '#9467bd', // purple
+        '#1f77b4', // blue
+        '#17becf', // cyan
+        '#7f7f7f', // gray
+        '#aec7e8', // light blue
+        '#c5b0d5', // light purple
+        '#c7c7c7', // light gray
+        '#9edae5', // light cyan
+        '#393b79', // dark blue
+        '#6b6ecf', // medium purple
+        '#9c9ede', // light purple-blue
+        '#637939', // dark olive-gray
+        '#8ca252', // muted olive
+        '#b5cf6b', // light olive
+        '#cedb9c', // very light olive
+        '#1b9e77', // teal
+        '#7570b3', // slate purple
+        '#d95f02', // burnt orange
+        '#666666', // medium gray
+        '#5254a3'  // dark slate blue
+    ]);
+
+const exonColorScale = d3.scaleOrdinal()
+    .range([
+        '#ff7f0e', // orange
+        '#8c564b', // brown
+        '#e377c2', // pink
+        '#bcbd22', // olive
+        '#98df8a', // light green
+        '#ff9896', // light red
+        '#d62728', // red
+        '#2ca02c', // green
+        '#ffbb78', // light orange
+        '#c49c94', // light brown
+        '#f7b6d3', // light pink
+        '#dbdb8d', // light olive
+        '#843c39', // dark brown
+        '#8c6d31', // dark brown-orange
+        '#a55194'  // dark pink-purple
     ]);
 
 /*******************************************************************************
@@ -233,6 +278,13 @@ var domain_details_position_tip = d3.tip()
 	    return "<span> "+ d +"</span>";
 	});
 
+// Define tooltip for exons
+var exonTip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function(event, d) {
+        return "<span>Exon " + d.exon + "<br/>Positions: p." + d.start + "-" + d.end + ", c." + d.cdna_start + "-" + d.cdna_end + "</span>";
+    });
 
 // Define tooltip for positions
 var positionTip = d3.tip()
@@ -240,7 +292,13 @@ var positionTip = d3.tip()
 	.offset([ -10, 0 ])
 	.html(function(event, d) {
 	    var positionTip_str = "<span>";
-	    positionTip_str += "Position: p." + d.values[0].protein_pos + " " + d.values[0].cdna_pos + "</br>";
+
+        // Parse and simplify exon numbers
+	    const exonNumbers = d.values[0].exon_numbers.split(', ').map(num => parseInt(num.trim()));
+	    const uniqueExons = [...new Set(exonNumbers)].sort((a, b) => a - b);
+	    const exonDisplay = uniqueExons.length === 1 ? `Exon ${uniqueExons[0]}` : `Exon ${uniqueExons.join(',')}`;
+
+	    positionTip_str += "Position: p." + d.values[0].protein_pos + " " + d.values[0].cdna_pos + " " + exonDisplay + "</br>";
 	    positionTip_str += "Codon: " + d.values[0].ref_codon + "</br>";
 	    positionTip_str += "Residue: " + d.values[0].ref_aa_triplet + "</br>";
 	    positionTip_str += "Tolerance score (dn/ds): "+ (Math.round((d.values[0].sw_dn_ds)*100)/100) +' ('+tolerance_rating(d.values[0].sw_dn_ds) +')';
@@ -369,6 +427,9 @@ function createGraph(obj) {
 
 	// Add schematic protein overview as a custom Axis
 	createSchematicProtein(domain_metadomain_coverage, dataGroup, obj.transcript_id);
+
+    // Create exon visualization
+    createExonVisualization(dataGroup);
 
 	// Finally draw the context zoom
 	addContextZoomView(domain_data, dataGroup.length);
@@ -808,6 +869,149 @@ function annotateDomains(protDomain, tolerance_data, domain_metadomain_coverage)
         });
 }
 
+// Draw exon blocks
+function createExonVisualization(groupedTolerance) {
+    // Extract exon information from the data
+    const exonData = [];
+    const exonMap = new Map();
+
+    groupedTolerance.forEach(d => {
+        const exonInfo = d.values[0].exon_numbers;
+        if (exonInfo) {
+            const exonNumbers = d.values[0].exon_numbers.split(', ').map(num => parseInt(num.trim()));
+            const uniqueExons = [...new Set(exonNumbers)]
+
+            // Extract cDNA triplet positions (assuming format like "c.123-456")
+            const cdnaMatch = d.values[0].cdna_pos.match(/c\.(\d+)-(\d+)/);
+            if (cdnaMatch) {
+                const cdnaStart = parseInt(cdnaMatch[1]);
+                const cdnaEnd = parseInt(cdnaMatch[2]);
+                // Calculate the middle position (assuming it's cdnaStart + 1)
+                const cdnaMiddle = cdnaStart + 1;
+                const cdnaPositions = [cdnaStart, cdnaMiddle, cdnaEnd];
+
+                uniqueExons.forEach(exonNum => {
+                    // Determine which cDNA positions belong to this exon
+                    const exonCdnaPositions = [];
+                    exonNumbers.forEach((baseExon, index) => {
+                        if (baseExon === exonNum) {
+                            exonCdnaPositions.push(cdnaPositions[index]);
+                        }
+                    });
+
+                    const minCdna = Math.min(...exonCdnaPositions);
+                    const maxCdna = Math.max(...exonCdnaPositions);
+
+                    if (!exonMap.has(exonNum)) {
+                        exonMap.set(exonNum, {
+                            exon: exonNum,
+                            start: d.values[0].protein_pos,
+                            end: d.values[0].protein_pos,
+                            cdna_start: minCdna,
+                            cdna_end: maxCdna,
+                            positions: [d.values[0].protein_pos]
+                        });
+                    } else {
+                        const existing = exonMap.get(exonNum);
+                        existing.start = Math.min(existing.start, d.values[0].protein_pos);
+                        existing.end = Math.max(existing.end, d.values[0].protein_pos);
+                        existing.cdna_start = Math.min(existing.cdna_start, minCdna);
+                        existing.cdna_end = Math.max(existing.cdna_end, maxCdna);
+                        existing.positions.push(d.values[0].protein_pos);
+                    }
+                });
+            }
+        }
+    });
+
+    // Convert map to array and sort by exon number
+    const sortedExons = Array.from(exonMap.values()).sort((a, b) => a.exon - b.exon);
+
+    // Set the domain for the global color scale
+    exonColorScale.domain(sortedExons.map(d => d.exon));
+
+    // Create exon visualization group
+    const exonViz = main_svg.append("g")
+        .attr("class", "exon-visualization")
+        .attr("id", "exon_blocks")
+        .attr("transform", `translate(${main_marginExons.left}, ${main_marginExons.top})`);
+
+    // Call the tooltip
+    main_svg.call(exonTip);
+
+    // Draw exon blocks (rectangles)
+    exonViz.selectAll(".exon-block")
+        .data(sortedExons)
+        .enter()
+        .append("rect")
+        .attr("class", "exon-block")
+        .attr("x", d => main_x(d.start - 0.5))
+        .attr("y", 5)
+        .attr("width", d => main_x(d.end + 0.5) - main_x(d.start - 0.5))
+        .attr("height", main_heightExons - 10)
+        .attr("rx", 3)
+        .attr("ry", 3)
+        .style("fill", d => exonColorScale(d.exon))  // Use the color scale here
+        .style("stroke", "black")
+        .style("stroke-width", 1)
+        .style("opacity", 0.8)
+        .style("clip-path", "url(#clip)")
+        .on("mouseover", function(event, d) {
+            if (exons_visible) {  // Only show tooltip if exons are visible
+                exonTip.show(event, d);
+            }
+            d3.select(this)
+                .style("opacity", 1)
+                .style("stroke-width", 2)
+                .moveToFront();
+            d3.selectAll(".exon-label")
+                .filter(labelData => labelData.exon === d.exon)
+                .moveToFront();
+        })
+        .on("mouseout", function(event, d) {
+            exonTip.hide();
+            d3.select(this)
+                .style("opacity", 0.8)
+                .style("stroke-width", 1);
+        });
+
+    // Add exon labels (text)
+    exonViz.selectAll(".exon-label")
+        .data(sortedExons)
+        .enter()
+        .append("text")
+        .attr("class", "exon-label")
+        .attr("x", d => main_x((d.start + d.end) / 2))
+        .attr("y", main_heightExons / 2)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .style("font-weight", "bold")
+        .style("fill", "black")  // Changed to black
+        .style("pointer-events", "none")
+        .style("user-select", "none")
+        .text(d => d.exon)
+        .style("clip-path", "url(#clip)");
+
+    // Add section label
+    main_svg.append("text")
+        .attr("text-anchor", "left")
+        .attr("x", 0)
+        .attr("y", main_marginExons.top + (main_heightExons / 2))
+        .attr("dy", 0)
+        .attr("class", "label")
+        .attr("id", "exon_section_label")  // Add ID for easier selection
+        .text("Exons")
+        .style("pointer-events", "none")
+        .style("user-select", "none");
+
+    // Add initial visibility state
+    if (!exons_visible) {
+        d3.select("#exon_blocks").style("opacity", 0);
+        d3.select("#exon_section_label").style("opacity", 0);
+    }
+}
+
 // Draw the context area for zooming
 function addContextZoomView(domain_data, number_of_positions) {
     // Pre-calculate domain positions for better performance
@@ -1060,6 +1264,21 @@ function draw_position_schematic_protein(d, element){
 	}
 }
 
+function toggleExonVisualization(exon_checkbox) {
+    const exonViz = d3.select("#exon_blocks");
+    const exonLabel = d3.select("#exon_section_label"); // Use the ID for more reliable selection
+
+    exons_visible = exon_checkbox.checked;
+
+    if (exons_visible) {
+        exonViz.style("opacity", 1);
+        exonLabel.style("opacity", 1);
+    } else {
+        exonViz.style("opacity", 0);
+        exonLabel.style("opacity", 0);
+    }
+}
+
 function toggleClinvarVariantsInProtein(clinvar_checkbox){
 	var focusAxis = d3.select("#tolerance_axis");
 
@@ -1145,6 +1364,21 @@ function rescaleLandscape() {
     domains.selectAll(".clinvar")
         .attr("x1", d => main_x(d.protein_pos))
         .attr("x2", d => main_x(d.protein_pos));
+
+    // Exon visualization updates
+    const exonViz = d3.select("#exon_blocks");
+    exonViz.selectAll(".exon-block")
+        .attr("x", d => main_x(d.start - 0.5))
+        .attr("width", d => main_x(d.end + 0.5) - main_x(d.start - 0.5));
+
+    exonViz.selectAll(".exon-label")
+        .attr("x", function(d) {
+            const currentDomain = main_x.domain();  // Get current zoom range
+            const visibleStart = Math.max(d.start, currentDomain[0]);
+            const visibleEnd = Math.min(d.end, currentDomain[1]);
+            const visibleCenter = (visibleStart + visibleEnd) / 2;
+            return main_x(visibleCenter);
+        });
 }
 
 //This function resets the zooming

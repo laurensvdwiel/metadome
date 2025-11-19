@@ -584,15 +584,19 @@ function getVisualizationResult(transcript_id, genome_build) {
             var geneDetails = document.getElementById("geneDetails");
             
             var refSeqLinks = "";
-            if (obj.refseq_ids.length > 0) {
-            	refSeqLinks += "RefSeq: "; 	
-	            for (var i = 0; i < obj.refseq_ids.length; i++){
-	            	if (i > 0){
-	            		refSeqLinks += ', ';
-	            	}
-	            	refSeqLinks += '<a href="https://www.ncbi.nlm.nih.gov/nuccore/'+obj.refseq_ids[i]+'" target="_blank">'+obj.refseq_ids[i]+'</a>';
-	            }
-	            refSeqLinks += ','
+            if (obj.refseq_ids && obj.refseq_ids.trim().length > 0) {
+                refSeqLinks += "RefSeq: ";
+
+                // Split by comma and trim whitespace from each ID
+                const refseqArray = obj.refseq_ids.split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+                for (var i = 0; i < refseqArray.length; i++){
+                    if (i > 0){
+                        refSeqLinks += ', ';
+                    }
+                    refSeqLinks += '<a href="https://www.ncbi.nlm.nih.gov/nuccore/'+refseqArray[i]+'" target="_blank">'+refseqArray[i]+'</a>';
+                }
+                refSeqLinks += ',';
             }
 
             //@todo: add behaviour for other genome builds
@@ -692,7 +696,7 @@ function FillPositionalInformation(domain_metadomain_coverage, position_data, da
     document.getElementById("positional_information_overlay_body").innerHTML += '<p>Gene: '+ position_data.values[0].chr_positions +'</p>';
     document.getElementById("positional_information_overlay_body").innerHTML += '<p>Protein: p.'+ position_data.values[0].protein_pos +' '+ position_data.values[0].ref_aa_triplet+'</p>';
     document.getElementById("positional_information_overlay_body").innerHTML += '<p>cDNA: '+ position_data.values[0].cdna_pos +' '+ position_data.values[0].ref_codon +'</p>';
-    
+    document.getElementById("positional_information_overlay_body").innerHTML += '<p>Exon: '+ position_data.values[0].exon_numbers +'</p>';
     document.getElementById("positional_information_overlay_body").innerHTML += '<p>Tolerance score (dn/ds): '+ (Math.round((position_data.values[0].sw_dn_ds)*100)/100) +' ('+tolerance_rating(position_data.values[0].sw_dn_ds) +')</p>';
     
     
