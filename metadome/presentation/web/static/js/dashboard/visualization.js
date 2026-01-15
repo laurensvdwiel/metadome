@@ -226,26 +226,6 @@ function calculateDomainWidth(d) {
     return main_x2(d.stop + 1) - main_x2(d.start);
 }
 
-// Prototype extensions
-if (!d3.selection.prototype.moveToFront) {
-    d3.selection.prototype.moveToFront = function() {
-        return this.each(function() {
-            this.parentNode.appendChild(this);
-        });
-    };
-}
-
-if (!d3.selection.prototype.moveToBack) {
-    d3.selection.prototype.moveToBack = function() {
-        return this.each(function() {
-            var firstChild = this.parentNode.firstChild;
-            if (firstChild) {
-                this.parentNode.insertBefore(this, firstChild);
-            }
-        });
-    };
-}
-
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -517,17 +497,17 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .on("click", function(event, d) {
         createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
     })
-    .on("mouseover", function(event, d) {
+    .on("pointerenter", function(event, d) {
         if (metadomain_graph_visible){
+            event.stopPropagation();
             domain_details_position_tip.show(event, "Homologous gnomAD missense count: " + d._preCalc.normal);
-            d3.select(this).style("fill", "orange");
-            d3.select(this).moveToFront();
+            d3.select(this).style("fill", "orange").raise();
         }
     })
-    .on("mouseout", function(event, d) {
+    .on("pointerleave", function(event, d) {
+        event.stopPropagation();
         domain_details_position_tip.hide();
-        d3.select(this).style("fill", "green");
-        d3.select(this).moveToBack();
+        d3.select(this).style("fill", "green").lower();
     });
 
     // Draw the meta-domain pathogenic missense variation barplot
@@ -553,17 +533,17 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .on("click", function(event, d) {
         createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
     })
-    .on("mouseover", function(event, d) {
+    .on("pointerenter", function(event, d) {
         if (metadomain_graph_visible){
+            event.stopPropagation();
             domain_details_position_tip.show(event, "Homologous pathogenic missense count: " + d._preCalc.pathogenic);
-            d3.select(this).style("fill", "orange");
-            d3.select(this).moveToFront();
+            d3.select(this).style("fill", "orange").raise();
         }
     })
-    .on("mouseout", function(event, d) {
+    .on("pointerleave", function(event, d) {
+        event.stopPropagation();
         domain_details_position_tip.hide();
-        d3.select(this).style("fill", "red");
-        d3.select(this).moveToBack();
+        d3.select(this).style("fill", "red").lower();
     });
 
     // Draw not aligned barplots
@@ -584,17 +564,17 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     })
     .style("clip-path", "url(#clip)")
     .style("fill", "black")
-    .on("mouseover", function(event, d) {
+    .on("pointerenter", function(event, d) {
         if (metadomain_graph_visible){
+            event.stopPropagation();
             domain_details_position_tip.show(event, "Residue is not aligned to homologues");
-            d3.select(this).style("fill", "orange");
-            d3.select(this).moveToFront();
+            d3.select(this).style("fill", "orange").raise();
         }
     })
-    .on("mouseout", function(event, d) {
+    .on("pointerleave", function(event, d) {
+        event.stopPropagation();
         domain_details_position_tip.hide();
-        d3.select(this).style("fill", "black");
-        d3.select(this).moveToBack();
+        d3.select(this).style("fill", "black").lower();
     });
 }
 
@@ -731,18 +711,21 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
 
     // Use event delegation for better performance
     focusAxiselements.selectAll(".toleranceAxisTick")
-        .on("mouseover", function(event, d) {
+        .on("pointerenter", function(event, d) {
+            event.stopPropagation();
             if (!d.values[0].selected) {
                 d3.select(this).style("fill", "orange").style("fill-opacity", 0.5);
             }
             positionTip.show(event, d);
             d3.select(this).style("cursor", "pointer");
         })
-        .on("mouseout", function(event, d) {
+        .on("pointerleave", function(event, d) {
+            event.stopPropagation();
             if (!d.values[0].selected) {
                 d3.select(this).style("fill", draw_position_schematic_protein(d, this));
             }
             positionTip.hide();
+            d3.select(this).style("cursor", "default");
         })
         .on("click", function(event, d) {
             if (!d.values[0].selected) {
@@ -823,21 +806,23 @@ function annotateDomains(protDomain, tolerance_data, domain_metadomain_coverage)
         .style("stroke", "black")
         .style("stroke-width", 1)
         .style("clip-path", "url(#clip)")
-        .on("mouseover", function(event, d) {
+        .on("pointerenter", function(event, d) {
+            event.stopPropagation();
             domainTip.show(event, d);
             d3.select(this)
                 .style("fill", "yellow")
-                .style("opacity", 0.9)  // Increase opacity on hover
+                .style("opacity", 0.9)
                 .style("cursor", "pointer")
-                .moveToFront();
+                .raise();
         })
-        .on("mouseout", function(event, d) {
+        .on("pointerleave", function(event, d) {
+            event.stopPropagation();
             domainTip.hide();
             d3.select(this)
-                .style("fill", d._color)  // Return to original color
+                .style("fill", d._color)
                 .style("opacity", 0.7)
                 .style("cursor", "default")
-                .moveToBack();
+                .lower();
         })
         .on("click", function(event, d) {
                 // Activate the overlay
@@ -939,11 +924,15 @@ function createExonVisualization(groupedTolerance) {
     // Call the tooltip
     main_svg.call(exonTip);
 
-    // Draw exon blocks (rectangles)
-    exonViz.selectAll(".exon-block")
+    // Create groups for each exon (contains both rect and text)
+    const exonGroups = exonViz.selectAll(".exon-group")
         .data(sortedExons)
         .enter()
-        .append("rect")
+        .append("g")
+        .attr("class", "exon-group");
+
+    // Add rectangles to groups
+    exonGroups.append("rect")
         .attr("class", "exon-block")
         .attr("x", d => main_x(d.start - 0.5))
         .attr("y", 5)
@@ -955,31 +944,10 @@ function createExonVisualization(groupedTolerance) {
         .style("stroke", "black")
         .style("stroke-width", 1)
         .style("opacity", 0.8)
-        .style("clip-path", "url(#clip)")
-        .on("mouseover", function(event, d) {
-            if (exons_visible) {  // Only show tooltip if exons are visible
-                exonTip.show(event, d);
-            }
-            d3.select(this)
-                .style("opacity", 1)
-                .style("stroke-width", 2)
-                .moveToFront();
-            d3.selectAll(".exon-label")
-                .filter(labelData => labelData.exon === d.exon)
-                .moveToFront();
-        })
-        .on("mouseout", function(event, d) {
-            exonTip.hide();
-            d3.select(this)
-                .style("opacity", 0.8)
-                .style("stroke-width", 1);
-        });
+        .style("clip-path", "url(#clip)");
 
-    // Add exon labels (text)
-    exonViz.selectAll(".exon-label")
-        .data(sortedExons)
-        .enter()
-        .append("text")
+    // Add labels to groups
+    exonGroups.append("text")
         .attr("class", "exon-label")
         .attr("x", d => main_x((d.start + d.end) / 2))
         .attr("y", main_heightExons / 2)
@@ -992,6 +960,28 @@ function createExonVisualization(groupedTolerance) {
         .style("user-select", "none")
         .text(d => d.exon)
         .style("clip-path", "url(#clip)");
+
+    // Attach events to the groups (affects both rect and text together)
+    exonGroups
+        .on("pointerenter", function(event, d) {
+            event.stopPropagation();
+            if (exons_visible) {
+                exonTip.show(event, d);
+            }
+            d3.select(this)
+                .select(".exon-block")
+                .style("opacity", 1)
+                .style("stroke-width", 2);
+            d3.select(this).raise();
+        })
+        .on("pointerleave", function(event, d) {
+            event.stopPropagation();
+            exonTip.hide();
+            d3.select(this)
+                .select(".exon-block")
+                .style("opacity", 0.8)
+                .style("stroke-width", 1);
+        });
 
     // Add section label
     main_svg.append("text")
@@ -1367,18 +1357,24 @@ function rescaleLandscape() {
 
     // Exon visualization updates
     const exonViz = d3.select("#exon_blocks");
-    exonViz.selectAll(".exon-block")
-        .attr("x", d => main_x(d.start - 0.5))
-        .attr("width", d => main_x(d.end + 0.5) - main_x(d.start - 0.5));
 
-    exonViz.selectAll(".exon-label")
-        .attr("x", function(d) {
-            const currentDomain = main_x.domain();  // Get current zoom range
-            const visibleStart = Math.max(d.start, currentDomain[0]);
-            const visibleEnd = Math.min(d.end, currentDomain[1]);
-            const visibleCenter = (visibleStart + visibleEnd) / 2;
-            return main_x(visibleCenter);
-        });
+    exonViz.selectAll(".exon-group").each(function(d) {
+        const group = d3.select(this);
+
+        // Update rectangle position and width
+        group.select(".exon-block")
+            .attr("x", main_x(d.start - 0.5))
+            .attr("width", main_x(d.end + 0.5) - main_x(d.start - 0.5));
+
+        // Update label position to visible center
+        const currentDomain = main_x.domain();
+        const visibleStart = Math.max(d.start, currentDomain[0]);
+        const visibleEnd = Math.min(d.end, currentDomain[1]);
+        const visibleCenter = (visibleStart + visibleEnd) / 2;
+
+        group.select(".exon-label")
+            .attr("x", main_x(visibleCenter));
+    });
 }
 
 //This function resets the zooming
