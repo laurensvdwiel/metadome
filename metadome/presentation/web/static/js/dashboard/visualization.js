@@ -477,6 +477,57 @@ function createGraph(obj) {
 		d3.selectAll('.pathogenic_missense_variant_count').style("fill", "red");
 		d3.selectAll('.not_aligned_position_plot').style("fill", "black");
 	});
+
+    // Scroll-to-zoom: zoom in/out with mousewheel over the graph
+	main_svg.on("wheel", function(event) {
+		event.preventDefault(); // Prevent page scroll
+
+		// Get current brush selection (or full range if no selection)
+		const brushSelection = d3.brushSelection(d3.select("#brush_for_zooming").node());
+		let currentStart, currentEnd;
+
+		if (brushSelection) {
+			currentStart = main_x2.invert(brushSelection[0]);
+			currentEnd = main_x2.invert(brushSelection[1]);
+		} else {
+			currentStart = main_x2.domain()[0];
+			currentEnd = main_x2.domain()[1];
+		}
+
+		const currentRange = currentEnd - currentStart;
+		const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9; // Zoom out or in
+		const newRange = currentRange * zoomFactor;
+
+		// Calculate center point (where the mouse is hovering)
+		const mouseX = event.offsetX - main_marginContext.left;
+		const mousePosition = main_x2.invert(mouseX);
+
+		// Calculate how much the mouse position represents in the current view
+		const mouseRatio = (mousePosition - currentStart) / currentRange;
+
+		// Calculate new start/end centered on mouse position
+		let newStart = mousePosition - (newRange * mouseRatio);
+		let newEnd = mousePosition + (newRange * (1 - mouseRatio));
+
+		// Clamp to data bounds
+		const dataBounds = main_x2.domain();
+		if (newStart < dataBounds[0]) {
+			newEnd += dataBounds[0] - newStart;
+			newStart = dataBounds[0];
+		}
+		if (newEnd > dataBounds[1]) {
+			newStart -= newEnd - dataBounds[1];
+			newEnd = dataBounds[1];
+		}
+
+		// Clamp again to ensure we don't go out of bounds
+		newStart = Math.max(newStart, dataBounds[0]);
+		newEnd = Math.min(newEnd, dataBounds[1]);
+
+		// Apply the new selection to the brush
+		const newSelection = [main_x2(newStart), main_x2(newEnd)];
+		d3.select("#brush_for_zooming").call(brush.move, newSelection);
+	});
 }
 
 function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, transcript_id){
