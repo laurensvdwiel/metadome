@@ -439,6 +439,44 @@ function createGraph(obj) {
 	
 	// Add behaviour according to the settings
 	toggleToleranceLandscapeOrMetadomainLandscape();
+
+    // Safety net: reset bar colors and hide tooltips when pointer moves over non-interactive elements
+	main_svg.on("pointermove", function(event) {
+		const target = event.target;
+		const isInteractive = target.classList.contains('pfamDomains') ||
+		                      target.classList.contains('toleranceAxisTick') ||
+		                      target.classList.contains('normal_missense_variant_count') ||
+		                      target.classList.contains('pathogenic_missense_variant_count') ||
+		                      target.classList.contains('not_aligned_position_plot') ||
+		                      target.classList.contains('exon-block') ||
+		                      target.closest('.exon-group');
+
+		if (!isInteractive) {
+			// Hide all tooltips
+			if (domainTip) domainTip.hide();
+			if (positionTip) positionTip.hide();
+			if (domain_details_position_tip) domain_details_position_tip.hide();
+			if (exonTip) exonTip.hide();
+
+			// Reset all bar colors to original
+			d3.selectAll('.normal_missense_variant_count').style("fill", "green");
+			d3.selectAll('.pathogenic_missense_variant_count').style("fill", "red");
+			d3.selectAll('.not_aligned_position_plot').style("fill", "black");
+		}
+	});
+
+	main_svg.on("pointerleave", function() {
+		// Always hide tooltips and reset colors when leaving the SVG
+		if (domainTip) domainTip.hide();
+		if (positionTip) positionTip.hide();
+		if (domain_details_position_tip) domain_details_position_tip.hide();
+		if (exonTip) exonTip.hide();
+
+		// Reset all bar colors
+		d3.selectAll('.normal_missense_variant_count').style("fill", "green");
+		d3.selectAll('.pathogenic_missense_variant_count').style("fill", "red");
+		d3.selectAll('.not_aligned_position_plot').style("fill", "black");
+	});
 }
 
 function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, transcript_id){
