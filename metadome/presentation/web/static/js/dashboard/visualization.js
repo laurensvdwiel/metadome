@@ -462,6 +462,13 @@ function createGraph(obj) {
 			d3.selectAll('.normal_missense_variant_count').style("fill", "green");
 			d3.selectAll('.pathogenic_missense_variant_count').style("fill", "red");
 			d3.selectAll('.not_aligned_position_plot').style("fill", "black");
+
+			// Reset domain colors to original
+			d3.selectAll('.pfamDomains').each(function(d) {
+				d3.select(this)
+					.style("fill", d._color)
+					.style("opacity", 0.7);
+			});
 		}
 	});
 
@@ -476,6 +483,13 @@ function createGraph(obj) {
 		d3.selectAll('.normal_missense_variant_count').style("fill", "green");
 		d3.selectAll('.pathogenic_missense_variant_count').style("fill", "red");
 		d3.selectAll('.not_aligned_position_plot').style("fill", "black");
+
+		// Reset domain colors to original
+		d3.selectAll('.pfamDomains').each(function(d) {
+			d3.select(this)
+				.style("fill", d._color)
+				.style("opacity", 0.7);
+		});
 	});
 
     // Scroll-to-zoom: zoom in/out with mousewheel over the graph
