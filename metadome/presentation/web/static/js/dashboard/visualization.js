@@ -358,12 +358,35 @@ function createGraph(obj) {
 
 	// Extract the various data
 	var positional_annotation = obj.positional_annotation;
+
+    // Calculate position range
+	const minPos = Math.min(...positional_annotation.map(d => d.protein_pos));
+	const maxPos = Math.max(...positional_annotation.map(d => d.protein_pos));
+
+	// Add position range display at top of graph
+	main_svg.append("text")
+		.attr("id", "position_range_left")
+		.attr("text-anchor", "start")
+		.attr("x", main_marginLandscape.left)
+		.attr("y", 15)
+		.attr("class", "label")
+		.text("p." + minPos)
+		.style("pointer-events", "none")
+		.style("user-select", "none")
+		.style("font-weight", "bold");
+
+	main_svg.append("text")
+		.attr("id", "position_range_right")
+		.attr("text-anchor", "end")
+		.attr("x", main_outerWidth - main_marginLandscape.right)
+		.attr("y", 15)
+		.attr("class", "label")
+		.text("p." + maxPos)
+		.style("pointer-events", "none")
+		.style("user-select", "none")
+		.style("font-weight", "bold");
+
 	var domain_data = obj.domains;
-    //// Fix domain positions to be 1-indexed
-    //     var domain_data = obj.domains.map(d => ({...d,
-    //         start: d.start + 1,  // Convert 0-indexed to 1-indexed
-    //         stop: d.stop + 1     // Convert 0-indexed to 1-indexed
-    //     }));
 
 	// setting x/y domain according to data
 	main_x.domain(d3.extent(positional_annotation, function(d) {
@@ -660,6 +683,10 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
             _textX: main_x(d.values[0].protein_pos)
         };
     });
+
+    // Store min/max positions for display range
+    window.actualMinProteinPos = positionData[0].values[0].protein_pos;
+    window.actualMaxProteinPos = positionData[positionData.length - 1].values[0].protein_pos;
 
     // Call the tooltips
     main_svg.call(positionTip);
@@ -1302,6 +1329,23 @@ function toggleHomologousClinvarVariantsInProtein(clinvar_checkbox){
 
 // Rescale the landscape for zooming or brushing purposes
 function rescaleLandscape() {
+    // The actual visible area is determined by main_x.range(), not the margins
+    const xRange = main_x.range();
+    const leftEdgePixel = xRange[0];   // Should be 40
+    const rightEdgePixel = xRange[1];  // Should be 1160
+
+    // Invert these to get the protein positions
+    const visibleMinPos = Math.floor(main_x.invert(leftEdgePixel) + 0.5);
+
+    const calculatedMaxPos = Math.ceil(main_x.invert(rightEdgePixel) + 0.5 - 0.25);
+    const visibleMaxPos = Math.min(calculatedMaxPos, window.actualMaxProteinPos);
+
+    d3.select("#position_range_left")
+        .text("p." + visibleMinPos);
+
+    d3.select("#position_range_right")
+        .text("p." + visibleMaxPos);
+
     // Tolerance graph updates
     const focus = d3.select("#tolerance_graph");
     focus.selectAll(".area").attr("d", toleranceArea);
