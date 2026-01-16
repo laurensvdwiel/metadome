@@ -1056,15 +1056,26 @@ function addContextZoomView(domain_data, number_of_positions) {
         .call(brush)
         .call(brush.move);
 
-    // Add zoom label
+    // Add zoom label (two lines)
     main_svg.append("text")
         .attr("text-anchor", "left")
-        .attr("id", "schematic_protein_zoom_text")
+        .attr("id", "schematic_protein_zoom_text_line1")
         .attr("x", 0)
-        .attr("y", main_marginContext.top + (main_heightContext * (3/5)))
+        .attr("y", main_marginContext.top + (main_heightContext * (3/5)) - 7)
         .attr("dy", 0)
         .attr("class", "label")
-        .text("Zoom-in")
+        .text("Zoom")
+        .style("pointer-events", "none")
+        .style("user-select", "none");
+
+    main_svg.append("text")
+        .attr("text-anchor", "left")
+        .attr("id", "schematic_protein_zoom_text_line2")
+        .attr("x", 0)
+        .attr("y", main_marginContext.top + (main_heightContext * (3/5)) + 7)
+        .attr("dy", 0)
+        .attr("class", "label")
+        .text("Here")
         .style("pointer-events", "none")
         .style("user-select", "none");
 }
