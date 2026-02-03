@@ -4,7 +4,7 @@
 var selected_positions = 0;
 var meta_domain_ids = new Set();
 
-var main_outerWidth = 1300;
+var main_outerWidth = document.getElementById('toleranceGraphContainer').offsetWidth || 1300;
 var main_outerHeight = 500;
 var main_svg = d3.select("#landscape_svg").attr("width", main_outerWidth)
 		.attr("height", main_outerHeight);
@@ -338,6 +338,16 @@ function resetGraph(){
 // Creates all graph elements based on the obj
 function createGraph(obj) {
 	$("#geneName").html(obj.geneName);
+
+	// Dynamically set width based on container (now visible)
+	var container = document.getElementById('toleranceGraphContainer');
+	if (container && container.offsetWidth > 0) {
+		main_outerWidth = container.offsetWidth;
+		main_svg.attr("width", main_outerWidth);
+		// Recalculate dependent widths
+		main_width = main_outerWidth - main_marginLandscape.left - main_marginLandscape.right;
+		main_widthLegend = main_outerWidth - main_marginLegend.left - main_marginLegend.right;
+	}
 	
 	// reset the Graph
 	resetGraph();
