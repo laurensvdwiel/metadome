@@ -346,7 +346,6 @@ function createGraph(obj) {
 		main_svg.attr("width", main_outerWidth);
 		// Recalculate dependent widths
 		main_width = main_outerWidth - main_marginLandscape.left - main_marginLandscape.right;
-		main_widthLegend = main_outerWidth - main_marginLegend.left - main_marginLegend.right;
 	}
 	
 	// reset the Graph
