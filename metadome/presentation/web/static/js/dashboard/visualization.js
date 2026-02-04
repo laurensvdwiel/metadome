@@ -60,8 +60,8 @@ var main_heightAnnotations = main_outerHeight - main_marginAnnotations.top
 var main_heightExons = main_outerHeight - main_marginExons.top - main_marginExons.bottom;
 
 // Scale the axis
-var main_x = d3.scaleLinear().range([ 40, main_width -40 ]).nice();
-var main_x2 = d3.scaleLinear().range([ 0, main_width ]);
+var main_x = d3.scaleLinear().range([ 40, main_width -60 ]).nice();
+var main_x2 = d3.scaleLinear().range([ 40, main_width -90 ]).nice();
 var main_y = d3.scaleLinear().range([ main_heightLandscape, 0 ]);
 var main_y_metadomain = d3.scaleLinear().range([ main_heightLandscape, 0 ]);
 
@@ -82,7 +82,7 @@ const debouncedBrushed = debounce(function(event) {
 
 // add the brush element
 var brush = d3.brushX()
-    .extent([[0, 0], [main_width, main_heightContext]])
+    .extent([[30, 0], [main_width-50, main_heightContext]])
     .on("brush", function(event) { // Use debounced version during brushing
         // Add visual indicator that update is pending
         d3.select("#landscape_svg").classed("updating", true);
@@ -220,10 +220,6 @@ function calculatePositionWidth(d, startOffset = 0, endOffset = 0) {
     } else {
         return main_x(endPos + 1 + endOffset) - main_x(startPos + startOffset);
     }
-}
-
-function calculateDomainWidth(d) {
-    return main_x2(d.stop + 1) - main_x2(d.start);
 }
 
 function debounce(func, wait) {
@@ -1146,8 +1142,8 @@ function addContextZoomView(domain_data, number_of_positions) {
     // Pre-calculate domain positions for better performance
     const contextDomainData = domain_data.map(d => ({
         ...d,
-        _x: main_x2(d.start - 0.5),
-        _width: calculateDomainWidth(d)
+        _x: main_x(d.start - 0.5),
+        _width: main_x(d.stop + 0.5) - main_x(d.start - 0.5)
     }));
 
     // Append context view
@@ -1158,7 +1154,7 @@ function addContextZoomView(domain_data, number_of_positions) {
 
     // Append context area background (static values, no need for functions)
     context.append("rect")
-        .attr("x", main_x2(0))
+        .attr("x", main_x(0))
         .attr("y", 20)
         .attr("width", main_x2(number_of_positions))
         .attr("height", main_heightContext - 40)
@@ -1447,7 +1443,8 @@ function rescaleLandscape() {
     const rightEdgePixel = xRange[1];  // Should be 1160
 
     // Invert these to get the protein positions
-    const visibleMinPos = Math.floor(main_x.invert(leftEdgePixel) + 0.5);
+	const calculatedMinPos = Math.floor(main_x.invert(leftEdgePixel) + 0.5);
+	const visibleMinPos = Math.max(calculatedMinPos, window.actualMinProteinPos);
 
     const calculatedMaxPos = Math.ceil(main_x.invert(rightEdgePixel) + 0.5 - 0.25);
     const visibleMaxPos = Math.min(calculatedMaxPos, window.actualMaxProteinPos);
