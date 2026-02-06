@@ -169,13 +169,34 @@ def transcript(genome_build, gene_name, transcript_id):
 
 @bp.route('/dashboard/<genome_build>/<gene_name>/<transcript_id>/p.<int:position>', methods=['GET'], strict_slashes=False)
 def transcript_position(genome_build, gene_name, transcript_id, position):
-    """Handle position-specific links without page refresh"""
-    # Store the position in session for JavaScript to retrieve
-    session['selected_position'] = position
+    """Handle position-specific links - validate position against transcript length"""
 
-    # return transcript route to keep p.X from URL
+    # Get transcript info from session (already validated in transcript() route)
+    transcript_ids_for_gene = get_transcript_ids_for_gene_from_session()
+
+    # Find the matching transcript to get its length
+    valid_position = False
+    if transcript_ids_for_gene and 'transcript_ids' in transcript_ids_for_gene:
+        for transcript_data in transcript_ids_for_gene['transcript_ids']:
+            # Match the transcript ID (handle with/without version)
+            transcript_gencode_id = transcript_data['gencode_id']
+            if transcript_gencode_id == transcript_id or transcript_gencode_id.split('.')[0] == transcript_id:
+                # Validate position is within the actual protein length
+                aa_length = transcript_data['aa_length']
+                if 1 <= position <= aa_length:
+                    valid_position = True
+                    session['selected_position'] = position
+                else:
+                    _log.warning(f"Position {position} out of range for {transcript_id} (length: {aa_length})")
+                break
+
+    if not valid_position:
+        _log.warning(f"Invalid position {position} for {transcript_id}, redirecting to transcript view")
+        return redirect(
+            url_for('web.transcript', genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id))
+
+    # Call the transcript route function directly
     return transcript(genome_build, gene_name, transcript_id)
-
 
 @bp.route('/get_selected_position')
 def get_selected_position():
