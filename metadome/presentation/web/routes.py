@@ -112,20 +112,20 @@ def dashboard_gene_name(genome_build, gene_name):
         # check if the transcript id is valid for the retrieved transcript ids for gene
         if 'transcript_ids' in transcript_ids_for_gene.keys():
             for transcript in transcript_ids_for_gene['transcript_ids']:
-                if transcript['gencode_id'].startswith(transcript_id):
-                    # check if the transcript contains a dot, if so, split and check only the main part
-                    if not '.' in transcript_id and '.' in transcript['gencode_id']:
-                        transcript_id_match = transcript['gencode_id'].split('.')[0] == transcript_id
-                    else:
-                        transcript_id_match = transcript['gencode_id'] == transcript_id
+                # check if the transcript contains a dot, if so, split and check only the main part
+                if not '.' in transcript_id and '.' in transcript['gencode_id']:
+                    transcript_id_match = transcript['gencode_id'].split('.')[0] == transcript_id
+                else:
+                    transcript_id_match = transcript['gencode_id'] == transcript_id
 
-                    # break the loop if we found a match
-                    if transcript_id_match:
-                        break
+                # break the loop if we found a match
+                if transcript_id_match:
+                    break
 
         if not transcript_id_match:
             delete_selected_transcript_id_from_session()
-            raise Exception("Transcript id '{}' is not valid. Redirected to gene_name endpoint.".format(transcript_id))
+            _log.error("Transcript id '{}' in dashboard_gene_name() is not valid. Redirected to gene_name endpoint.".format(transcript_id))
+            return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
 
     else:
         # ensure a clean state if transcript_id is None
@@ -154,7 +154,8 @@ def transcript(genome_build, gene_name, transcript_id):
 
     if not valid_transcript_id_format:
         delete_selected_transcript_id_from_session()
-        return visualization_error("Transcript id '{}' is not valid. Redirected to gene_name endpoint.".format(transcript_id))
+        _log.error("Transcript id '{}' in transcript() is not valid. Redirected to gene_name endpoint.".format(transcript_id))
+        return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
 
     # First make sure the string is upper case and has no leading or trailing spaces
     if transcript_id_corrected != transcript_id:
@@ -165,6 +166,28 @@ def transcript(genome_build, gene_name, transcript_id):
     session['transcript_id'] = transcript_id
 
     return dashboard_gene_name(genome_build, gene_name)
+
+@bp.route('/dashboard/<genome_build>/<gene_name>/<transcript_id>/p.<int:position>', methods=['GET'], strict_slashes=False)
+def transcript_position(genome_build, gene_name, transcript_id, position):
+    """Handle position-specific links without page refresh"""
+    # Store the position in session for JavaScript to retrieve
+    session['selected_position'] = position
+
+    # return transcript route to keep p.X from URL
+    return transcript(genome_build, gene_name, transcript_id)
+
+
+@bp.route('/get_selected_position')
+def get_selected_position():
+    """Retrieve the selected position from session"""
+    position = session.get('selected_position', None)
+    return jsonify(selected_position=position)
+
+@bp.route('/clear_selected_position', methods=['POST'])
+def clear_selected_position():
+    """Clear the selected position from session after it's been used"""
+    session.pop('selected_position', None)
+    return jsonify(success=True)
 
 @bp.route('/contact', methods=['GET', 'POST'])
 @limiter.limit("5 per minute; 30 per hour")

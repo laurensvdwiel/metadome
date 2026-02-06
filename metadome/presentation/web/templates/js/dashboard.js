@@ -645,6 +645,8 @@ function getVisualizationResult(transcript_id, genome_build) {
                 var fileName = 'Gene_' + obj.gene_name + '_transcript_' + obj.transcript_id + '_protein_' + obj.protein_ac + '_metadome';
                 saveSvg(document.getElementById('landscape_svg'), fileName);
             });
+
+            checkForSelectedPosition();
         }
     );
 }
@@ -1051,6 +1053,89 @@ function getToleranceButtonPress() {
 	}
 }
 
+async function checkForSelectedPosition() {
+    if (global_debugging) {console.info('%c Function checkForSelectedPosition() called', info_style);}
+
+    try {
+        let response = await fetch(Flask.url_for("web.get_selected_position"));
+        if (!response.ok) {
+            throw new Error('get_selected_position did not respond: ' + response.statusText);
+        }
+        let data = await response.json();
+
+        if (data.selected_position !== null) {
+            const position = data.selected_position;
+            const elementId = 'toleranceAxisRect_' + position;
+
+            // Wait for graph to be fully rendered
+            let attempts = 0;
+            const maxAttempts = 100; // 10 seconds total
+
+            const checkElement = setInterval(function() {
+                attempts++;
+                const element = document.getElementById(elementId);
+
+                if (element) {
+                    clearInterval(checkElement);
+
+                    // Get the data from the element attributes
+                    const transcript_id = element.getAttribute('data-transcript-id');
+                    const domain_coverage_str = element.getAttribute('data-domain-coverage');
+
+                    if (!transcript_id || !domain_coverage_str) {
+                        console.error('Missing data attributes on element');
+                        return;
+                    }
+
+                    const domain_metadomain_coverage = JSON.parse(domain_coverage_str);
+
+                    // Get the D3 data bound to this element
+                    const d3Element = d3.select('#' + elementId);
+                    const boundData = d3Element.datum();
+
+                    if (boundData && transcript_id && domain_metadomain_coverage) {
+                        // Select the position visually first
+                        if (!boundData.values[0].selected) {
+                            d3Element.style("fill", "green").style("fill-opacity", 0.7);
+                            boundData.values[0].selected = true;
+
+                            addRowToPositionalInformationTable(
+                                domain_metadomain_coverage,
+                                boundData,
+                                transcript_id
+                            );
+
+                            selected_positions += 1;
+                            $("#position_information_table").removeClass('is-hidden');
+                            document.getElementById("selected_positions_explanation").innerHTML =
+                                'Click on one of the selected positions in the table to view more information';
+                        }
+
+                        // Trigger the positional information popup
+                        createPositionalInformation(
+                            domain_metadomain_coverage,
+                            transcript_id,
+                            boundData
+                        );
+
+                        // Clear the session variable now that we've used it
+                        fetch(Flask.url_for("web.clear_selected_position"), {
+                            method: 'POST'
+                        });
+                    }
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkElement);
+                    if (global_debugging) {
+                        console.info('%c Position p.' + position + ' not found after ' + maxAttempts + ' attempts', info_style);
+                    }
+                }
+            }, 100);
+        }
+    } catch (error) {
+        console.error('Error fetching selected position:', error);
+    }
+}
+
 async function retrieveSessionVariables() {
     if (global_debugging) {console.info('%c Function retrieveSessionVariables() called', info_style);}
     // Expected session variables
@@ -1160,7 +1245,8 @@ function handleURLPathParameters(session_vars) {
 				getTranscript(session_vars.gene_name, session_vars.genome_build, session_vars.transcript_ids_for_gene);
 				break;
 			case 5: // Genome build, gene name and transcript id are specified
-                if (global_debugging) { console.info('%c Case 5: Genome build, gene name and transcript id are specified', info_style); }
+			case 6: // Same as case 5, but with position (p.X)
+                if (global_debugging) { console.info('%c Case ' + pathSegments.length + ': Genome build, gene name and transcript id are specified', info_style); }
 				document.getElementById("geneName").value = url_param_gene_name;
 				document.getElementById("genomeBuild").value = url_param_tour_or_genome_build;
 				getTranscript(session_vars.gene_name, session_vars.genome_build, session_vars.transcript_ids_for_gene);

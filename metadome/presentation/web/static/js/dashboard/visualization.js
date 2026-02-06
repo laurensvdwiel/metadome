@@ -836,6 +836,8 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
     focusAxiselements.append("rect")
         .attr("class", "toleranceAxisTick")
         .attr("id", d => "toleranceAxisRect_" + d.values[0].protein_pos)
+		.attr("data-transcript-id", transcript_id)
+		.attr("data-domain-coverage", JSON.stringify(domain_metadomain_coverage))
         .attr("x", d => d._x)
         .attr("y", 0)
         .attr("width", d => d._width)
