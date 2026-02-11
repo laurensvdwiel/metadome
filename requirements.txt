@@ -32,7 +32,7 @@ numpy==2.2.5
 pandas==2.2.3
 pathtools3==0.2.1
 pbr==6.1.1
-pillow==11.2.1
+pillow==12.1.1
 prompt_toolkit==3.0.51
 psycopg2==2.9.10
 pydot==4.0.0
