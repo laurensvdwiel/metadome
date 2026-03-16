@@ -1,5 +1,4 @@
 from metadome.default_settings import RECONSTRUCT_METADOMAINS
-from metadome.domain.infrastructure import write_all_genes_names_to_disk
 from metadome.domain.services.meta_domain_creation import create_metadomains
 from metadome.domain.services.database_creation import create_db
 from metadome.database import db
