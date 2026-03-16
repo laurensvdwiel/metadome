@@ -30,6 +30,148 @@ class MalformedAARegionException(Exception):
 class MetaDomainRepository:
 
     @staticmethod
+    def get_meta_domain_annotation_for_variants(_variant_dicts):
+        """Retrieve mapping and metadomain information for a batch of variants."""
+        _session = db._make_scoped_session(options={})
+
+        def _normalize_gene_id(gene_id):
+            return gene_id.split('.', 1)[0] if gene_id else gene_id
+
+        def _normalize_chr(chromosome):
+            return chromosome.lower() if chromosome else chromosome
+
+        def _reverse_complement(base):
+            mapping = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
+            return mapping.get(base.upper()) if base else None
+
+        try:
+            normalized_variants = []
+            positions = set()
+            chromosomes = set()
+            genome_build_prefixes = set()
+
+            for variant in _variant_dicts:
+                normalized_gene_id = _normalize_gene_id(variant['gene_id'])
+                normalized_variant = {
+                    'chr': variant['chr'],
+                    'pos': int(variant['pos']),
+                    'ref': variant.get('ref'),
+                    'gene_id': normalized_gene_id,
+                    'genome_build': variant['genome_build'],
+                }
+                normalized_variants.append(normalized_variant)
+                positions.add(normalized_variant['pos'])
+                chromosomes.add(_normalize_chr(normalized_variant['chr']))
+                genome_build_prefixes.add(normalized_variant['genome_build'][:6].upper())
+
+            if len(normalized_variants) == 0:
+                return {}
+
+            results = _session.query(
+                Mapping.chromosome,
+                Mapping.chromosome_position,
+                Mapping.base_pair,
+                Gene.gencode_gene_id,
+                Gene.genome_build,
+                Gene.strand,
+                Mapping.id,
+                MetaDomainPosition.ext_db_id,
+                MetaDomainPosition.consensus_position
+            ) \
+                .join(Gene, Gene.id == Mapping.gene_id) \
+                .outerjoin(MetaDomainMapping, MetaDomainMapping.mapping_id == Mapping.id) \
+                .outerjoin(MetaDomainPosition, MetaDomainPosition.id == MetaDomainMapping.meta_domain_position_id) \
+                .filter(
+                    Mapping.chromosome_position.in_(positions),
+                    func.lower(Mapping.chromosome).in_(chromosomes),
+                    func.upper(func.substr(Gene.genome_build, 1, 6)).in_(genome_build_prefixes)
+                ) \
+                .all()
+
+            grouped_results = {}
+            for variant in normalized_variants:
+                variant_key = (
+                    variant['chr'],
+                    variant['pos'],
+                    variant['ref'],
+                    variant['gene_id'],
+                    variant['genome_build'],
+                )
+                grouped_results[variant_key] = {
+                    'MetaDomainPositions': '',
+                    'MetaDomainStatus': 'no_mapping',
+                    'RefMatchStatus': 'not_checked',
+                }
+
+            for variant in normalized_variants:
+                variant_key = (
+                    variant['chr'],
+                    variant['pos'],
+                    variant['ref'],
+                    variant['gene_id'],
+                    variant['genome_build'],
+                )
+
+                matching_rows = []
+                for row in results:
+                    db_gene_id = row.gencode_gene_id or ''
+                    db_genome_build = row.genome_build or ''
+
+                    if (row.chromosome or '').lower() != variant['chr'].lower():
+                        continue
+                    if row.chromosome_position != variant['pos']:
+                        continue
+                    if not db_gene_id.startswith(variant['gene_id']):
+                        continue
+                    if not db_genome_build.upper().startswith(variant['genome_build'][:6].upper()):
+                        continue
+
+                    matching_rows.append(row)
+
+                if len(matching_rows) == 0:
+                    continue
+
+                grouped_results[variant_key]['MetaDomainStatus'] = 'mapping_no_metadomain'
+
+                ref_statuses = set()
+                md_positions = set()
+
+                for row in matching_rows:
+                    if variant['ref'] and row.base_pair:
+                        if variant['ref'].upper() == row.base_pair.upper():
+                            ref_statuses.add('direct_match')
+                        elif _reverse_complement(row.base_pair) == variant['ref'].upper():
+                            ref_statuses.add('reverse_complement_match')
+                        else:
+                            ref_statuses.add('mismatch')
+
+                    if row.ext_db_id is not None and row.consensus_position is not None:
+                        md_positions.add((row.ext_db_id, row.consensus_position))
+
+                if len(md_positions) > 0:
+                    grouped_results[variant_key]['MetaDomainStatus'] = 'metadomain_found'
+                    grouped_results[variant_key]['MetaDomainPositions'] = ';'.join(
+                        f'{ext_db_id}:{consensus_position}'
+                        for ext_db_id, consensus_position in sorted(md_positions)
+                    )
+
+                if 'direct_match' in ref_statuses:
+                    grouped_results[variant_key]['RefMatchStatus'] = 'direct_match'
+                elif 'reverse_complement_match' in ref_statuses:
+                    grouped_results[variant_key]['RefMatchStatus'] = 'reverse_complement_match'
+                elif 'mismatch' in ref_statuses:
+                    grouped_results[variant_key]['RefMatchStatus'] = 'mismatch'
+
+            return grouped_results
+        except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
+            raise RecoverableError(str(e))
+        except:
+            _log.error(traceback.format_exc())
+            raise
+        finally:
+            _session.remove()
+
+    @staticmethod
     def retrieve_all_mappings_for_meta_domain(_ext_db_id, _genome_build):
         """Retrieves all Mappings, Genes, MetaDomainMapping, MetaDomainPosition, and Protein for
          a given metadomain ext_db_id and genome_build"""
