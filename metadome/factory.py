@@ -79,11 +79,6 @@ def create_app(settings=None):
     with app.app_context():
         db.create_all()
 
-        # retrieve all gene names and genome builds and write to disk
-        from metadome.domain.infrastructure import write_all_genes_names_to_disk, write_all_genome_builds_to_disk
-        write_all_genes_names_to_disk()
-        write_all_genome_builds_to_disk()
-
     from flask_jsglue import JSGlue
     flask_jsglue.JSGLUE_JS_PATH = '/metadome/static/js/JSGlue.js'
     jsglue = JSGlue(app)
@@ -93,6 +88,9 @@ def create_app(settings=None):
     cache.init_app(app)
     # Store reference if you want to access via current_app
     app.cache = cache
+
+    _log.info(f"Flask-Caching configured with CACHE_TYPE={app.config.get('CACHE_TYPE')} "
+              f"CACHE_REDIS_URL={app.config.get('CACHE_REDIS_URL')}")
 
     return app
 

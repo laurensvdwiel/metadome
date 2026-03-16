@@ -76,7 +76,7 @@ def dashboard_genome_build(genome_build):
         session['genome_build'] = genome_build
 
     # Retrieve all gene names
-    gene_names = GeneRepository.retrieve_all_gene_names_from_file()
+    gene_names = GeneRepository.retrieve_all_gene_names_from_db()
 
     # Render and return the template
     return render_template('dashboard.html', data=map(json.dumps, gene_names), genome_build = genome_build) #@todo move genome build to session handling
@@ -171,21 +171,19 @@ def transcript(genome_build, gene_name, transcript_id):
 def transcript_position(genome_build, gene_name, transcript_id, position):
     """Handle position-specific links - validate position against transcript length"""
 
-    # Get transcript info from session (already validated in transcript() route)
-    transcript_ids_for_gene = get_transcript_ids_for_gene_from_session()
+    transcript_ids_for_gene = json.loads(
+        get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8')
+    )
 
     # Find the matching transcript to get its length
     valid_position = False
     if transcript_ids_for_gene and 'transcript_ids' in transcript_ids_for_gene:
         for transcript_data in transcript_ids_for_gene['transcript_ids']:
-            # Match the transcript ID (handle with/without version)
             transcript_gencode_id = transcript_data['gencode_id']
             if transcript_gencode_id == transcript_id or transcript_gencode_id.split('.')[0] == transcript_id:
-                # Validate position is within the actual protein length
                 aa_length = transcript_data['aa_length']
                 if 1 <= position <= aa_length:
                     valid_position = True
-                    session['selected_position'] = position
                 else:
                     _log.warning(f"Position {position} out of range for {transcript_id} (length: {aa_length})")
                 break
@@ -195,7 +193,7 @@ def transcript_position(genome_build, gene_name, transcript_id, position):
         return redirect(
             url_for('web.transcript', genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id))
 
-    # Call the transcript route function directly
+    # Just render normally (canonical URL is the /p.<position> URL itself)
     return transcript(genome_build, gene_name, transcript_id)
 
 @bp.route('/get_selected_position')
@@ -502,7 +500,7 @@ def get_genome_builds_from_session():
     """ Retrieve the genome builds from the session, if available."""
     genome_builds = session.get('genome_builds', None)
     if genome_builds is None:
-        genome_builds = GeneRepository.retrieve_all_genome_builds_from_file()
+        genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
         session['genome_builds'] = genome_builds
 
     return genome_builds

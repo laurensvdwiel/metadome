@@ -1,5 +1,3 @@
-from pickletools import genops
-
 from metadome.domain.models.entities.gene_region import GenomeBuild
 from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.helper_functions import is_transcript_id
@@ -98,7 +96,7 @@ def submit_visualization_job_for_transcript():
     genome_build = data['genome_build']
 
     # check if genome build is valid
-    if not genome_build in GeneRepository.retrieve_all_genome_builds_from_file():
+    if not genome_build in GeneRepository.retrieve_all_genome_builds_from_db():
         return jsonify({'error': "not a valid genome build: {}".format(genome_build)}), 400
 
 

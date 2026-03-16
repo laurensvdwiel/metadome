@@ -3,7 +3,6 @@ import traceback
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.sql.functions import func
-from metadome.default_settings import GENE_NAMES_FILE, GENOME_BUILDS_FILE
 from sqlalchemy.sql.expression import and_, distinct
 from sqlalchemy.exc import ResourceClosedError as AlchemyResourceClosedError
 from sqlalchemy.exc import OperationalError as AlchemyOperationalError
@@ -18,6 +17,8 @@ from metadome.domain.models.protein import Protein
 from metadome.domain.models.interpro import Interpro
 from metadome.domain.error import RecoverableError
 
+from flask import current_app
+
 _log = logging.getLogger(__name__)
 
 class RepositoryException(Exception):
@@ -26,6 +27,75 @@ class RepositoryException(Exception):
 class MalformedAARegionException(Exception):
     pass
 
+class RepositoryCacheException(Exception):
+    """Raised when the repository cache layer cannot be used safely."""
+    pass
+
+class RepositoryCacheHelper:
+    @staticmethod
+    def _get_cache():
+        cache = getattr(current_app, "cache", None)
+        if cache is None:
+            raise RepositoryCacheException(
+                "Flask cache is not configured: current_app.cache is missing."
+            )
+        return cache
+
+    @staticmethod
+    def _resolve_timeout(timeout: int | None) -> int:
+        if timeout is not None:
+            return timeout
+
+        resolved = (
+            current_app.config.get("REPOSITORY_CACHE_TIMEOUT")
+            or current_app.config.get("CACHE_DEFAULT_TIMEOUT")
+        )
+        if resolved is None:
+            raise RepositoryCacheException(
+                "No cache timeout configured. Set REPOSITORY_CACHE_TIMEOUT "
+                "(preferred) or CACHE_DEFAULT_TIMEOUT."
+            )
+        return int(resolved)
+
+    @staticmethod
+    def cache_get(cache_key: str) -> tuple[bool, object | None]:
+        """
+        Returns (hit, value).
+
+        Raises RepositoryCacheException on cache backend errors or misconfiguration.
+        """
+        cache = RepositoryCacheHelper._get_cache()
+        try:
+            has_method = getattr(cache, "has", None)
+            if callable(has_method):
+                if not cache.has(cache_key):
+                    return False, None
+                return True, cache.get(cache_key)
+
+            # Fallback: cannot distinguish cached None from miss (treat None as miss)
+            value = cache.get(cache_key)
+            if value is None:
+                return False, None
+            return True, value
+        except Exception as e:
+            raise RepositoryCacheException(f"Cache GET failed for key={cache_key}") from e
+
+    @staticmethod
+    def cache_set(cache_key: str, value: object, timeout: int | None = None) -> None:
+        """
+        Cache value with timeout.
+
+        Raises RepositoryCacheException on cache backend errors or misconfiguration.
+        """
+        cache = RepositoryCacheHelper._get_cache()
+        resolved_timeout = RepositoryCacheHelper._resolve_timeout(timeout)
+
+        try:
+            cache.set(cache_key, value, timeout=resolved_timeout)
+        except Exception as e:
+            raise RepositoryCacheException(
+                f"Cache SET failed for key={cache_key}, timeout={resolved_timeout}"
+            ) from e
 
 class MetaDomainRepository:
 
@@ -282,22 +352,34 @@ class GeneRepository:
             _session.remove()
 
     @staticmethod
-    def retrieve_all_gene_names_from_file():
-        """Retrieves all gene names present in the static file"""
-        try:
-            with open(GENE_NAMES_FILE, 'r') as gene_names_file:
-                return gene_names_file.read().splitlines()
-        except OSError:
-            return []
-
-    @staticmethod
     def retrieve_all_gene_names_from_db():
         """Retrieves all gene names present in the database"""
+        cache_key = "GeneRepository:gene_names:distinct"
+
+        try:
+            hit, cached = RepositoryCacheHelper.cache_get(cache_key)
+        except RepositoryCacheException:
+            _log.exception("Repository cache failure in retrieve_all_gene_names_from_db (key=%s)", cache_key)
+            hit, cached = (False, None)
+
+        if hit:
+            return cached
+
         # Open as session
         _session = db._make_scoped_session(options={})
 
         try:
-            return [gene_name for gene_name in _session.query(Gene.gene_name).distinct(Gene.gene_name).all()]
+            result = [
+                gene_name
+                for gene_name in _session.query(Gene.gene_name).distinct(Gene.gene_name).all()
+            ]
+
+            try:
+                RepositoryCacheHelper.cache_set(cache_key, result)
+            except RepositoryCacheException:
+                _log.exception("Repository cache failure in retrieve_all_gene_names_from_db (set key=%s)", cache_key)
+
+            return result
         except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
             raise RecoverableError(str(e))
         except:
@@ -310,11 +392,32 @@ class GeneRepository:
     @staticmethod
     def retrieve_all_genome_builds_from_db():
         """Retrieves all genome builds present in the database"""
+        cache_key = "GeneRepository:genome_builds:distinct"
+
+        try:
+            hit, cached = RepositoryCacheHelper.cache_get(cache_key)
+        except RepositoryCacheException:
+            _log.exception("Repository cache failure in retrieve_all_genome_builds_from_db (key=%s)", cache_key)
+            hit, cached = (False, None)
+
+        if hit:
+            return cached
+
         # Open as session
         _session = db._make_scoped_session(options={})
 
         try:
-            return [genome_build for genome_build in _session.query(Gene.genome_build).distinct(Gene.genome_build).all()]
+            result = [
+                genome_build
+                for genome_build in _session.query(Gene.genome_build).distinct(Gene.genome_build).all()
+            ]
+
+            try:
+                RepositoryCacheHelper.cache_set(cache_key, result)
+            except RepositoryCacheException:
+                _log.exception("Repository cache failure in retrieve_all_genome_builds_from_db (set key=%s)", cache_key)
+
+            return result
         except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
             raise RecoverableError(str(e))
         except:
@@ -325,22 +428,43 @@ class GeneRepository:
             _session.remove()
 
     @staticmethod
-    def retrieve_all_genome_builds_from_file():
-        """Retrieves all genome builds present in the static file"""
-        try:
-            with open(GENOME_BUILDS_FILE, 'r') as genome_builds_file:
-                return genome_builds_file.read().splitlines()
-        except OSError:
-            return []
-
-    @staticmethod
     def retrieve_all_transcript_ids(genome_build, gene_name):
         """Retrieves all transcript ids for a gene name"""
+        cache_key = f"GeneRepository:transcript_ids:{genome_build.lower()}:{gene_name.lower()}"
+
+        try:
+            hit, cached = RepositoryCacheHelper.cache_get(cache_key)
+        except RepositoryCacheException:
+            _log.exception(
+                "Repository cache failure in retrieve_all_transcript_ids (key=%s)",
+                cache_key
+            )
+            hit, cached = (False, None)
+
+        if hit:
+            return cached
+
         # Open as session
         _session = db._make_scoped_session(options={})
 
         try:
-            return [transcript for transcript in _session.query(Gene).filter(func.lower(Gene.gene_name) == gene_name.lower(), func.lower(Gene.genome_build) == genome_build.lower()).all()]
+            result = [
+                transcript
+                for transcript in _session.query(Gene).filter(
+                    func.lower(Gene.gene_name) == gene_name.lower(),
+                    func.lower(Gene.genome_build) == genome_build.lower()
+                ).all()
+            ]
+
+            try:
+                RepositoryCacheHelper.cache_set(cache_key, result)
+            except RepositoryCacheException:
+                _log.exception(
+                    "Repository cache failure in retrieve_all_transcript_ids (set key=%s)",
+                    cache_key
+                )
+
+            return result
         except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
             raise RecoverableError(str(e))
         except:

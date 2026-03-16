@@ -19,10 +19,18 @@ SQLALCHEMY_ECHO = True
 SQLALCHEMY_POOL_TIMEOUT = 10
 
 # Flask-Celery settings
+CELERY_BROKER_URL='amqp://guest@metadome-dev-rabbitmq-1'
+CELERY_RESULT_BACKEND='redis://metadome-dev-redis-1/0'
 CELERY_TRACK_STARTED = True
 CELERY_TASK_SERIALIZER = 'pickle'
 CELERY_RESULT_SERIALIZER='pickle'
 CELERY_ACCEPT_CONTENT = ['pickle']
+
+# Flask-Caching Settings
+CACHE_TYPE = 'RedisCache'
+CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL', 'redis://metadome-dev-redis-1/1')
+CACHE_DEFAULT_TIMEOUT = int(os.environ.get('CACHE_DEFAULT_TIMEOUT', '3600'))
+REPOSITORY_CACHE_TIMEOUT = int(os.environ.get('REPOSITORY_CACHE_TIMEOUT', '86400'))
 
 # Visualiation specific settings
 ALLELE_FREQUENCY_CUTOFF = 0.0
@@ -42,9 +50,6 @@ ISSUES_EMAIL = os.environ.get('ISSUES_EMAIL')
 MAIL_DEFAULT_SENDER = os.environ.get('DEFAULT_FROM_EMAIL')
 # Error timestamp notification window
 ERROR_EMAIL_NOTIFICATION_WINDOW=300
-
-# Flask-Caching Settings
-CACHE_TYPE = 'simple'
 
 # local data directory
 DATA_DIR = "/usr/data/"
@@ -111,10 +116,7 @@ GNOMAD_GRCH38_VCF_FILE = GNOMAD_DIR + "GRCh38" + "/" + "gnomad.joint.v4.1.sites.
 GNOMAD_ACCEPTED_FILTERS = ['PASS']
 
 # ClinVar specific files
-CLINVAR_DIR = DATA_DIR + 'ClinVar/GRCh37/'
-CLINVAR_ORIGINAL_VCF_FILE = CLINVAR_DIR + 'clinvar.vcf.gz'
-CLINVAR_VCF_FILE = CLINVAR_ORIGINAL_VCF_FILE
-CLINVAR_CONSIDERED_CLINSIG = ['Pathogenic']
 CLINVAR_DIR = DATA_DIR + 'ClinVar/'
 CLINVAR_GRCH37_VCF_FILE = CLINVAR_DIR + "GRCh37" + "/" + 'clinvar_20251006.vcf.gz'
 CLINVAR_GRCH38_VCF_FILE = CLINVAR_DIR + "GRCh38" + "/" + 'clinvar_20251006.vcf.gz'
+CLINVAR_CONSIDERED_CLINSIG = ['Pathogenic']

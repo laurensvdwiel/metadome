@@ -7,15 +7,22 @@ services:
             - FLASK_APP=metadome/application.py
             - MAIL_SERVER=mailserver
             - MAIL_PORT=25
+            - CACHE_TYPE=RedisCache
+            - CACHE_REDIS_URL=redis://redis:6379/1
         env_file:
            - metadome/database.env
            - metadome/mailserver.env
         ports:
             - "5000:5000"
         depends_on:
-            - db
-            - celery
-            - mailserver
+            db:
+              condition: service_healthy
+            redis:
+              condition: service_healthy
+            rabbitmq:
+              condition: service_healthy
+            mailserver:
+              condition: service_started
         volumes:
             - ${PWD}:/usr/src/app
             - data:/usr/data
@@ -35,12 +42,17 @@ services:
         command: celery -A metadome.application:celery worker --loglevel=info
         environment:
             - C_FORCE_ROOT=1
+            - CACHE_TYPE=RedisCache
+            - CACHE_REDIS_URL=redis://redis:6379/1
         env_file:
            - metadome/database.env
         depends_on:
-            - db
-            - redis
-            - rabbitmq
+            db:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
         volumes:
             - ${PWD}:/usr/src/app
             - data:/usr/data
@@ -72,10 +84,13 @@ services:
         restart: always
         image: redis:8.2.3
         platform: linux/arm64
-        depends_on:
-            - db
         ports:
           - "6379:6379"
+        healthcheck:
+          test: [ "CMD", "redis-cli", "ping" ]
+          interval: 10s
+          timeout: 5s
+          retries: 10
     rabbitmq:
         restart: always
         image: rabbitmq:4.2.0
@@ -86,6 +101,11 @@ services:
             - db
         ports:
           - "15672:15672"
+        healthcheck:
+          test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+          interval: 10s
+          timeout: 10s
+          retries: 12
     mailserver:
         image:  boky/postfix:4.4.0
         restart: always
