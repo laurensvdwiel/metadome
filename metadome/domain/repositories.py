@@ -370,7 +370,7 @@ class GeneRepository:
 
         try:
             result = [
-                gene_name
+                gene_name[0]
                 for gene_name in _session.query(Gene.gene_name).distinct(Gene.gene_name).all()
             ]
 
@@ -408,7 +408,7 @@ class GeneRepository:
 
         try:
             result = [
-                genome_build
+                genome_build[0]
                 for genome_build in _session.query(Gene.genome_build).distinct(Gene.genome_build).all()
             ]
 
@@ -429,7 +429,7 @@ class GeneRepository:
 
     @staticmethod
     def retrieve_all_transcript_ids(genome_build, gene_name):
-        """Retrieves all transcript ids for a gene name"""
+        """Retrieves all transcript ids for a gene name as plain serializable dicts"""
         cache_key = f"GeneRepository:transcript_ids:{genome_build.lower()}:{gene_name.lower()}"
 
         try:
@@ -448,13 +448,19 @@ class GeneRepository:
         _session = db._make_scoped_session(options={})
 
         try:
-            result = [
-                transcript
-                for transcript in _session.query(Gene).filter(
-                    func.lower(Gene.gene_name) == gene_name.lower(),
-                    func.lower(Gene.genome_build) == genome_build.lower()
-                ).all()
-            ]
+            result = []
+            for transcript in _session.query(Gene).filter(
+                func.lower(Gene.gene_name) == gene_name.lower(),
+                func.lower(Gene.genome_build) == genome_build.lower()
+            ).all():
+                result.append({
+                    'gene_name': transcript.gene_name,
+                    'sequence_length': transcript.sequence_length,
+                    'gencode_transcription_id': transcript.gencode_transcription_id,
+                    'refseq_transcript_id': transcript.refseq_transcript_id,
+                    'mane_transcript_type': transcript.mane_transcript_type,
+                    'protein_id': transcript.protein_id,
+                })
 
             try:
                 RepositoryCacheHelper.cache_set(cache_key, result)

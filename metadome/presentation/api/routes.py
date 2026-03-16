@@ -23,24 +23,26 @@ def get_transcript_ids_for_gene(genome_build, gene_name):
     _log.debug('get_transcript_ids_for_gene')
     # retrieve the transcript ids for this gene
     transcripts = GeneRepository.retrieve_all_transcript_ids(genome_build, gene_name)
-    
+
     # check if there was any return value
     if len(transcripts) > 0:
-        message = "Retrieved transcripts for gene '"+transcripts[0].gene_name+"'"
+        message = "Retrieved transcripts for gene '" + transcripts[0]['gene_name'] + "'"
     else:
-        message = "No transcripts available in database for gene '"+gene_name+"'"
+        message = "No transcripts available in database for gene '" + gene_name + "'"
 
     transcript_results = []
     for t in transcripts:
         transcript_entry = {}
-        transcript_entry['aa_length'] = t.sequence_length
-        transcript_entry['gencode_id'] = t.gencode_transcription_id
-        if t.refseq_transcript_id is None:
+        transcript_entry['aa_length'] = t['sequence_length']
+        transcript_entry['gencode_id'] = t['gencode_transcription_id']
+        if t['refseq_transcript_id'] is None:
             transcript_entry['refseq_nm_numbers'] = ""
         else:
-            transcript_entry['refseq_nm_numbers'] = ", ".join(nm_number for nm_number in t.refseq_transcript_id.split(','))
-        transcript_entry['mane_transcript_type'] = t.mane_transcript_type if not t.mane_transcript_type is None else ""
-        transcript_entry['has_protein_data'] = not t.protein_id is None
+            transcript_entry['refseq_nm_numbers'] = ", ".join(
+                nm_number for nm_number in t['refseq_transcript_id'].split(',')
+            )
+        transcript_entry['mane_transcript_type'] = t['mane_transcript_type'] if t['mane_transcript_type'] is not None else ""
+        transcript_entry['has_protein_data'] = t['protein_id'] is not None
         transcript_results.append(transcript_entry)
 
     return jsonify(transcript_ids=transcript_results, message=message, genome_build=genome_build, gene_name=gene_name)
