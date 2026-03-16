@@ -6,7 +6,6 @@ from metadome.domain.models.gene import Gene
 from sqlalchemy.sql.expression import distinct
 import logging
 from metadome.domain.repositories import GeneRepository
-from metadome.default_settings import GENE_NAMES_FILE, GENOME_BUILDS_FILE
 import os
 
 _log = logging.getLogger(__name__)
@@ -35,37 +34,6 @@ def filter_gene_names_present_in_database(gene_names_of_interest):
     finally:
         # Close this session, thus all items are cleared and memory usage is kept at a minimum
         _session.remove()
-
-
-def write_all_genes_names_to_disk():
-    # retrieve all gene names present in the database
-    gene_names = sorted(GeneRepository.retrieve_all_gene_names_from_db())
-
-    # First attempt to remove the file present
-    try:
-        os.remove(GENE_NAMES_FILE)
-    except OSError:
-        pass
-
-    # write all gene names to file
-    with open(GENE_NAMES_FILE, 'w') as gene_names_file:
-        for gene_name in gene_names:
-            gene_names_file.write("%s\n" % gene_name[0])
-
-def write_all_genome_builds_to_disk():
-    # retrieve all genome builds present in the database
-    genome_builds = sorted(GeneRepository.retrieve_all_genome_builds_from_db())
-
-    # First attempt to remove the file present
-    try:
-        os.remove(GENOME_BUILDS_FILE)
-    except OSError:
-        pass
-
-    # write all gene names to file
-    with open(GENOME_BUILDS_FILE, 'w') as genome_builds_file:
-        for genome_build in genome_builds:
-            genome_builds_file.write("%s\n" % genome_build[0])
 
 def add_gene_mapping_to_database(gene_mapping):
     _session = db.create_scoped_session()
