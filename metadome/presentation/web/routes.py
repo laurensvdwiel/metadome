@@ -1,10 +1,10 @@
-from flask import Blueprint, g, render_template, redirect, url_for, session, jsonify, current_app, request, flash, make_response
+from flask import Blueprint, g, render_template, redirect, url_for, current_app, request, flash, make_response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_mail import Message
 from metadome import get_version
 from metadome.controllers.job import retrieve_error
-from metadome.domain.repositories import GeneRepository
+from metadome.domain.repositories import GeneRepository, MappingRepository
 from metadome.domain.services.mail.mail import mail
 from metadome.presentation.api.routes import get_transcript_ids_for_gene
 from metadome.presentation.web.forms import SupportForm
@@ -173,6 +173,79 @@ def transcript_position(genome_build, gene_name, transcript_id, position):
             url_for('web.transcript', genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id))
 
     return _render_dashboard(genome_build, gene_name=gene_name, transcript_id=transcript_id)
+
+@bp.route('/position/', methods=['GET'])
+def position_lookup_home():
+    genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
+    return render_template(
+        'position.html',
+        genome_builds=genome_builds,
+        selected_genome_build="ALL",
+        selected_chromosome="",
+        selected_position="",
+        results=[]
+    )
+
+@bp.route('/position/search', methods=['GET'])
+def position_lookup_search():
+    chromosome = MappingRepository._normalize_chromosome_input(request.args.get('chromosome', ''))
+    position_raw = (request.args.get('position') or "").strip()
+    genome_build = (request.args.get('genome_build') or "ALL").strip()
+
+    if not chromosome or not position_raw.isdigit():
+        return redirect(url_for('web.position_lookup_home'))
+
+    position = int(position_raw)
+
+    if genome_build and genome_build != "ALL":
+        return redirect(url_for(
+            'web.position_lookup',
+            chromosome=chromosome,
+            position=position,
+            genome_build=genome_build
+        ))
+
+    return redirect(url_for(
+        'web.position_lookup',
+        chromosome=chromosome,
+        position=position
+    ))
+
+@bp.route('/position/<chromosome>/<int:position>/', methods=['GET'])
+def position_lookup(chromosome, position):
+    normalized_chr = MappingRepository._normalize_chromosome_input(chromosome)
+    selected_genome_build = (request.args.get('genome_build') or "ALL").strip()
+    genome_build_filter = None if selected_genome_build == "ALL" else selected_genome_build
+
+    raw_results = MappingRepository.lookup_position_results(
+        chromosome=normalized_chr,
+        position=position,
+        genome_build=genome_build_filter
+    )
+
+    results = []
+    for r in raw_results:
+        metadome_link = url_for(
+            'web.transcript_position',
+            genome_build=r["genome_build"],
+            gene_name=r["gene_name"],
+            transcript_id=r["gencode_transcript"],
+            position=r["protein_position"]
+        )
+        item = dict(r)
+        item["metadome_link"] = metadome_link
+        item["metadome_label"] = "Analyse"
+        results.append(item)
+
+    genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
+    return render_template(
+        'position.html',
+        genome_builds=genome_builds,
+        selected_genome_build=selected_genome_build,
+        selected_chromosome=normalized_chr,
+        selected_position=position,
+        results=results
+    )
 
 @bp.route('/contact', methods=['GET', 'POST'])
 @limiter.limit("5 per minute; 30 per hour")

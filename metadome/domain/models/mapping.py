@@ -28,6 +28,10 @@ class Mapping(db.Model):
     """
     # Table configuration
     __tablename__ = 'mappings'
+
+    __table_args__ = (
+        db.Index('idx_mappings_chr_pos', 'chromosome', 'chromosome_position'),
+    )
     
     # Fields
     id = db.Column(db.Integer, primary_key=True)

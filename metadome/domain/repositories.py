@@ -1,5 +1,6 @@
 import logging
 import traceback
+from collections import defaultdict
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.sql.functions import func
@@ -7,6 +8,7 @@ from sqlalchemy.sql.expression import and_, distinct
 from sqlalchemy.exc import ResourceClosedError as AlchemyResourceClosedError
 from sqlalchemy.exc import OperationalError as AlchemyOperationalError
 from psycopg2 import OperationalError as PsycopOperationalError
+from Bio.Data.IUPACData import protein_letters_1to3
 
 from metadome.database import db
 from metadome.domain.models.mapping import Mapping
@@ -291,25 +293,23 @@ class GeneRepository:
         finally:
             # Close this session, thus all items are cleared and memory usage is kept at a minimum
             _session.remove()
-    
+
     @staticmethod
-    def retrieve_transcript_id_for_multiple_gene_ids(_gene_ids):
-        """Retrieves all gencode transcripts for multiple Gene objects as {gene_id: gencode_transcription_id}"""
-        # Open as session
+    def retrieve_genes_by_ids(_gene_ids):
+        """Retrieve multiple genes by IDs as a dict {id: Gene}"""
         _session = db._make_scoped_session(options={})
 
         try:
-            _gencode_transcription_id_per_gene_id = {}
-            for gene in _session.query(Gene).filter(Gene.id.in_(_gene_ids)).all():
-                _gencode_transcription_id_per_gene_id[gene.id] = gene.gencode_transcription_id
-            return _gencode_transcription_id_per_gene_id
+            if not _gene_ids:
+                return {}
+            genes = _session.query(Gene).filter(Gene.id.in_(_gene_ids)).all()
+            return {g.id: g for g in genes}
         except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
             raise RecoverableError(str(e))
         except:
             _log.error(traceback.format_exc())
             raise
         finally:
-            # Close this session, thus all items are cleared and memory usage is kept at a minimum
             _session.remove()
 
     @staticmethod
@@ -331,8 +331,6 @@ class GeneRepository:
         finally:
             # Close this session, thus all items are cleared and memory usage is kept at a minimum
             _session.remove()
-
-
 
     @staticmethod
     def retrieve_all_transcript_ids_with_mappings():
@@ -619,7 +617,214 @@ class ProteinRepository:
             # Close this session, thus all items are cleared and memory usage is kept at a minimum
             _session.remove()
 
+    @staticmethod
+    def retrieve_proteins_by_ids(_protein_ids):
+        """Retrieve multiple proteins by IDs as a dict {id: Protein}"""
+        _session = db._make_scoped_session(options={})
+
+        try:
+            if not _protein_ids:
+                return {}
+            proteins = _session.query(Protein).filter(Protein.id.in_(_protein_ids)).all()
+            return {p.id: p for p in proteins}
+        except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
+            raise RecoverableError(str(e))
+        except:
+            _log.error(traceback.format_exc())
+            raise
+        finally:
+            _session.remove()
+
 class MappingRepository:
+
+    @staticmethod
+    def _normalize_chromosome_input(chromosome: str) -> str:
+        c = (chromosome or "").strip()
+        if not c:
+            return c
+        if c.lower().startswith("chr"):
+            suffix = c[3:]
+        else:
+            suffix = c
+        return "chr" + suffix.upper()
+
+    @staticmethod
+    def _format_positions_to_ranges(chromosome: str, positions: list[int]) -> str:
+        """Formats [1,2,3,7,8,10] -> chr1:1-3, 7-8, 10"""
+        if not positions:
+            return f"{chromosome}:"
+        positions = sorted(set(positions))
+
+        ranges = []
+        start = positions[0]
+        prev = positions[0]
+
+        for p in positions[1:]:
+            if p == prev + 1:
+                prev = p
+                continue
+            if start == prev:
+                ranges.append(str(start))
+            else:
+                ranges.append(f"{start}-{prev}")
+            start = p
+            prev = p
+
+        if start == prev:
+            ranges.append(str(start))
+        else:
+            ranges.append(f"{start}-{prev}")
+
+        return f"{chromosome}:{', '.join(ranges)}"
+
+    @staticmethod
+    def lookup_mapping_hits_for_position(chromosome: str, position: int, genome_build: str | None = None):
+        """
+        Lightweight mapping-first lookup for position.
+        Returns minimal mapping hit dicts for enrichment in a second step.
+        """
+        normalized_chr = MappingRepository._normalize_chromosome_input(chromosome)
+        _session = db._make_scoped_session(options={})
+
+        try:
+            query = _session.query(
+                Mapping.id,
+                Mapping.gene_id,
+                Mapping.protein_id,
+                Mapping.chromosome,
+                Mapping.chromosome_position,
+                Mapping.uniprot_position,
+                Mapping.uniprot_residue,
+                Mapping.codon,
+                Mapping.strand
+            ).filter(
+                func.lower(Mapping.chromosome) == normalized_chr,
+                Mapping.chromosome_position == position
+            ).order_by(Mapping.id)
+
+            if genome_build and genome_build != "ALL":
+                query = query.join(Gene, Mapping.gene_id == Gene.id).filter(
+                    func.lower(Gene.genome_build) == genome_build.lower())
+
+            rows = query.all()
+
+            return [
+                {
+                    "mapping_id": r.id,
+                    "gene_id": r.gene_id,
+                    "protein_id": r.protein_id,
+                    "chromosome": r.chromosome,
+                    "chromosome_position": r.chromosome_position,
+                    "uniprot_position": r.uniprot_position,
+                    "uniprot_residue": r.uniprot_residue,
+                    "codon": r.codon,
+                    "strand": r.strand.value if hasattr(r.strand, "value") else str(r.strand)
+                }
+                for r in rows
+                if r.uniprot_position is not None
+            ]
+        except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
+            raise RecoverableError(str(e))
+        except:
+            _log.error(traceback.format_exc())
+            raise
+        finally:
+            _session.remove()
+
+    @staticmethod
+    def lookup_position_results(chromosome: str, position: int, genome_build: str | None = None):
+        """
+        Returns UI-ready rows for position lookup table.
+        Sorted with MANE_Select first.
+        """
+        hits = MappingRepository.lookup_mapping_hits_for_position(
+            chromosome=chromosome,
+            position=position,
+            genome_build=genome_build
+        )
+        if not hits:
+            return []
+
+        gene_ids = {h["gene_id"] for h in hits if h["gene_id"] is not None}
+        protein_ids = {h["protein_id"] for h in hits if h["protein_id"] is not None}
+
+        genes_by_id = GeneRepository.retrieve_genes_by_ids(gene_ids)
+        proteins_by_id = ProteinRepository.retrieve_proteins_by_ids(protein_ids)
+
+        grouped = defaultdict(lambda: {
+            "positions": [],
+            "genome_build": "",
+            "chromosome": "",
+            "gene_name": "",
+            "strand": "",
+            "gencode_transcript": "",
+            "refseq_transcript": "",
+            "mane_transcript_type": "",
+            "uniprot_ac": "",
+            "codon": "",
+            "amino_acid": "",
+            "protein_position": None
+        })
+
+        for h in hits:
+            gene = genes_by_id.get(h["gene_id"])
+            if gene is None:
+                continue
+
+            protein = proteins_by_id.get(h["protein_id"])
+            protein_position_1_based = h["uniprot_position"] + 1
+
+            key = (
+                gene.id,
+                h["protein_id"],
+                gene.gencode_transcription_id,
+                protein_position_1_based,
+                h["codon"],
+                h["uniprot_residue"]
+            )
+
+            item = grouped[key]
+            item["positions"].append(h["chromosome_position"])
+            item["genome_build"] = gene.genome_build
+            item["chromosome"] = h["chromosome"]
+            item["gene_name"] = gene.gene_name
+            item["strand"] = h["strand"]
+            item["gencode_transcript"] = gene.gencode_transcription_id
+            item["refseq_transcript"] = gene.refseq_transcript_id or ""
+            item["mane_transcript_type"] = gene.mane_transcript_type or ""
+            item["uniprot_ac"] = protein.uniprot_ac if protein is not None else ""
+            item["codon"] = h["codon"] or ""
+            item["amino_acid"] = protein_letters_1to3.get(h["uniprot_residue"], "") if h["uniprot_residue"] else ""
+            item["protein_position"] = protein_position_1_based
+
+        results = []
+        for _, item in grouped.items():
+            transcript_display = item["gencode_transcript"]
+            if item["refseq_transcript"]:
+                transcript_display += f" / {item['refseq_transcript']}"
+
+            results.append({
+                "gene_name": item["gene_name"],
+                "genome_build": item["genome_build"],
+                "codon_position": MappingRepository._format_positions_to_ranges(item["chromosome"], item["positions"]),
+                "strand": item["strand"],
+                "transcript": transcript_display,
+                "uniprot": item["uniprot_ac"],
+                "codon": item["codon"],
+                "amino_acid": item["amino_acid"],
+                "mane_transcript_type": item["mane_transcript_type"],
+                "gencode_transcript": item["gencode_transcript"],
+                "protein_position": item["protein_position"],
+            })
+
+        results.sort(key=lambda r: (
+            0 if r["mane_transcript_type"] == "MANE_Select" else 1,
+            r["gene_name"],
+            r["gencode_transcript"],
+            r["protein_position"] if r["protein_position"] is not None else 10 ** 9
+        ))
+
+        return results
 
     @staticmethod
     def get_mappings_for_multiple_protein_ids(_protein_ids):

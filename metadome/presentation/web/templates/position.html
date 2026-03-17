@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1 class="title">Position Lookup</h1>
+    <p class="subtitle">Lookup transcript/protein mappings from genomic coordinates.</p>
+
+    <form method="get" action="{{ url_for('web.position_lookup_search') }}">
+      <div class="field is-grouped">
+        <div class="control">
+          <div class="select">
+            <select name="genome_build">
+              <option value="ALL" {% if selected_genome_build == "ALL" %}selected{% endif %}>All Genome Builds</option>
+              {% for gb in genome_builds %}
+                <option value="{{ gb }}" {% if selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="control">
+          <input class="input" type="text" name="chromosome" placeholder="chr1 or 1"
+                 value="{{ selected_chromosome or '' }}" required>
+        </div>
+
+        <div class="control">
+          <input class="input" type="number" min="1" step="1" name="position"
+                 placeholder="Genomic position" value="{{ selected_position or '' }}" required>
+        </div>
+
+        <div class="control">
+          <button class="button is-info" type="submit">Search</button>
+        </div>
+      </div>
+    </form>
+
+    <table class="table is-fullwidth is-striped is-hoverable mt-4">
+      <thead>
+        <tr>
+          <th>Gene Name</th>
+          <th>Genome Build</th>
+          <th>Codon Position</th>
+          <th>Strand</th>
+          <th>Transcript</th>
+          <th>UniProt</th>
+          <th>Codon</th>
+          <th>Amino Acid</th>
+          <th>MetaDome</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if results and results|length > 0 %}
+          {% for r in results %}
+            <tr>
+              <td>{{ r.gene_name }}</td>
+              <td>{{ r.genome_build }}</td>
+              <td>{{ r.codon_position }}</td>
+              <td>{{ r.strand }}</td>
+              <td>{{ r.transcript }}</td>
+              <td>{{ r.uniprot }}</td>
+              <td>{{ r.codon }}</td>
+              <td>{{ r.amino_acid }}</td>
+              <td><a href="{{ r.metadome_link }}">{{ r.metadome_label }}</a></td>
+            </tr>
+          {% endfor %}
+        {% elif selected_chromosome and selected_position %}
+          <tr>
+            <td colspan="9">No mappings found for this position.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

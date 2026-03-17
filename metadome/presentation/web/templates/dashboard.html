@@ -10,10 +10,10 @@
     exampleGeneJsonUrl: "{{ url_for('static', filename='json/example_T_gene.json') }}"
   };
 </script>
-<script src="{{ url_for('static', filename='js/dashboard/visualization.js') }}" async></script>
+<script src="{{ url_for('static', filename='js/dashboard/visualization.js') }}"></script>
 <script src="{{ url_for('static', filename='js/dashboard/dashboard.js') }}"></script>
 
-<script async>
+<script>
 $( function() {
   var availableTags = [{% for item in data %} {{ item|safe }},{% endfor %}];
   $( "#geneName" ).autocomplete({

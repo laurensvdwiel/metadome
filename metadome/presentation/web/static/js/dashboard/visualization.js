@@ -32,10 +32,20 @@ function setPositionInPath(pos) {
     }
 }
 
-var main_outerWidth = document.getElementById('toleranceGraphContainer').offsetWidth || 1300;
+// Defer DOM-dependent initialization
+var main_outerWidth = 1300;
 var main_outerHeight = 500;
-var main_svg = d3.select("#landscape_svg").attr("width", main_outerWidth)
-		.attr("height", main_outerHeight);
+var main_svg = null;
+
+function initVisualizationGlobals() {
+    var container = document.getElementById('toleranceGraphContainer');
+    if (container && container.offsetWidth > 0) {
+        main_outerWidth = container.offsetWidth;
+    }
+    main_svg = d3.select("#landscape_svg")
+        .attr("width", main_outerWidth)
+        .attr("height", main_outerHeight);
+}
 
 // Declare margins
 var main_marginLandscape = {
@@ -350,18 +360,27 @@ function resetGraph(){
     $("#position_information_table").addClass('is-hidden');
     d3.selectAll('.tr').remove();
 
-    // Clear SVG content
-    main_svg.selectAll("*").remove();
+    // Initialize if not yet done
+    if (!main_svg) {
+        initVisualizationGlobals();
+    }
 
-    // Important: Re-select the SVG to ensure proper reference
-    main_svg = d3.select("#landscape_svg")
-        .attr("width", main_outerWidth)
-        .attr("height", main_outerHeight);
+    if (main_svg) {
+        main_svg.selectAll("*").remove();
+        main_svg = d3.select("#landscape_svg")
+            .attr("width", main_outerWidth)
+            .attr("height", main_outerHeight);
+    }
 }
 
 // Creates all graph elements based on the obj
 function createGraph(obj) {
 	$("#geneName").html(obj.geneName);
+
+	// Ensure globals are initialized
+    if (!main_svg) {
+        initVisualizationGlobals();
+    }
 
 	// Dynamically set width based on container (now visible)
 	var container = document.getElementById('toleranceGraphContainer');
