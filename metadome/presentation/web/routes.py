@@ -1,4 +1,4 @@
-from flask import Blueprint, g, render_template, redirect, url_for, session, jsonify, current_app, request, flash
+from flask import Blueprint, g, render_template, redirect, url_for, session, jsonify, current_app, request, flash, make_response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_mail import Message
@@ -35,21 +35,19 @@ def index():
 @bp.route('/dashboard_js')
 def dashboard_js():
     # Renders the javascript used on the index page
-    return render_template('/js/dashboard.js')
+    response = make_response(render_template('/js/dashboard.js'))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @bp.route('/dashboard/', methods=['GET'])
 def dashboard():
-    # Reset the dashboard session to ensure a clean start
-    reset_dashboard_session()
-
     # Redirect to the GRCh38 dashboard by default
     return dashboard_grch38()
 
 @bp.route('/dashboard/tour/', methods=['GET'])
 def dashboard_tour():
-    # Reset the dashboard session to ensure a clean start
-    reset_dashboard_session()
-
     return render_template('dashboard.html')
 
 @bp.route('/dashboard_grch37/', methods=['GET'])
@@ -64,88 +62,53 @@ def dashboard_grch38():
 
     return redirect(url_for('web.dashboard_genome_build', genome_build=genome_build_url_safe))
 
-@bp.route('/dashboard/<genome_build>/', methods=['GET'])
-def dashboard_genome_build(genome_build):
-    # Check if the genome build is valid, redirect to default dashboard if not
+def _render_dashboard(genome_build, gene_name=None, transcript_id=None):
+    """Render the dashboard from URL state only."""
     if not validate_genome_build(genome_build):
-        delete_selected_genome_build_from_session()
-        _log.error("Genome build '{}' is not available in the database. Redirecting to default".format(genome_build))
+        _log.error("Genome build '%s' is not available in the database. Redirecting to default", genome_build)
         return dashboard()
-    else:
-        # add valid genome_build to the session
-        session['genome_build'] = genome_build
 
-    # Retrieve all gene names
     gene_names = GeneRepository.retrieve_all_gene_names_from_db()
 
-    # Render and return the template
-    return render_template('dashboard.html', data=map(json.dumps, gene_names), genome_build = genome_build) #@todo move genome build to session handling
+    response = make_response(render_template(
+        'dashboard.html',
+        data=map(json.dumps, gene_names),
+        genome_build=genome_build,
+        gene_name=gene_name or "",
+        transcript_id=transcript_id or ""
+    ))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+@bp.route('/dashboard/<genome_build>/', methods=['GET'])
+def dashboard_genome_build(genome_build):
+    return _render_dashboard(genome_build)
 
 @bp.route('/dashboard/<genome_build>/<gene_name>/', methods=['GET'])
 def dashboard_gene_name(genome_build, gene_name):
-    # We can add the gene name to the session, even if it does not exist in the database
-    session['gene_name'] = gene_name
+    if not validate_genome_build(genome_build):
+        _log.error("Genome build '%s' is not available in the database. Redirecting to default", genome_build)
+        return dashboard()
 
-    # check of transcript_ids_for_gene is in the session
-    transcript_ids_for_gene = get_transcript_ids_for_gene_from_session()
-    query_required = True
+    transcript_ids_for_gene = json.loads(
+        get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8')
+    )
 
-    # check if the genome build and gene name match the session variables
-    if transcript_ids_for_gene is not None:
-        if 'genome_build' in transcript_ids_for_gene.keys() and transcript_ids_for_gene['genome_build'] == genome_build:
-            if 'gene_name' in transcript_ids_for_gene.keys() and transcript_ids_for_gene['gene_name'] == gene_name:
-                # no need to query the database again if both genome build and gene name match
-                query_required = False
-    else:
-        # ensure a clean state if transcript_ids_for_gene is None
-        delete_transcript_ids_for_gene_from_session()
+    if not transcript_ids_for_gene or 'transcript_ids' not in transcript_ids_for_gene:
+        _log.error("Failed to retrieve transcripts for gene '%s' on build '%s'", gene_name, genome_build)
+        return redirect(url_for('web.dashboard_genome_build', genome_build=genome_build))
 
-    if query_required:
-        # reset the session variables for gene name, geome build, and transcript ids
-        session['transcript_ids_for_gene'] = json.loads(get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8'))
-
-    # Check if there is a transcript id selected in the session
-    transcript_id = get_selected_transcript_id_from_session()
-    if transcript_id is not None:
-        transcript_id_match = False
-
-        # check if the transcript id is valid for the retrieved transcript ids for gene
-        if 'transcript_ids' in transcript_ids_for_gene.keys():
-            for transcript in transcript_ids_for_gene['transcript_ids']:
-                # check if the transcript contains a dot, if so, split and check only the main part
-                if not '.' in transcript_id and '.' in transcript['gencode_id']:
-                    transcript_id_match = transcript['gencode_id'].split('.')[0] == transcript_id
-                else:
-                    transcript_id_match = transcript['gencode_id'] == transcript_id
-
-                # break the loop if we found a match
-                if transcript_id_match:
-                    break
-
-        if not transcript_id_match:
-            delete_selected_transcript_id_from_session()
-            _log.error("Transcript id '{}' in dashboard_gene_name() is not valid. Redirected to gene_name endpoint.".format(transcript_id))
-            return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
-
-    else:
-        # ensure a clean state if transcript_id is None
-        delete_selected_transcript_id_from_session()
-
-    # After adding session variables, handle further validation logic in the dashboard_genome_build() method
-    return dashboard_genome_build(genome_build)
+    return _render_dashboard(genome_build, gene_name=gene_name)
 
 @bp.route('/dashboard/<genome_build>/<gene_name>/<transcript_id>/', methods=['GET'])
 def transcript(genome_build, gene_name, transcript_id):
-    # validate transcript id format
     valid_transcript_id_format = False
-
-    # type check the transcript id
     transcript_id_corrected = transcript_id.strip().upper()
 
-    # check if transcript_id_corrected contains ENST, followed by numericals and optionally a dot:
     if transcript_id_corrected.startswith('ENST'):
-        # tokenize by 'ENST' and check the rest
-        transcript_id_corrected_tail = transcript_id_corrected[4:]  # get the part after 'ENST
+        transcript_id_corrected_tail = transcript_id_corrected[4:]
         if '.' in transcript_id_corrected_tail:
             main_part, dot_part = transcript_id_corrected_tail.split('.', 1)
             valid_transcript_id_format = main_part.isdigit() and dot_part.isdigit()
@@ -153,19 +116,36 @@ def transcript(genome_build, gene_name, transcript_id):
             valid_transcript_id_format = transcript_id_corrected_tail.isdigit()
 
     if not valid_transcript_id_format:
-        delete_selected_transcript_id_from_session()
-        _log.error("Transcript id '{}' in transcript() is not valid. Redirected to gene_name endpoint.".format(transcript_id))
+        _log.error("Transcript id '%s' in transcript() is not valid. Redirected to gene_name endpoint.", transcript_id)
         return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
 
-    # First make sure the string is upper case and has no leading or trailing spaces
     if transcript_id_corrected != transcript_id:
-        delete_selected_transcript_id_from_session()
-        return redirect(url_for('web.transcript', genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id_corrected))
+        return redirect(url_for('web.transcript', genome_build=genome_build, gene_name=gene_name,
+                                transcript_id=transcript_id_corrected))
 
-    # Add the transcript id to the session after validation
-    session['transcript_id'] = transcript_id
+    transcript_ids_for_gene = json.loads(
+        get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8')
+    )
 
-    return dashboard_gene_name(genome_build, gene_name)
+    transcript_match = None
+    if 'transcript_ids' in transcript_ids_for_gene:
+        for transcript_data in transcript_ids_for_gene['transcript_ids']:
+            gencode_id = transcript_data['gencode_id']
+            if gencode_id == transcript_id or gencode_id.split('.')[0] == transcript_id:
+                transcript_match = transcript_data
+                break
+
+    if transcript_match is None:
+        _log.error("Transcript id '%s' in transcript() is not valid for gene '%s'. Redirected to gene_name endpoint.",
+                   transcript_id, gene_name)
+        return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
+
+    if not transcript_match.get('has_protein_data', False):
+        _log.warning("Transcript id '%s' for gene '%s' has no protein data. Redirected to gene_name endpoint.",
+                     transcript_id, gene_name)
+        return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
+
+    return _render_dashboard(genome_build, gene_name=gene_name, transcript_id=transcript_id)
 
 @bp.route('/dashboard/<genome_build>/<gene_name>/<transcript_id>/p.<int:position>', methods=['GET'], strict_slashes=False)
 def transcript_position(genome_build, gene_name, transcript_id, position):
@@ -175,7 +155,6 @@ def transcript_position(genome_build, gene_name, transcript_id, position):
         get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8')
     )
 
-    # Find the matching transcript to get its length
     valid_position = False
     if transcript_ids_for_gene and 'transcript_ids' in transcript_ids_for_gene:
         for transcript_data in transcript_ids_for_gene['transcript_ids']:
@@ -193,20 +172,7 @@ def transcript_position(genome_build, gene_name, transcript_id, position):
         return redirect(
             url_for('web.transcript', genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id))
 
-    # Just render normally (canonical URL is the /p.<position> URL itself)
-    return transcript(genome_build, gene_name, transcript_id)
-
-@bp.route('/get_selected_position')
-def get_selected_position():
-    """Retrieve the selected position from session"""
-    position = session.get('selected_position', None)
-    return jsonify(selected_position=position)
-
-@bp.route('/clear_selected_position', methods=['POST'])
-def clear_selected_position():
-    """Clear the selected position from session after it's been used"""
-    session.pop('selected_position', None)
-    return jsonify(success=True)
+    return _render_dashboard(genome_build, gene_name=gene_name, transcript_id=transcript_id)
 
 @bp.route('/contact', methods=['GET', 'POST'])
 @limiter.limit("5 per minute; 30 per hour")
@@ -384,135 +350,14 @@ def exception_error_handler(error):  # pragma: no cover
     _log.error(traceback.format_exc())
     return render_template('error.html', msg=error, stack_trace=traceback.format_exc()), 500
 
-@bp.route('/get_dashboard_session')
-def get_dashboard_session():
-    result = {}
-
-    # Check if genome_builds are in the session
-    result['genome_builds'] = get_genome_builds_from_session()
-
-    # retrieve the selected genome build from the session
-    result['genome_build'] = get_selected_genome_build_from_session()
-    if result['genome_build'] is None:
-        # ensure the session remains clear of other variables
-        delete_selected_genome_build_from_session()
-        return jsonify(genome_builds = result['genome_builds'])
-
-    # retrieve the selected gene name from the session
-    result['gene_name'] = get_selected_gene_name_from_session()
-    if result['gene_name'] is None:
-        # ensure a partial session reset
-        delete_selected_gene_name_from_session()
-        # return jsonify(data = result['data'], genome_builds = result['genome_builds'], genome_build = result['genome_build'])
-        return jsonify(genome_builds = result['genome_builds'], genome_build = result['genome_build'])
-
-    # Check if transcript ids have already been retrieved for the selected gene
-    transcript_ids_for_gene = get_transcript_ids_for_gene_from_session()
-    if transcript_ids_for_gene is None:
-        # ensure a partial session reset
-        delete_transcript_ids_for_gene_from_session()
-        return jsonify(genome_builds = result['genome_builds'], genome_build = result['genome_build'], gene_names = result['gene_name'])
-
-    result['transcript_ids'] = transcript_ids_for_gene['transcript_ids']
-
-    # check if a transcript id is selected
-    result['transcript_id'] = get_selected_transcript_id_from_session()
-    if result['transcript_id'] is None:
-        # ensure a partial session reset
-        delete_selected_transcript_id_from_session()
-        return jsonify(genome_builds = result['genome_builds'], genome_build = result['genome_build'], gene_name = result['gene_name'], transcript_ids_for_gene = transcript_ids_for_gene)
-
-    # if all variables are set, return the session data
-    return jsonify(genome_builds = result['genome_builds'], genome_build = result['genome_build'], gene_name = result['gene_name'], transcript_ids_for_gene = transcript_ids_for_gene, transcript_id = result['transcript_id'])
-
-### Helper functions & Session handling
-def reset_dashboard_session():
-    # Deletes user input and system input from the session
-    session.clear()
-
-def delete_selected_transcript_id_from_session():
-    """ Delete the selected transcript id from the session."""
-    session.pop('transcript_id', None)
-
-def get_selected_transcript_id_from_session():
-    """ Retrieve the selected transcript id from the session, if available."""
-    return session.get('transcript_id', None)
-
-def delete_transcript_ids_for_gene_from_session():
-    """ Delete the transcript ids for a gene from the session."""
-    session.pop('transcript_ids_for_gene', None)
-    # Also delete the transcript id to ensure a clean state
-    session.pop('transcript_id', None)
-
-def get_transcript_ids_for_gene_from_session():
-    """ Retrieve the transcript ids for a gene from the session, if available."""
-    transcript_ids_for_gene = session.get('transcript_ids_for_gene', None)
-    if transcript_ids_for_gene is not None:
-        try:
-            # check if the transcript_ids_for_gene variable holds the expected keys
-            if 'transcript_ids' not in transcript_ids_for_gene.keys():
-                raise Exception("Field 'transcript_ids' is missing in 'transcript_ids_for_gene' session variable.")
-            if 'gene_name' not in transcript_ids_for_gene.keys():
-                raise Exception("Field 'gene_name' is missing in 'transcript_ids_for_gene' session variable.")
-            if 'genome_build' not in transcript_ids_for_gene.keys():
-                raise Exception("Field 'genome_build' is missing in 'transcript_ids_for_gene' session variable.")
-            if 'message' not in transcript_ids_for_gene.keys():
-                raise Exception("Field 'message' is missing in 'transcript_ids_for_gene' session variable.")
-        except Exception as e:
-            raise Exception("Error in `get_transcript_ids_for_gene_from_session` with message: {}, and stack trace: {}".format(e, traceback.format_exc()))
-
-    return transcript_ids_for_gene
-
-def delete_selected_gene_name_from_session():
-    """ Delete the selected gene name from the session."""
-    session.pop('gene_name', None)
-    # Also delete the transcript id and transcript ids for gene to ensure a clean state
-    session.pop('transcript_ids_for_gene', None)
-    session.pop('transcript_id', None)
-
-def get_selected_gene_name_from_session():
-    """ Retrieve the selected gene name from the session, if available."""
-    return session.get('gene_name', None)
-
-def delete_selected_genome_build_from_session():
-    """ Delete all user input from the session, e.g. gene_name, transcript_id, transcript_ids_for_gene."""
-    session.pop('genome_build', None)
-    # Also delete the gene name, transcript ids for gene, and transcript id to ensure a clean state
-    session.pop('gene_name', None)
-    session.pop('transcript_ids_for_gene', None)
-    session.pop('transcript_id', None)
-
-def get_selected_genome_build_from_session():
-    """ Retrieve the selected genome build from the session, if available."""
-    genome_build = session.get('genome_build', None)
-    if genome_build is not None:
-        # safety check for the genome build
-        try:
-            genome_url_safe = dashboard_genome_build_safety_check(genome_build)
-            if genome_url_safe != genome_build:
-                raise Exception("Genome build in session '{}' does not match the available genome builds.".format(genome_build))
-        except Exception as e:
-            raise Exception("Error in `get_selected_genome_build_from_session` with message: {}, and stack trace: {}".format(e, traceback.format_exc()))
-
-    return genome_build
-
-def get_genome_builds_from_session():
-    """ Retrieve the genome builds from the session, if available."""
-    genome_builds = session.get('genome_builds', None)
-    if genome_builds is None:
-        genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
-        session['genome_builds'] = genome_builds
-
-    return genome_builds
-
 def validate_genome_build(genome_build):
-    """ Validate the genome build against the available genome builds in the session."""
+    """ Validate the genome build against the available genome builds in the db."""
     genome_url_safe = dashboard_genome_build_safety_check(genome_build)
     return genome_build == genome_url_safe
 
 def dashboard_genome_build_safety_check(genome_build):
-    """ Check if the genome build is available in the file extracted from the database."""
-    genome_builds = get_genome_builds_from_session()
+    """ Check if the genome build is consistent with the database."""
+    genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
 
     # check which genome build is available for genome build
     result = [x for x in genome_builds if x.lower().startswith(genome_build.lower())]

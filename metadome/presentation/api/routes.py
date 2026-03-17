@@ -2,7 +2,7 @@ from metadome.domain.models.entities.gene_region import GenomeBuild
 from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.helper_functions import is_transcript_id
 from metadome.controllers.job import retrieve_error
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, make_response
 from builtins import Exception
 import traceback
 import logging
@@ -21,10 +21,8 @@ bp = Blueprint('api', __name__)
 @bp.route('/get_transcripts/<string:genome_build>/<string:gene_name>', methods=['GET'])
 def get_transcript_ids_for_gene(genome_build, gene_name):
     _log.debug('get_transcript_ids_for_gene')
-    # retrieve the transcript ids for this gene
     transcripts = GeneRepository.retrieve_all_transcript_ids(genome_build, gene_name)
 
-    # check if there was any return value
     if len(transcripts) > 0:
         message = "Retrieved transcripts for gene '" + transcripts[0]['gene_name'] + "'"
     else:
@@ -45,7 +43,16 @@ def get_transcript_ids_for_gene(genome_build, gene_name):
         transcript_entry['has_protein_data'] = t['protein_id'] is not None
         transcript_results.append(transcript_entry)
 
-    return jsonify(transcript_ids=transcript_results, message=message, genome_build=genome_build, gene_name=gene_name)
+    response = make_response(jsonify(
+        transcript_ids=transcript_results,
+        message=message,
+        genome_build=genome_build,
+        gene_name=gene_name
+    ))
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @bp.route('/get_metadomain_annotation/', methods=['POST'])
 def get_metadomain_annotation():

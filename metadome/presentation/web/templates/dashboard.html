@@ -2,8 +2,16 @@
 
 <!-- Scripts needed for functionality on this page -->
 <script src="{{ url_for('static', filename='js/d3-v6-tip.min.js') }}"></script>
+<script>
+  window.METADOME_CONFIG = {
+    dashboardUrl: "{{ url_for('web.dashboard') }}",
+    submitVisualizationUrl: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
+    metadomainAnnotationUrl: "{{ url_for('api.get_metadomain_annotation') }}",
+    exampleGeneJsonUrl: "{{ url_for('static', filename='json/example_T_gene.json') }}"
+  };
+</script>
 <script src="{{ url_for('static', filename='js/dashboard/visualization.js') }}" async></script>
-<script src="{{ url_for('web.dashboard_js') }}" type="text/javascript" async></script>
+<script src="{{ url_for('static', filename='js/dashboard/dashboard.js') }}"></script>
 
 <script async>
 $( function() {
