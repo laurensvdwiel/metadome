@@ -4,6 +4,34 @@
 var selected_positions = 0;
 var meta_domain_ids = new Set();
 
+// New: keep selected position shareable in the PATH, like
+// /dashboard/<genome_build>/<gene_name>/<transcript_id>/p.<pos>
+function setPositionInPath(pos) {
+    try {
+        const url = new URL(window.location.href);
+
+        // Preserve query params (e.g. ?debug=True) but change only the path
+        const segments = url.pathname.split('/').filter(s => s.length > 0);
+
+        // Remove existing trailing p.<n> segment if present
+        if (segments.length > 0 && /^p\.\d+$/.test(segments[segments.length - 1])) {
+            segments.pop();
+        }
+
+        // If pos is provided, append p.<pos>
+        if (pos !== null && typeof pos !== 'undefined') {
+            segments.push(`p.${parseInt(pos, 10)}`);
+        }
+
+        url.pathname = '/' + segments.join('/') + '/';
+
+        // Replace so clicks don't spam history; use pushState if you prefer
+        window.history.replaceState({}, "", url.toString());
+    } catch (e) {
+        // no-op
+    }
+}
+
 var main_outerWidth = document.getElementById('toleranceGraphContainer').offsetWidth || 1300;
 var main_outerHeight = 500;
 var main_svg = d3.select("#landscape_svg").attr("width", main_outerWidth)
@@ -626,6 +654,7 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .style("clip-path", "url(#clip)")
     .style("fill", "green")
     .on("click", function(event, d) {
+        setPositionInPath(d.values[0].protein_pos);
         createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
     })
     .on("pointerenter", function(event, d) {
@@ -662,6 +691,7 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .style("clip-path", "url(#clip)")
     .style("fill", "red")
     .on("click", function(event, d) {
+        setPositionInPath(d.values[0].protein_pos);
         createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
     })
     .on("pointerenter", function(event, d) {
@@ -874,6 +904,13 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
                 $("#position_information_table").removeClass('is-hidden');
                 document.getElementById("selected_positions_explanation").innerHTML =
                     'Click on one of the selected positions in the table to view more information';
+
+                // New: update shareable URL state in the PATH
+                setPositionInPath(d.values[0].protein_pos);
+
+                // If you want click-on-axis to also open the popup immediately, uncomment:
+                // createPositionalInformation(domain_metadomain_coverage, transcript_id, d);
+
             } else {
                 d3.select(this).style("fill", "orange").style("fill-opacity", 0.5);
                 d.values[0].selected = false;
@@ -884,6 +921,9 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
                     $("#position_information_table").addClass('is-hidden');
                     document.getElementById("selected_positions_explanation").innerHTML =
                         'Click on one of positions in the schematic protein to obtain more information';
+
+                    // New: clear URL position segment when nothing is selected
+                    setPositionInPath(null);
                 }
             }
         });
