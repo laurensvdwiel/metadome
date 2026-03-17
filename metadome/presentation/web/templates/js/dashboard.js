@@ -5,6 +5,34 @@
 // Initialize with global_debugging set to false
 var global_debugging = false;
 
+function setGenomeBuildValue(genomeBuild) {
+    const genomeBuildElement = document.getElementById("genomeBuild");
+    if (!genomeBuildElement) {
+        return;
+    }
+
+    genomeBuildElement.value = genomeBuild;
+    genomeBuildElement.innerText = genomeBuild;
+    genomeBuildElement.textContent = genomeBuild;
+}
+
+function getGenomeBuildValue() {
+    const genomeBuildElement = document.getElementById("genomeBuild");
+    if (!genomeBuildElement) {
+        return "";
+    }
+
+    return genomeBuildElement.value || genomeBuildElement.innerText || genomeBuildElement.textContent || "";
+}
+
+function setGeneNameValue(geneName) {
+    const geneNameElement = document.getElementById("geneName");
+    if (!geneNameElement) {
+        return;
+    }
+    geneNameElement.value = geneName || "";
+}
+
 // Specify the style for the console messages
 const info_style = "background: blue; color: white; padding-left:10px;";
 const success_style = "background: green; color: white; padding-left:10px;";
@@ -32,6 +60,19 @@ function keyPress (e) {
     	$("#domain_information_overlay").removeClass("is-active");
     	$("#positional_information_overlay").removeClass("is-active");
         d3.selectAll(".tr").classed("is-selected", false);
+
+        // New: if the URL ends with /p.<n>/, remove that segment (shareable state cleared)
+        try {
+            const url = new URL(window.location.href);
+            const segments = url.pathname.split('/').filter(s => s.length > 0);
+            if (segments.length > 0 && /^p\.\d+$/.test(segments[segments.length - 1])) {
+                segments.pop();
+                url.pathname = '/' + segments.join('/') + '/';
+                window.history.replaceState({}, "", url.toString());
+            }
+        } catch (err) {
+            // no-op
+        }
     }
 }
 
@@ -226,7 +267,7 @@ function tour_fill_transcripts(){
 function tour_fill_graph_example(){
     if (global_debugging) {console.info('%c Function tour_fill_graph_example() called', info_style);}
 	// Retrieve the example json to fill in the graph
-	$.getJSON("{{ url_for('static', filename='json/example_T_gene.json') }}", function(json) {	    
+	$.getJSON(window.METADOME_CONFIG.exampleGeneJsonUrl, function(json) {
 		document.getElementById("toleranceGraphContainer").setAttribute("style", "pointer-events: none;");
 		$("#toleranceGraphContainer").removeClass('is-hidden');
 	    $("#graph_control_field").removeClass('is-hidden');
@@ -253,7 +294,7 @@ var tour = new Tour({
   onPrev: function (tour) {
     show_tour_data_input(tour.getCurrentStep() - 1)
   },
-  onEnd: function (tour) {  window.location.reload(true); window.location.replace("{{ url_for('web.dashboard') }}");},
+  onEnd: function (tour) {  window.location.reload(true); window.location.replace(window.METADOME_CONFIG.dashboardUrl);},
   steps: [
 	  {
 		element: "",
@@ -555,14 +596,19 @@ function visualize() {
 
         if (gtID !== undefined && gtID.length > 0 && !selection.options[selection.selectedIndex].disabled) {
             var transcript_id = gtID.split(" ")[0];
-            var genome_build = document.getElementById("genomeBuild").innerText;
+            var genome_build = getGenomeBuildValue();
+
+            if (!genome_build) {
+                console.error("visualize(): genome build is empty");
+                return;
+            }
 
             $("#loading_overlay").addClass('is-active');
             $("#loading_label").text("Loading...");
             $.ajax(
                 {
                     type: 'POST',
-                    url: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
+                    url: window.METADOME_CONFIG.submitVisualizationUrl,
                     data: JSON.stringify({'transcript_id': transcript_id, 'genome_build': genome_build}),
                     success: function(data) { getVisualizationStatus(data.transcript_id, data.genome_build, 0); },
                     error: function(response) {
@@ -580,14 +626,19 @@ function visualize() {
 
 function getVisualizationStatus(transcript_id, genome_build, checkCount) {
     if (global_debugging) {console.info('%c Function getVisualizationStatus(transcript_id, checkCount) called, with transcript_id='+transcript_id+', genome_build='+genome_build+', checkCount='+checkCount, info_style);}
-    $.get(Flask.url_for("api.get_visualization_status_for_transcript",
-                        {'transcript_id': transcript_id, 'genome_build': genome_build}),
+    $.get(
+        Flask.url_for("api.get_visualization_status_for_transcript",
+            {'transcript_id': transcript_id, 'genome_build': genome_build}
+        ),
+        {
+            _: Date.now()
+        },
         function(data) {
             if (data.status == 'SUCCESS')
                 getVisualizationResult(transcript_id, genome_build);
             else if (data.status == 'FAILURE')
                 showVisualizationError(transcript_id, genome_build);
-            else {  // try again after a while..
+            else {   // try again after a while..
                 var delay = 10000;
                 if (checkCount >= 5) {
                     delay = 50000;
@@ -602,59 +653,58 @@ function getVisualizationStatus(transcript_id, genome_build, checkCount) {
 }
 
 function getVisualizationResult(transcript_id, genome_build) {
-    if (global_debugging) {console.info('%c Function getVisualizationResult(transcript_id) called, with transcript_id='+transcript_id+' genome_build='+genome_build, info_style);}
-    $.get(Flask.url_for("api.get_visualization_result_for_transcript",
-                        {'transcript_id': transcript_id, 'genome_build': genome_build}),
-        function(obj) {
-            $("#loading_overlay").removeClass('is-active');
+	if (global_debugging) {
+		console.info('%c Function getVisualizationResult(transcript_id) called, with transcript_id=' + transcript_id + ' genome_build=' + genome_build, info_style);
+	}
+	$.get(
+		Flask.url_for("api.get_visualization_result_for_transcript",
+			{'transcript_id': transcript_id, 'genome_build': genome_build}
+		),
+		{
+			_: Date.now()
+		},
+		function (obj) {
+			$("#loading_overlay").removeClass('is-active');
+			$("#toleranceGraphContainer").removeClass('is-hidden');
+			$("#graph_control_field").removeClass('is-hidden');
+			$("#geneName").val(obj.gene_name);
 
-            $("#toleranceGraphContainer").removeClass('is-hidden');
-            $("#graph_control_field").removeClass('is-hidden');
-            
-            // Set the object's gene name as the value
-            $("#geneName").val(obj.gene_name);
-            
-            var geneDetails = document.getElementById("geneDetails");
-            
-            var refSeqLinks = "";
-            if (obj.refseq_ids && obj.refseq_ids.trim().length > 0) {
-                refSeqLinks += "RefSeq: ";
+			var geneDetails = document.getElementById("geneDetails");
 
-                // Split by comma and trim whitespace from each ID
-                const refseqArray = obj.refseq_ids.split(',').map(id => id.trim()).filter(id => id.length > 0);
+			var refSeqLinks = "";
+			if (obj.refseq_ids && obj.refseq_ids.trim().length > 0) {
+				refSeqLinks += "RefSeq: ";
+				const refseqArray = obj.refseq_ids.split(',').map(id => id.trim()).filter(id => id.length > 0);
 
-                for (var i = 0; i < refseqArray.length; i++){
-                    if (i > 0){
-                        refSeqLinks += ', ';
-                    }
-                    refSeqLinks += '<a href="https://www.ncbi.nlm.nih.gov/nuccore/'+refseqArray[i]+'" target="_blank">'+refseqArray[i]+'</a>';
-                }
-                refSeqLinks += ',';
-            }
+				for (var i = 0; i < refseqArray.length; i++) {
+					if (i > 0) {
+						refSeqLinks += ', ';
+					}
+					refSeqLinks += '<a href="https://www.ncbi.nlm.nih.gov/nuccore/' + refseqArray[i] + '" target="_blank">' + refseqArray[i] + '</a>';
+				}
+				refSeqLinks += ',';
+			}
 
-            //@todo: add behaviour for other genome builds
-            geneDetails.innerHTML = 'Protein of ' + obj.gene_name + ' (GENCODE: <a href="http://grch37.ensembl.org/Homo_sapiens/Transcript/Summary?t='
-                                  + obj.transcript_id + '" target="_blank">' + obj.transcript_id
-                                  + '</a>, '+refSeqLinks+' UniProt: <a href="https://www.uniprot.org/uniprot/'
-                                  + obj.protein_ac + '" target="_blank">' + obj.protein_ac + '</a>)';
-            // Draw the graph
-            createGraph(obj);
+			geneDetails.innerHTML = 'Protein of ' + obj.gene_name + ' (GENCODE: <a href="http://grch37.ensembl.org/Homo_sapiens/Transcript/Summary?t='
+				+ obj.transcript_id + '" target="_blank">' + obj.transcript_id
+				+ '</a>, ' + refSeqLinks + ' UniProt: <a href="https://www.uniprot.org/uniprot/'
+				+ obj.protein_ac + '" target="_blank">' + obj.protein_ac + '</a>)';
+			createGraph(obj);
 
-            // Download for the whole svg as svg
-            d3.select('#dlSVG').on('click', function() {
-                var fileName = 'Gene_' + obj.gene_name + '_transcript_' + obj.transcript_id + '_protein_' + obj.protein_ac + '_metadome';
-                saveSvg(document.getElementById('landscape_svg'), fileName);
-            });
+			d3.select('#dlSVG').on('click', function () {
+				var fileName = 'Gene_' + obj.gene_name + '_transcript_' + obj.transcript_id + '_protein_' + obj.protein_ac + '_metadome';
+				saveSvg(document.getElementById('landscape_svg'), fileName);
+			});
 
-            checkForSelectedPosition();
-        }
-    );
+			checkForSelectedPosition();
+		}
+	);
 }
 
 function showVisualizationError(transcript_id, genome_build) {
     if (global_debugging) {console.info('%c Function showVisualizationError(transcript_id) called, with transcript_id='+transcript_id+' genome_build='+genome_build, info_style);}
     // Forward to the error page.
-    customRedirect(Flask.url_for("web.visualization_error", {'transcript_id': transcript_id, 'genome_build': genome_build}));
+    customRedirect(routeUrl("web.visualization_error", {'transcript_id': transcript_id, 'genome_build': genome_build}));
 }
 
 // annotates meta domain information for a position
@@ -696,7 +746,7 @@ function createPositionalInformation(domain_metadomain_coverage, transcript_id, 
         $.ajax(
           {
              type: 'POST',
-             url: "{{ url_for('api.get_metadomain_annotation') }}",
+             url: window.METADOME_CONFIG.metadomainAnnotationUrl,
              data: JSON.stringify(input),
              success:function(data) {
                 $("#loading_overlay").removeClass('is-active');
@@ -1006,36 +1056,51 @@ function customRedirect(url){
 	}
 }
 
+function routeUrl(endpoint, params) {
+    if (window.Flask && typeof Flask.url_for === "function") {
+        return Flask.url_for(endpoint, params || {});
+    }
+
+    // fallback using config
+    if (endpoint === "web.dashboard") return window.METADOME_CONFIG.dashboardUrl;
+    if (endpoint === "web.dashboard_genome_build") {
+        return window.METADOME_CONFIG.dashboardBaseUrl + "/" + encodeURIComponent(params.genome_build) + "/";
+    }
+    if (endpoint === "web.dashboard_gene_name") {
+        return window.METADOME_CONFIG.dashboardBaseUrl + "/" + encodeURIComponent(params.genome_build) + "/" + encodeURIComponent(params.gene_name) + "/";
+    }
+    if (endpoint === "web.transcript") {
+        return window.METADOME_CONFIG.dashboardBaseUrl + "/" + encodeURIComponent(params.genome_build) + "/" + encodeURIComponent(params.gene_name) + "/" + encodeURIComponent(params.transcript_id) + "/";
+    }
+
+    throw new Error("Unknown endpoint fallback: " + endpoint);
+}
+
 function getTranscriptButtonPress() {
     if (global_debugging) {console.info('%c Function getTranscriptButtonPress() called', info_style);}
 		const geneName = document.getElementById("geneName").value;
-		const genomeBuild = document.getElementById("genomeBuild").value;
+		const genomeBuild = getGenomeBuildValue();
 
-		// Check if the gene name and genome build variables are defined
 		if (typeof genomeBuild !== 'undefined' && genomeBuild.length > 0) {
 			if (typeof geneName !== 'undefined' && geneName.length > 0) {
-				// correctly set the genome build and gene name
-				customRedirect(Flask.url_for("web.dashboard_gene_name", {'genome_build': genomeBuild, 'gene_name': geneName}));
+				customRedirect(routeUrl("web.dashboard_gene_name", {'genome_build': genomeBuild, 'gene_name': geneName}));
 			}
 			else {
-				// no gene name set, redirect to the dashboard with the genome build
-				customRedirect(Flask.url_for("web.dashboard_genome_build", {'genome_build': genomeBuild}));
+				customRedirect(routeUrl("web.dashboard_genome_build", {'genome_build': genomeBuild}));
 			}
 		}
 		else {
-			// no genome build set, redirect to the default dashboard
             console.info('%c No genome build specified in the URL, redirecting to the default dashboard.', info_style);
-            customRedirect(Flask.url_for("web.dashboard"))
+            customRedirect(routeUrl("web.dashboard"))
 		}
 }
 
 function getToleranceButtonPress() {
     if (global_debugging) {console.info('%c Function getToleranceButtonPress() called', info_style);}
 	const geneName = document.getElementById("geneName").value;
-	const genomeBuild = document.getElementById("genomeBuild").value;
+	const genomeBuild = getGenomeBuildValue();
 	const selection = document.getElementsByClassName("dropdown")[0];
 
-	// Check if the gene name and genome build variables are defined
 	if (typeof genomeBuild !== 'undefined' && genomeBuild.length > 0) {
 		if (typeof geneName !== 'undefined' && geneName.length > 0) {
 			if (selection !== undefined && selection !== null && selection.length > 0) {
@@ -1044,9 +1109,7 @@ function getToleranceButtonPress() {
 
 				if (gtID !== undefined && gtID.length > 0 && !selection.options[selection.selectedIndex].disabled) {
 					const transcript_id = gtID.split(" ")[0];
-
-					// redirect to the dashboard with the genome build, gene name and transcript id
-					customRedirect(Flask.url_for("web.transcript", {'genome_build': genomeBuild, 'gene_name': geneName, 'transcript_id': transcript_id}));
+					customRedirect(routeUrl("web.transcript", {'genome_build': genomeBuild, 'gene_name': geneName, 'transcript_id': transcript_id}));
 				}
 			}
 		}
@@ -1056,218 +1119,256 @@ function getToleranceButtonPress() {
 async function checkForSelectedPosition() {
     if (global_debugging) {console.info('%c Function checkForSelectedPosition() called', info_style);}
 
-    try {
-        let response = await fetch(Flask.url_for("web.get_selected_position"));
-        if (!response.ok) {
-            throw new Error('get_selected_position did not respond: ' + response.statusText);
+    const path = window.location.pathname;
+    const pathSegments = path.split('/').filter(segment => segment.length > 0);
+
+    if (pathSegments.length < 6) {
+        if (global_debugging) {
+            console.info('%c No position segment present in path', info_style);
         }
-        let data = await response.json();
-
-        if (data.selected_position !== null) {
-            const position = data.selected_position;
-            const elementId = 'toleranceAxisRect_' + position;
-
-            // Wait for graph to be fully rendered
-            let attempts = 0;
-            const maxAttempts = 100; // 10 seconds total
-
-            const checkElement = setInterval(function() {
-                attempts++;
-                const element = document.getElementById(elementId);
-
-                if (element) {
-                    clearInterval(checkElement);
-
-                    // Get the data from the element attributes
-                    const transcript_id = element.getAttribute('data-transcript-id');
-                    const domain_coverage_str = element.getAttribute('data-domain-coverage');
-
-                    if (!transcript_id || !domain_coverage_str) {
-                        console.error('Missing data attributes on element');
-                        return;
-                    }
-
-                    const domain_metadomain_coverage = JSON.parse(domain_coverage_str);
-
-                    // Get the D3 data bound to this element
-                    const d3Element = d3.select('#' + elementId);
-                    const boundData = d3Element.datum();
-
-                    if (boundData && transcript_id && domain_metadomain_coverage) {
-                        // Select the position visually first
-                        if (!boundData.values[0].selected) {
-                            d3Element.style("fill", "green").style("fill-opacity", 0.7);
-                            boundData.values[0].selected = true;
-
-                            addRowToPositionalInformationTable(
-                                domain_metadomain_coverage,
-                                boundData,
-                                transcript_id
-                            );
-
-                            selected_positions += 1;
-                            $("#position_information_table").removeClass('is-hidden');
-                            document.getElementById("selected_positions_explanation").innerHTML =
-                                'Click on one of the selected positions in the table to view more information';
-                        }
-
-                        // Trigger the positional information popup
-                        createPositionalInformation(
-                            domain_metadomain_coverage,
-                            transcript_id,
-                            boundData
-                        );
-
-                        // Clear the session variable now that we've used it
-                        fetch(Flask.url_for("web.clear_selected_position"), {
-                            method: 'POST'
-                        });
-                    }
-                } else if (attempts >= maxAttempts) {
-                    clearInterval(checkElement);
-                    if (global_debugging) {
-                        console.info('%c Position p.' + position + ' not found after ' + maxAttempts + ' attempts', info_style);
-                    }
-                }
-            }, 100);
-        }
-    } catch (error) {
-        console.error('Error fetching selected position:', error);
+        return;
     }
+
+    const positionSegment = pathSegments[5];
+    const match = /^p\.(\d+)$/.exec(positionSegment);
+
+    if (!match) {
+        if (global_debugging) {
+            console.info('%c No valid p.<position> segment found in path', info_style);
+        }
+        return;
+    }
+
+    const position = parseInt(match[1], 10);
+    const elementId = 'toleranceAxisRect_' + position;
+
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    const checkElement = setInterval(function() {
+        attempts++;
+        const element = document.getElementById(elementId);
+
+        if (element) {
+            clearInterval(checkElement);
+
+            const transcript_id = element.getAttribute('data-transcript-id');
+            const domain_coverage_str = element.getAttribute('data-domain-coverage');
+
+            if (!transcript_id || !domain_coverage_str) {
+                console.error('Missing data attributes on element');
+                return;
+            }
+
+            const domain_metadomain_coverage = JSON.parse(domain_coverage_str);
+            const d3Element = d3.select('#' + elementId);
+            const boundData = d3Element.datum();
+
+            if (boundData && transcript_id && domain_metadomain_coverage) {
+                if (!boundData.values[0].selected) {
+                    d3Element.style("fill", "green").style("fill-opacity", 0.7);
+                    boundData.values[0].selected = true;
+
+                    addRowToPositionalInformationTable(
+                        domain_metadomain_coverage,
+                        boundData,
+                        transcript_id
+                    );
+
+                    selected_positions += 1;
+                    $("#position_information_table").removeClass('is-hidden');
+                    document.getElementById("selected_positions_explanation").innerHTML =
+                        'Click on one of the selected positions in the table to view more information';
+                }
+
+                createPositionalInformation(
+                    domain_metadomain_coverage,
+                    transcript_id,
+                    boundData
+                );
+            }
+        } else if (attempts >= maxAttempts) {
+            clearInterval(checkElement);
+            if (global_debugging) {
+                console.info('%c Position p.' + position + ' not found after ' + maxAttempts + ' attempts', info_style);
+            }
+        }
+    }, 100);
 }
 
-async function retrieveSessionVariables() {
-    if (global_debugging) {console.info('%c Function retrieveSessionVariables() called', info_style);}
-    // Expected session variables
-    const session_variables = {
-        // @todo 1: should be redesigned as a dict where genome_build+gene_name are keys and transcript_ids_for_gene as values and multiple transcript_ids_for_gene can be stored then the parameter urls should interact with this dictionary and make this browser tab independent
-        // @todo 2: align the contents here with the session variables in Flask (web.py)
-        genome_builds: [],
-        genome_build: "",
-        gene_name: "",
-        transcript_ids_for_gene: {},
-        transcript_id: "",
+function parseDashboardPath() {
+    if (global_debugging) {console.info('%c Function parseDashboardPath() called', info_style);}
+
+    const path = window.location.pathname;
+    let pathSegments = path.split('/').filter(segment => segment.length > 0);
+
+    if (get_query_param('debug')) {
+        global_debugging = true;
+        console.info('%c Debugging enabled', success_style);
+        console.info('%c Path: ' + path, info_style);
+        console.info('%c Path segments length: ' + pathSegments.length, info_style);
+        console.info('%c Path segments: ' + pathSegments, info_style);
+    }
+
+    if (!(pathSegments.length > 1 && pathSegments[0] === 'metadome' && pathSegments[1] === 'dashboard')) {
+        console.info('%c Invalid URL path: "' + path + '", expected format is /metadome/dashboard/<GenomeBuild>/<gene_name>/<transcript_id>.', info_style);
+        customRedirect(routeUrl("web.dashboard"));
+        return null;
+    }
+
+    const parsed = {
+        genome_build: pathSegments[2] || "",
+        gene_name: pathSegments[3] || "",
+        transcript_id: pathSegments[4] || "",
+        position: null,
+        is_tour: pathSegments[2] === 'tour'
     };
 
-    // get session variables from Flask
-    try{
-        let response = await fetch(Flask.url_for("web.get_dashboard_session"));
-        if (!response.ok) {
-            throw new Error('get_dashboard_session did not respond: ' + response.statusText);
+    if (pathSegments.length > 5) {
+        const match = /^p\.(\d+)$/.exec(pathSegments[5]);
+        if (match) {
+            parsed.position = parseInt(match[1], 10);
         }
-        let data = await response.json();
-        // extract all vars: genome_builds = result['genome_builds'], genome_build = result['genome_build'], gene_name = result['gene_name'], transcript_ids_for_gene = transcript_ids_for_gene, transcript_id = result['transcript_id']
-        session_variables.genome_builds = data.genome_builds || [];
-        session_variables.genome_build = data.genome_build || "";
-        session_variables.gene_name = data.gene_name || "";
-        session_variables.transcript_ids_for_gene = data.transcript_ids_for_gene || {};
-        session_variables.transcript_id = data.transcript_id || "";
-
-        // return the session variables
-        return session_variables;
     }
-    catch (error) {
-        console.error('Error fetching session data:'+ error);
-        // return empty session variables
-        return session_variables;
-    }
-}
 
-function handleURLPathParameters(session_vars) {
-    if (global_debugging) {console.info('%c Function handleURLPathParameters() called', info_style);}
-	// Handle the URL path parameters
-    const path = window.location.pathname; // e.g., "/metadome/dashboard/<GenomeBuild>/<gene_name>/<transcript_id>"
-    var pathSegments = path.split('/'); // ["", "users", "123", "profile"]
-
-	// remove empty strings segments from the pathSegments array
-	pathSegments = pathSegments.filter(segment => segment.length > 0);
-
-	if (get_query_param('debug')) {
-		// Enable debugging mode
-		global_debugging = true;
-		console.info('%c Debugging enabled', success_style);
-
-		// Print the path segments for global_debugging
-		console.info('%c Path: ' + path, info_style);
-		console.info('%c Path segments length: ' + pathSegments.length, info_style);
-		console.info('%c Path segments: ' + pathSegments, info_style);
-	}
-
-    // Log the session data for debugging
     if (global_debugging) {
-        console.info('%c Session variable - Genome builds: ' + session_vars.genome_builds.join(', '), info_style);
-        console.info('%c Session variable - "selected" Genome build: ' + session_vars.genome_build, info_style);
-        console.info('%c Session variable - "selected" Gene name: ' + session_vars.gene_name, info_style);
-        if (session_vars.transcript_ids_for_gene.transcript_ids !== undefined && session_vars.transcript_ids_for_gene.transcript_ids.length > 0){
-            // iterate and print out: "transcript_ids_for_gene":{"gene_name":"PTP4A1","genome_build":"GRCh38.p14","message":"Retrieved transcripts for gene 'PTP4A1'","transcript_ids":[{"aa_length":173,"gencode_id":"ENST00000648894.1","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"},{"aa_length":173,"gencode_id":"ENST00000673199.1","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"},{"aa_length":173,"gencode_id":"ENST00000672924.1","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"},{"aa_length":173,"gencode_id":"ENST00000626021.3","has_protein_data":true,"refseq_nm_numbers":"NM_0123TEST"}]}}
-            console.info('%c Session variable - Transcript IDs for "selected" gene name details:', info_style);
-            session_vars.transcript_ids_for_gene.transcript_ids.forEach(function(transcript) {
-                console.info('%c   - ' + transcript.gencode_id + ' (' + transcript.aa_length + 'aa) RefSeq: ' + transcript.refseq_nm_numbers + ' Has protein data: ' + transcript.has_protein_data, info_style);
-            })
-        }
-        console.info('%c Session variable - "selected" Transcript ID: ' + session_vars.transcript_id, info_style);
+        console.info('%c Parsed dashboard path:', info_style);
+        console.info(parsed);
     }
-	// Check if the path contains the expected segments
-	// the first segment should be metadome
-	if (pathSegments.length > 2 && pathSegments.indexOf('metadome') == 0 && pathSegments.indexOf('dashboard') == 1 ) {
-		// set the metadome variable
-		const url_param_metadome = pathSegments[pathSegments.indexOf('metadome')];
-		const url_param_dashboard = pathSegments[pathSegments.indexOf('dashboard')];
 
-		const url_param_tour_or_genome_build = pathSegments[2]; // e.g., "GRCh37"
-		const url_param_gene_name = pathSegments[3]; // e.g., "TP53"
-		const url_param_transcript_id = pathSegments[4]; // e.g., "ENST00000367792"
-
-		if (global_debugging) {
-            console.info('%c URL parameters: ', info_style);
-            console.info('%c Metadome: ' + url_param_metadome, info_style);
-            console.info('%c Dashboard: ' + url_param_dashboard, info_style);
-            console.info('%c Genome build: ' + url_param_tour_or_genome_build, info_style);
-            console.info('%c Gene name: ' + url_param_gene_name, info_style);
-            console.info('%c Transcript ID: ' + url_param_transcript_id, info_style);
-        }
-
-		// Handle the JavaScript behaviour of the page based on the path segments
-		switch (pathSegments.length) {
-			case 3: // Only Genome build is specified
-                if (global_debugging) { console.info('%c Case 3: Only Genome build is specified', info_style); }
-                // Start the tour automatically if this url parameter is tour
-                if (url_param_tour_or_genome_build == 'tour') {
-                    // start the tour
-                    tour.restart();
-                    return;
-                }
-				break;
-			case 4: // Genome build and gene name are specified
-                if (global_debugging) { console.info('%c Case 4: Genome build and gene name are specified', info_style); }
-				document.getElementById("geneName").value = url_param_gene_name;
-				document.getElementById("genomeBuild").value = url_param_tour_or_genome_build;
-				getTranscript(session_vars.gene_name, session_vars.genome_build, session_vars.transcript_ids_for_gene);
-				break;
-			case 5: // Genome build, gene name and transcript id are specified
-			case 6: // Same as case 5, but with position (p.X)
-                if (global_debugging) { console.info('%c Case ' + pathSegments.length + ': Genome build, gene name and transcript id are specified', info_style); }
-				document.getElementById("geneName").value = url_param_gene_name;
-				document.getElementById("genomeBuild").value = url_param_tour_or_genome_build;
-				getTranscript(session_vars.gene_name, session_vars.genome_build, session_vars.transcript_ids_for_gene);
-				// select the transcript id in the dropdown
-				var dropdown = document.getElementById("gtID");
-				for (var i = 0; i < dropdown.options.length; i++) {
-					if(global_debugging) { console.info('%c Checking transcript ID: ' + dropdown.options[i].text + ' against} ' + url_param_transcript_id, info_style); }
-					if (dropdown.options[i].text.startsWith(url_param_transcript_id)) {
-						dropdown.selectedIndex = i;
-						break;
-					}
-				}
-				visualize();
-				break;
-		}
-	} else {
-		// The path does not contain the expected segments, redirect to the index page
-		console.info('%c Invalid URL path: "' + path + '", expected format is /metadome/dashboard/<GenomeBuild>/<gene_name>/<transcript_id>.', info_style);
-        customRedirect(Flask.url_for("web.dashboard"))
-	}
+    return parsed;
 }
 
-// Initialize the dashboard by retrieving session variables and handling URL path parameters
-retrieveSessionVariables().then(session_variables => {handleURLPathParameters(session_variables)}).catch(error => console.error(error));
+async function fetchTranscriptResults(geneName, genomeBuild) {
+    if (global_debugging) {
+        console.info('%c Function fetchTranscriptResults(geneName, genomeBuild) called with geneName=' + geneName + ', genomeBuild=' + genomeBuild, info_style);
+    }
+
+    try {
+        const response = await fetch(
+            Flask.url_for("api.get_transcript_ids_for_gene", {
+                'genome_build': genomeBuild,
+                'gene_name': geneName
+            }),
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (global_debugging) {
+            console.info('%c Transcript fetch response status: ' + response.status, info_style);
+        }
+
+        if (!response.ok) {
+            throw new Error('get_transcript_ids_for_gene did not respond: ' + response.statusText);
+        }
+
+        const result = await response.json();
+
+        if (global_debugging) {
+            console.info('%c Transcript fetch result:', info_style);
+            console.info(result);
+        }
+
+        return result;
+    } catch (error) {
+        console.error('Error fetching transcript data: ' + error);
+        return {
+            transcript_ids: [],
+            message: "No transcripts available in database for gene '" + geneName + "'",
+            genome_build: genomeBuild,
+            gene_name: geneName
+        };
+    }
+}
+
+async function handleURLPathParameters() {
+    if (global_debugging) {console.info('%c Function handleURLPathParameters() called', info_style);}
+
+    const urlState = parseDashboardPath();
+    if (urlState === null) {
+        console.error("URL state parsing returned null");
+        return;
+    }
+
+    if (global_debugging) {
+        console.info('%c URL state before handling:', info_style);
+        console.info(urlState);
+    }
+
+    switch (true) {
+        case urlState.is_tour:
+            if (global_debugging) { console.info('%c Tour URL detected', info_style); }
+            tour.restart();
+            return;
+
+        case !!urlState.genome_build && !urlState.gene_name:
+            if (global_debugging) { console.info('%c Case: genome build only', info_style); }
+            setGenomeBuildValue(urlState.genome_build);
+            return;
+
+        case !!urlState.genome_build && !!urlState.gene_name && !urlState.transcript_id:
+            if (global_debugging) { console.info('%c Case: genome build + gene name', info_style); }
+
+            setGeneNameValue(urlState.gene_name);
+            setGenomeBuildValue(urlState.genome_build);
+
+            const transcriptResultsForGene = await fetchTranscriptResults(urlState.gene_name, urlState.genome_build);
+            getTranscript(urlState.gene_name, urlState.genome_build, transcriptResultsForGene);
+
+            if (global_debugging) {
+                console.info('%c After getTranscript(), dropdown length = ' + document.getElementById("gtID").options.length, info_style);
+            }
+            return;
+
+        case !!urlState.genome_build && !!urlState.gene_name && !!urlState.transcript_id:
+            if (global_debugging) { console.info('%c Case: genome build + gene name + transcript id', info_style); }
+
+            setGeneNameValue(urlState.gene_name);
+            setGenomeBuildValue(urlState.genome_build);
+
+            const transcriptResultsForTranscript = await fetchTranscriptResults(urlState.gene_name, urlState.genome_build);
+            getTranscript(urlState.gene_name, urlState.genome_build, transcriptResultsForTranscript);
+
+            var dropdown = document.getElementById("gtID");
+            var transcriptFound = false;
+
+            if (global_debugging) {
+                console.info('%c Dropdown options after getTranscript(): ' + dropdown.options.length, info_style);
+            }
+
+            for (var i = 0; i < dropdown.options.length; i++) {
+                if (global_debugging) {
+                    console.info('%c Checking transcript ID: ' + dropdown.options[i].text + ' against ' + urlState.transcript_id, info_style);
+                }
+                if (dropdown.options[i].text.startsWith(urlState.transcript_id)) {
+                    dropdown.selectedIndex = i;
+                    transcriptFound = true;
+                    break;
+                }
+            }
+
+            if (!transcriptFound) {
+                console.error("Transcript from URL not found in dropdown: " + urlState.transcript_id);
+                return;
+            }
+
+            if (dropdown.options[dropdown.selectedIndex].disabled) {
+                console.error("Transcript from URL is present but disabled: " + urlState.transcript_id);
+                return;
+            }
+
+            visualize();
+            return;
+
+        default:
+            console.info('%c Invalid URL path state, redirecting to dashboard.', info_style);
+            customRedirect(routeUrl("web.dashboard"));
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    handleURLPathParameters().catch(function(error) {
+        console.error(error);
+    });
+});
