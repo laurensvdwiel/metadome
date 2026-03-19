@@ -10,9 +10,9 @@
     exampleGeneJsonUrl: "{{ url_for('static', filename='json/example_T_gene.json') }}"
   };
 </script>
-<script src="{{ url_for('static', filename='js/dashboard/visualization.js') }}"></script>
-<script src="{{ url_for('static', filename='js/dashboard/dashboard.js') }}"></script>
-
+<script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
+<script src="{{ url_for('static', filename='js/metadome/dashboard/visualization.js') }}"></script>
+<script src="{{ url_for('static', filename='js/metadome/dashboard/dashboard.js') }}"></script>
 <script>
 $( function() {
   var availableTags = [{% for item in data %} {{ item|safe }},{% endfor %}];

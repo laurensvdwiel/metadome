@@ -695,6 +695,7 @@ class MappingRepository:
                 Mapping.chromosome_position,
                 Mapping.uniprot_position,
                 Mapping.uniprot_residue,
+                Mapping.base_pair,
                 Mapping.codon,
                 Mapping.strand
             ).filter(
@@ -717,6 +718,7 @@ class MappingRepository:
                     "chromosome_position": r.chromosome_position,
                     "uniprot_position": r.uniprot_position,
                     "uniprot_residue": r.uniprot_residue,
+                    "base_pair": r.base_pair or "",
                     "codon": r.codon,
                     "strand": r.strand.value if hasattr(r.strand, "value") else str(r.strand)
                 }
@@ -789,6 +791,7 @@ class MappingRepository:
             item["chromosome"] = h["chromosome"]
             item["gene_name"] = gene.gene_name
             item["strand"] = h["strand"]
+            item["base_pair"] = h.get("base_pair", "")
             item["gencode_transcript"] = gene.gencode_transcription_id
             item["refseq_transcript"] = gene.refseq_transcript_id or ""
             item["mane_transcript_type"] = gene.mane_transcript_type or ""
@@ -806,14 +809,15 @@ class MappingRepository:
             results.append({
                 "gene_name": item["gene_name"],
                 "genome_build": item["genome_build"],
-                "codon_position": MappingRepository._format_positions_to_ranges(item["chromosome"], item["positions"]),
+                "chromosome": item["chromosome"],
+                "genomic_position": position,
+                "base_pair": item["base_pair"],
                 "strand": item["strand"],
-                "transcript": transcript_display,
-                "uniprot": item["uniprot_ac"],
-                "codon": item["codon"],
-                "amino_acid": item["amino_acid"],
-                "mane_transcript_type": item["mane_transcript_type"],
                 "gencode_transcript": item["gencode_transcript"],
+                "refseq_transcript": item["refseq_transcript"],
+                "mane_transcript_type": item["mane_transcript_type"],
+                "uniprot_ac": item["uniprot_ac"],
+                "amino_acid": item["amino_acid"],
                 "protein_position": item["protein_position"],
             })
 

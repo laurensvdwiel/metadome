@@ -273,8 +273,8 @@ function tour_fill_graph_example(){
 	    $("#graph_control_field").removeClass('is-hidden');
 	    var geneName = document.getElementById("geneName").value;
 	    var geneDetails = document.getElementById("geneDetails");
-	    geneDetails.innerHTML = 'Gene: '+json.gene_name+' (transcript: <a href="http://grch37.ensembl.org/Homo_sapiens/Transcript/Summary?t='+json.transcript_id+'" target="_blank">'+json.transcript_id+'</a>, protein: <a href="https://www.uniprot.org/uniprot/'+json.protein_ac+'" target="_blank">'+json.protein_ac+'</a>)';
-	    createGraph(json);
+		geneDetails.innerHTML = 'Gene: '+json.gene_name+' (transcript: <a href="'+ window.METADOME_LINKS.ensemblTranscript(json.genome_build || getGenomeBuildValue(), json.transcript_id) +'" target="_blank">'+json.transcript_id+'</a>, protein: <a href="'+ window.METADOME_LINKS.uniprot(json.protein_ac) +'" target="_blank">'+json.protein_ac+'</a>)';
+		createGraph(json);
 	    // disable any mouse events on the elements
 		document.getElementById("graph_control_field_buttons").setAttribute("style", "pointer-events: none;");
 		document.getElementById("graph_control_field_checkboxes").setAttribute("style", "pointer-events: none;");
@@ -680,15 +680,15 @@ function getVisualizationResult(transcript_id, genome_build) {
 					if (i > 0) {
 						refSeqLinks += ', ';
 					}
-					refSeqLinks += '<a href="https://www.ncbi.nlm.nih.gov/nuccore/' + refseqArray[i] + '" target="_blank">' + refseqArray[i] + '</a>';
+					refSeqLinks += '<a href="' + window.METADOME_LINKS.refseq(refseqArray[i]) + '" target="_blank">' + refseqArray[i] + '</a>';
 				}
 				refSeqLinks += ',';
 			}
 
-			geneDetails.innerHTML = 'Protein of ' + obj.gene_name + ' (GENCODE: <a href="http://grch37.ensembl.org/Homo_sapiens/Transcript/Summary?t='
-				+ obj.transcript_id + '" target="_blank">' + obj.transcript_id
-				+ '</a>, ' + refSeqLinks + ' UniProt: <a href="https://www.uniprot.org/uniprot/'
-				+ obj.protein_ac + '" target="_blank">' + obj.protein_ac + '</a>)';
+			geneDetails.innerHTML = 'Protein of ' + obj.gene_name + ' (GENCODE: <a href="'
+				+ window.METADOME_LINKS.ensemblTranscript(genome_build, obj.transcript_id) + '" target="_blank">' + obj.transcript_id
+				+ '</a>, ' + refSeqLinks + ' UniProt: <a href="'
+				+ window.METADOME_LINKS.uniprot(obj.protein_ac) + '" target="_blank">' + obj.protein_ac + '</a>)';
 			createGraph(obj);
 
 			d3.select('#dlSVG').on('click', function () {
@@ -795,10 +795,10 @@ function FillPositionalInformation(domain_metadomain_coverage, position_data, da
 		
 		for (var i = 0; i < n_domains_at_position; i++){
 		    if (i+1 == n_domains_at_position){
-			domain_ids += '<a href="http://pfam.xfam.org/family/' + domain_id_list[i] + '" target="_blank">'+domain_id_list[i]+"</a>";
-		    }	
+			domain_ids += '<a href="' + window.METADOME_LINKS.pfam(domain_id_list[i]) + '" target="_blank">'+domain_id_list[i]+"</a>";
+		    }
 		    else{
-			domain_ids += '<a href="http://pfam.xfam.org/family/' + domain_id_list[i] + '" target="_blank">'+domain_id_list[i]+", </a>";
+			domain_ids += '<a href="' + window.METADOME_LINKS.pfam(domain_id_list[i]) + '" target="_blank">'+domain_id_list[i]+", </a>";
 		    }
 		    
 		    // add meta domain information
@@ -972,11 +972,11 @@ function createClinVarTableBody(ClinvarVariants){
 		var variant = ClinvarVariants[index];
 		html_table += '<tr>';
 		html_table += '<td>'+variant.gene_name+'</td>';
-		html_table += '<td><a href="http://grch37.ensembl.org/Homo_sapiens/Location/View?db=core;r='+variant.chr.substr(3)+':'+variant.pos+'" target="_blank">'+variant.chr+':'+variant.pos+'</a></td>';
+		html_table += '<td><a href="' + window.METADOME_LINKS.ensemblGenomicPosition(variant.genome_build || getGenomeBuildValue(), variant.chr, variant.pos) + '" target="_blank">'+variant.chr+':'+variant.pos+'</a></td>';
 		html_table += '<td>'+variant.ref+'>'+variant.alt+'</td>';
 		html_table += '<td>'+variant.ref_aa_triplet+'>'+variant.alt_aa_triplet+'</td>';
 		html_table += '<td>'+variant.type+'</td>';
-		html_table += '<td><a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/' + variant.clinvar_ID + '/" target="_blank">' + variant.clinvar_ID + '</a></td>';
+		html_table += '<td><a href="' + window.METADOME_LINKS.clinvarVariant(variant.clinvar_ID) + '" target="_blank">' + variant.clinvar_ID + '</a></td>';
 		html_table += '</tr>';
     }
     	
@@ -1007,11 +1007,11 @@ function createGnomADTableBody(gnomADVariants){
 		var variant = gnomADVariants[index];
 		html_table += '<tr>';
 		html_table += '<td>'+variant.gene_name+'</td>';
-		html_table += '<td><a href="http://grch37.ensembl.org/Homo_sapiens/Location/View?db=core;r='+variant.chr.substr(3)+':'+variant.pos+'" target="_blank">'+variant.chr+':'+variant.pos+'</a></td>';
+		html_table += '<td><a href="' + window.METADOME_LINKS.ensemblGenomicPosition(variant.genome_build || getGenomeBuildValue(), variant.chr, variant.pos) + '" target="_blank">'+variant.chr+':'+variant.pos+'</a></td>';
 		html_table += '<td>'+variant.ref+'>'+variant.alt+'</td>';
 		html_table += '<td>'+variant.ref_aa_triplet+'>'+variant.alt_aa_triplet+'</td>';
-		html_table += '<td>'+variant.type+'</td>';		
-		html_table += '<td><a href="https://gnomad.broadinstitute.org/variant/'+variant.chr+'-'+variant.pos+'-'+variant.ref+'-'+variant.alt +'" target="_blank">'+parseFloat(variant.allele_count/variant.allele_number).toFixed(6)+'</a></td>';
+		html_table += '<td>'+variant.type+'</td>';
+		html_table += '<td><a href="' + window.METADOME_LINKS.gnomadVariant(variant.genome_build || getGenomeBuildValue(), variant.chr, variant.pos, variant.ref, variant.alt) + '" target="_blank">'+parseFloat(variant.allele_count/variant.allele_number).toFixed(6)+'</a></td>';
 		html_table += '</tr>';
     }
     	
