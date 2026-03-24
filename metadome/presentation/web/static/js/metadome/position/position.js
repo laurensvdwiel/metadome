@@ -4,13 +4,18 @@ document.addEventListener("DOMContentLoaded", function() {
         return;
     }
 
+    function buildExternalAnchorOrFallback(href, label) {
+        if (!href || typeof href !== "string" || href.trim().length === 0) {
+            return '<span class="has-text-grey" title="External link unavailable">' + label + '</span>';
+        }
+        return '<a href="' + href + '" target="_blank" rel="noopener">' + label + '</a>';
+    }
+
     const rows = table.querySelectorAll("tbody tr[data-gene]");
     rows.forEach(function(row) {
         const genomeBuild = row.dataset.build || window.METADOME_CONFIG.genomeBuild || "";
         const chr = row.dataset.chr || "";
         const genomicPos = row.dataset.pos || "";
-        const proteinPos = row.dataset.proteinPos || "";
-        const geneName = row.dataset.gene || "";
         const gencodeTranscript = row.dataset.gencodeTranscript || "";
         const refseqTranscript = row.dataset.refseqTranscript || "";
         const uniprotAc = row.dataset.uniprotAc || "";
@@ -21,22 +26,23 @@ document.addEventListener("DOMContentLoaded", function() {
         const genomicCell = row.cells[2];
         const transcriptCell = row.cells[3];
         const uniprotCell = row.cells[4];
-        const metadomeCell = row.cells[6];
 
+        const ensemblPositionHref = window.METADOME_LINKS.ensemblGenomicPosition(genomeBuild, chr, genomicPos);
         genomicCell.innerHTML =
-            '<a href="' + window.METADOME_LINKS.ensemblGenomicPosition(genomeBuild, chr, genomicPos) + '" target="_blank" rel="noopener">' +
-            chr + ':' + genomicPos +
-            '</a> ' + basePair + ' (' + (strand === "plus" ? "+" : "-") + ')';
+            buildExternalAnchorOrFallback(ensemblPositionHref, chr + ':' + genomicPos) +
+            ' ' + basePair + ' (' + (strand === "plus" ? "+" : "-") + ')';
+
+        const ensemblTranscriptHref = window.METADOME_LINKS.ensemblTranscript(genomeBuild, gencodeTranscript);
+        const refseqHref = refseqTranscript ? window.METADOME_LINKS.refseq(refseqTranscript) : null;
 
         transcriptCell.innerHTML =
-            '<a href="' + window.METADOME_LINKS.ensemblTranscript(genomeBuild, gencodeTranscript) + '" target="_blank" rel="noopener">' +
-            gencodeTranscript +
-            '</a>' +
-            (refseqTranscript ? ' / <a href="' + window.METADOME_LINKS.refseq(refseqTranscript) + '" target="_blank" rel="noopener">' + refseqTranscript + '</a>' : '') +
+            buildExternalAnchorOrFallback(ensemblTranscriptHref, gencodeTranscript) +
+            (refseqTranscript ? ' / ' + buildExternalAnchorOrFallback(refseqHref, refseqTranscript) : '') +
             (mane === "MANE_Select" ? ' <span class="tag is-info is-light">[MANE Select]</span>' : '');
 
+        const uniprotHref = uniprotAc ? window.METADOME_LINKS.uniprot(uniprotAc) : null;
         uniprotCell.innerHTML = uniprotAc
-            ? '<a href="' + window.METADOME_LINKS.uniprot(uniprotAc) + '" target="_blank" rel="noopener">' + uniprotAc + '</a>'
+            ? buildExternalAnchorOrFallback(uniprotHref, uniprotAc)
             : '';
     });
 
