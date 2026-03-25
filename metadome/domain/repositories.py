@@ -697,13 +697,14 @@ class MappingRepository:
                 Mapping.uniprot_residue,
                 Mapping.base_pair,
                 Mapping.codon,
+                Mapping.codon_base_pair_position,
                 Mapping.strand
             ).filter(
-                func.lower(Mapping.chromosome) == normalized_chr,
+                func.lower(Mapping.chromosome) == normalized_chr.lower(),
                 Mapping.chromosome_position == position
             ).order_by(Mapping.id)
 
-            if genome_build and genome_build != "ALL":
+            if genome_build:
                 query = query.join(Gene, Mapping.gene_id == Gene.id).filter(
                     func.lower(Gene.genome_build) == genome_build.lower())
 
@@ -719,8 +720,9 @@ class MappingRepository:
                     "uniprot_position": r.uniprot_position,
                     "uniprot_residue": r.uniprot_residue,
                     "base_pair": r.base_pair or "",
-                    "codon": r.codon,
-                    "strand": r.strand.value if hasattr(r.strand, "value") else str(r.strand)
+                    "codon": r.codon or "",
+                    "codon_position": (r.codon_base_pair_position + 1) if r.codon_base_pair_position is not None else None,
+                    "strand": r.strand.value if r.strand is not None else "",
                 }
                 for r in rows
                 if r.uniprot_position is not None
@@ -759,11 +761,13 @@ class MappingRepository:
             "chromosome": "",
             "gene_name": "",
             "strand": "",
+            "strand_symbol": "",
             "gencode_transcript": "",
             "refseq_transcript": "",
             "mane_transcript_type": "",
             "uniprot_ac": "",
             "codon": "",
+            "codon_position": None,
             "amino_acid": "",
             "protein_position": None
         })
@@ -775,6 +779,7 @@ class MappingRepository:
 
             protein = proteins_by_id.get(h["protein_id"])
             protein_position_1_based = h["uniprot_position"] + 1
+            strand_value = str(h.get("strand") or "").strip()
 
             key = (
                 gene.id,
@@ -782,6 +787,8 @@ class MappingRepository:
                 gene.gencode_transcription_id,
                 protein_position_1_based,
                 h["codon"],
+                h["codon_position"],
+                strand_value,
                 h["uniprot_residue"]
             )
 
@@ -790,22 +797,19 @@ class MappingRepository:
             item["genome_build"] = gene.genome_build
             item["chromosome"] = h["chromosome"]
             item["gene_name"] = gene.gene_name
-            item["strand"] = h["strand"]
+            item["strand"] = strand_value if strand_value in {"+", "-"} else ""
             item["base_pair"] = h.get("base_pair", "")
             item["gencode_transcript"] = gene.gencode_transcription_id
             item["refseq_transcript"] = gene.refseq_transcript_id or ""
             item["mane_transcript_type"] = gene.mane_transcript_type or ""
             item["uniprot_ac"] = protein.uniprot_ac if protein is not None else ""
             item["codon"] = h["codon"] or ""
+            item["codon_position"] = h.get("codon_position")
             item["amino_acid"] = protein_letters_1to3.get(h["uniprot_residue"], "") if h["uniprot_residue"] else ""
             item["protein_position"] = protein_position_1_based
 
         results = []
         for _, item in grouped.items():
-            transcript_display = item["gencode_transcript"]
-            if item["refseq_transcript"]:
-                transcript_display += f" / {item['refseq_transcript']}"
-
             results.append({
                 "gene_name": item["gene_name"],
                 "genome_build": item["genome_build"],
@@ -817,6 +821,8 @@ class MappingRepository:
                 "refseq_transcript": item["refseq_transcript"],
                 "mane_transcript_type": item["mane_transcript_type"],
                 "uniprot_ac": item["uniprot_ac"],
+                "codon": item["codon"],
+                "codon_position": item["codon_position"],
                 "amino_acid": item["amino_acid"],
                 "protein_position": item["protein_position"],
             })

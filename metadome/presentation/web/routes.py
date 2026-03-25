@@ -15,8 +15,8 @@ import traceback
 import time
 import requests
 from datetime import datetime
-
 import logging
+import re
 
 _log = logging.getLogger(__name__)
 
@@ -52,13 +52,13 @@ def dashboard_tour():
 
 @bp.route('/dashboard_grch37/', methods=['GET'])
 def dashboard_grch37():
-    genome_build_url_safe = dashboard_genome_build_safety_check('GRCh37')
+    genome_build_url_safe = genome_build_safety_check('GRCh37')
 
     return redirect(url_for('web.dashboard_genome_build', genome_build=genome_build_url_safe))
 
 @bp.route('/dashboard_grch38/', methods=['GET'])
 def dashboard_grch38():
-    genome_build_url_safe = dashboard_genome_build_safety_check('GRCh38')
+    genome_build_url_safe = genome_build_safety_check('GRCh38')
 
     return redirect(url_for('web.dashboard_genome_build', genome_build=genome_build_url_safe))
 
@@ -180,7 +180,8 @@ def position_lookup_home():
     return render_template(
         'position.html',
         genome_builds=genome_builds,
-        selected_genome_build="ALL",
+        selected_genome_build=genome_build_safety_check('GRCh38'),
+        selected_query="",
         selected_chromosome="",
         selected_position="",
         results=[]
@@ -188,39 +189,29 @@ def position_lookup_home():
 
 @bp.route('/position/search', methods=['GET'])
 def position_lookup_search():
-    chromosome = MappingRepository._normalize_chromosome_input(request.args.get('chromosome', ''))
-    position_raw = (request.args.get('position') or "").strip()
-    genome_build = (request.args.get('genome_build') or "ALL").strip()
+    genome_build = genome_build_safety_check(request.args.get('genome_build'))
+    query = request.args.get('query', '')
+    chromosome, position = parse_position_query(query)
 
-    if not chromosome or not position_raw.isdigit():
+    if not chromosome or position is None:
         return redirect(url_for('web.position_lookup_home'))
-
-    position = int(position_raw)
-
-    if genome_build and genome_build != "ALL":
-        return redirect(url_for(
-            'web.position_lookup',
-            chromosome=chromosome,
-            position=position,
-            genome_build=genome_build
-        ))
 
     return redirect(url_for(
         'web.position_lookup',
+        genome_build=genome_build,
         chromosome=chromosome,
         position=position
     ))
 
-@bp.route('/position/<chromosome>/<int:position>/', methods=['GET'])
-def position_lookup(chromosome, position):
+@bp.route('/position/<genome_build>/<chromosome>/<int:position>/', methods=['GET'])
+def position_lookup(genome_build, chromosome, position):
+    selected_genome_build = genome_build_safety_check(genome_build)
     normalized_chr = MappingRepository._normalize_chromosome_input(chromosome)
-    selected_genome_build = (request.args.get('genome_build') or "ALL").strip()
-    genome_build_filter = None if selected_genome_build == "ALL" else selected_genome_build
 
     raw_results = MappingRepository.lookup_position_results(
         chromosome=normalized_chr,
         position=position,
-        genome_build=genome_build_filter
+        genome_build=selected_genome_build
     )
 
     results = []
@@ -242,6 +233,7 @@ def position_lookup(chromosome, position):
         'position.html',
         genome_builds=genome_builds,
         selected_genome_build=selected_genome_build,
+        selected_query=f"{normalized_chr}:{position}",
         selected_chromosome=normalized_chr,
         selected_position=position,
         results=results
@@ -425,10 +417,10 @@ def exception_error_handler(error):  # pragma: no cover
 
 def validate_genome_build(genome_build):
     """ Validate the genome build against the available genome builds in the db."""
-    genome_url_safe = dashboard_genome_build_safety_check(genome_build)
+    genome_url_safe = genome_build_safety_check(genome_build)
     return genome_build == genome_url_safe
 
-def dashboard_genome_build_safety_check(genome_build):
+def genome_build_safety_check(genome_build):
     """ Check if the genome build is consistent with the database."""
     genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
 
@@ -440,3 +432,16 @@ def dashboard_genome_build_safety_check(genome_build):
         raise Exception("No genome build found for "+str(genome_build))
 
     return result[0]
+
+def parse_position_query(query: str) -> tuple[str | None, int | None]:
+    raw = (query or "").strip()
+    if not raw:
+        return None, None
+
+    match = re.match(r"^\s*(chr[\w]+|[\w]+)\s*[:\s]\s*(\d+)\s*$", raw, re.IGNORECASE)
+    if not match:
+        return None, None
+
+    chromosome = MappingRepository._normalize_chromosome_input(match.group(1))
+    position = int(match.group(2)) if match.group(2).isdigit() else None
+    return chromosome, position

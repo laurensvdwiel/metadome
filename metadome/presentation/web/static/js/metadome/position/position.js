@@ -1,6 +1,5 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const table = document.getElementById("position-results-table");
-    if (!table || !window.METADOME_LINKS) {
+    if (!window.METADOME_LINKS) {
         return;
     }
 
@@ -11,39 +10,86 @@ document.addEventListener("DOMContentLoaded", function() {
         return '<a href="' + href + '" target="_blank" rel="noopener">' + label + '</a>';
     }
 
+    function normalizeStrandSymbol(strandValue) {
+        const raw = String(strandValue || "").trim();
+        if (raw === "+" || raw === "-") {
+            return raw;
+        }
+        if (raw.toLowerCase() === "plus") {
+            return "+";
+        }
+        if (raw.toLowerCase() === "minus") {
+            return "-";
+        }
+        return "";
+    }
+
+    function formatCodonWithHighlight(codon, codonPosition, strandSymbol) {
+        const clean = String(codon || "").trim();
+        const pos = parseInt(codonPosition, 10);
+        const strand = String(strandSymbol || "").trim();
+
+        if (clean.length !== 3 || ![1, 2, 3].includes(pos)) {
+            return strand ? "(" + clean + " " + strand + ")" : "(" + clean + ")";
+        }
+
+        const chars = clean.split("");
+        const index = pos - 1;
+        chars[index] = "<strong><u>" + chars[index] + "</u></strong>";
+        return strand ? "(" + chars.join("") + " " + strand + ")" : "(" + chars.join("") + ")";
+    }
+
+    const queryElement = document.getElementById("position-query");
+    if (queryElement) {
+        const genomeBuild = queryElement.dataset.genomeBuild || window.METADOME_CONFIG?.genomeBuild || "";
+        const chr = queryElement.dataset.chr || "";
+        const pos = queryElement.dataset.pos || "";
+        const label = chr + ":" + pos + " (" + genomeBuild + ")";
+        const href = window.METADOME_LINKS.ensemblGenomicPosition(genomeBuild, chr, pos);
+        const container = queryElement.querySelector(".query-link-container");
+
+        if (container) {
+            container.innerHTML = buildExternalAnchorOrFallback(href, label);
+        }
+    }
+
+    const table = document.getElementById("position-results-table");
+    if (!table) {
+        return;
+    }
+
     const rows = table.querySelectorAll("tbody tr[data-gene]");
     rows.forEach(function(row) {
-        const genomeBuild = row.dataset.build || window.METADOME_CONFIG.genomeBuild || "";
-        const chr = row.dataset.chr || "";
-        const genomicPos = row.dataset.pos || "";
+        const genomeBuild = row.dataset.build || window.METADOME_CONFIG?.genomeBuild || "GRCh38";
         const gencodeTranscript = row.dataset.gencodeTranscript || "";
         const refseqTranscript = row.dataset.refseqTranscript || "";
         const uniprotAc = row.dataset.uniprotAc || "";
         const mane = row.dataset.mane || "";
-        const basePair = row.dataset.basePair || "";
-        const strand = row.dataset.strand || "";
+        const codon = row.dataset.codon || "";
+        const codonPosition = row.dataset.codonPosition || "";
+        const strand = normalizeStrandSymbol(row.dataset.strand);
 
-        const genomicCell = row.cells[2];
-        const transcriptCell = row.cells[3];
-        const uniprotCell = row.cells[4];
+        const proteinCell = row.querySelector(".protein-position-cell");
 
-        const ensemblPositionHref = window.METADOME_LINKS.ensemblGenomicPosition(genomeBuild, chr, genomicPos);
-        genomicCell.innerHTML =
-            buildExternalAnchorOrFallback(ensemblPositionHref, chr + ':' + genomicPos) +
-            ' ' + basePair + ' (' + (strand === "plus" ? "+" : "-") + ')';
+        const aaLabel = row.dataset.aminoAcid || "";
+        const proteinPos = row.dataset.proteinPos || "";
+        const codonLabel = formatCodonWithHighlight(codon, codonPosition, strand);
+
+        proteinCell.innerHTML =
+            "p." + aaLabel + proteinPos + (codon.trim() ? " " + codonLabel : "");
 
         const ensemblTranscriptHref = window.METADOME_LINKS.ensemblTranscript(genomeBuild, gencodeTranscript);
         const refseqHref = refseqTranscript ? window.METADOME_LINKS.refseq(refseqTranscript) : null;
 
-        transcriptCell.innerHTML =
+        row.cells[1].innerHTML =
             buildExternalAnchorOrFallback(ensemblTranscriptHref, gencodeTranscript) +
-            (refseqTranscript ? ' / ' + buildExternalAnchorOrFallback(refseqHref, refseqTranscript) : '') +
+            (refseqTranscript ? " / " + buildExternalAnchorOrFallback(refseqHref, refseqTranscript) : "") +
             (mane === "MANE_Select" ? ' <span class="tag is-info is-light">[MANE Select]</span>' : '');
 
         const uniprotHref = uniprotAc ? window.METADOME_LINKS.uniprot(uniprotAc) : null;
-        uniprotCell.innerHTML = uniprotAc
+        row.cells[2].innerHTML = uniprotAc
             ? buildExternalAnchorOrFallback(uniprotHref, uniprotAc)
-            : '';
+            : "";
     });
 
     const headers = table.querySelectorAll("th.sortable");
@@ -70,19 +116,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (sortKey === "gene") {
                     valA = a.dataset.gene.toLowerCase();
                     valB = b.dataset.gene.toLowerCase();
-                } else if (sortKey === "build") {
-                    valA = a.dataset.build.toLowerCase();
-                    valB = b.dataset.build.toLowerCase();
-                } else if (sortKey === "genomic") {
-                    valA = a.dataset.chr + String(parseInt(a.dataset.pos)).padStart(12, "0");
-                    valB = b.dataset.chr + String(parseInt(b.dataset.pos)).padStart(12, "0");
                 } else if (sortKey === "protein") {
-                    valA = parseInt(a.dataset.proteinPos) || 0;
-                    valB = parseInt(b.dataset.proteinPos) || 0;
+                    valA = parseInt(a.dataset.proteinPos, 10) || 0;
+                    valB = parseInt(b.dataset.proteinPos, 10) || 0;
                     return currentSort.asc ? valA - valB : valB - valA;
                 } else if (sortKey === "transcript") {
-                    valA = a.cells[3].textContent.toLowerCase();
-                    valB = b.cells[3].textContent.toLowerCase();
+                    valA = a.cells[1].textContent.toLowerCase();
+                    valB = b.cells[1].textContent.toLowerCase();
                 } else {
                     return 0;
                 }

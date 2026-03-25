@@ -12,28 +12,29 @@
     </script>
 
     <script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/metadome/position/position.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/metadome/position/position.js') }}"></script>
 
     <form method="get" action="{{ url_for('web.position_lookup_search') }}">
       <div class="field is-grouped">
         <div class="control">
           <div class="select">
             <select name="genome_build">
-              <option value="ALL" {% if selected_genome_build == "ALL" %}selected{% endif %}>All Genome Builds</option>
-              {% for gb in genome_builds %}
+              {% for gb in genome_builds if genome_builds is defined %}
                 <option value="{{ gb }}" {% if selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
               {% endfor %}
+              {% if not genome_builds is defined %}
+                <option value="GRCh38" selected>GRCh38</option>
+              {% endif %}
             </select>
           </div>
         </div>
-        <div class="control">
-          <input class="input" type="text" name="chromosome" placeholder="chr1 or 1"
-                 value="{{ selected_chromosome or '' }}" required>
+
+        <div class="control is-expanded">
+          <input class="input" type="text" name="query"
+                 placeholder="chr1:12345 or chr1 12345"
+                 value="{{ selected_query or '' }}" required>
         </div>
-        <div class="control">
-          <input class="input" type="number" min="1" step="1" name="position"
-                 placeholder="Genomic position" value="{{ selected_position or '' }}" required>
-        </div>
+
         <div class="control">
           <button class="button is-info" type="submit">Search</button>
         </div>
@@ -41,15 +42,22 @@
     </form>
 
     {% if selected_chromosome and selected_position %}
-      <p class="mt-3"><strong>Query:</strong> {{ selected_chromosome }}:{{ selected_position }}</p>
+      <p class="mt-3"
+         id="position-query"
+         data-genome-build="{{ selected_genome_build }}"
+         data-chr="{{ selected_chromosome }}"
+         data-pos="{{ selected_position }}">
+        <strong>Query:</strong>
+        <span class="query-link-container">
+          {{ selected_chromosome }}:{{ selected_position }} ({{ selected_genome_build }})
+        </span>
+      </p>
     {% endif %}
 
     <table class="table is-fullwidth is-striped is-hoverable mt-4" id="position-results-table">
       <thead>
         <tr>
           <th class="sortable" data-sort="gene">Gene Name</th>
-          <th class="sortable" data-sort="build">Genome Build</th>
-          <th class="sortable" data-sort="genomic">Genomic Position</th>
           <th class="sortable" data-sort="transcript">Transcript</th>
           <th>UniProt</th>
           <th class="sortable" data-sort="protein">Protein Position</th>
@@ -70,13 +78,11 @@
                 data-refseq-transcript="{{ r.refseq_transcript or '' }}"
                 data-uniprot-ac="{{ r.uniprot_ac or '' }}"
                 data-base-pair="{{ r.base_pair or '' }}"
-                data-strand="{{ r.strand or '' }}">
+                data-strand="{{ r.strand or '' }}"
+                data-codon="{{ r.codon or '' }}"
+                data-codon-position="{{ r.codon_position or '' }}"
+                data-amino-acid="{{ r.amino_acid or '' }}">
               <td>{{ r.gene_name }}</td>
-              <td>{{ r.genome_build }}</td>
-              <td>
-                {{ r.chromosome }}:{{ r.genomic_position }}
-                {{ r.base_pair }} ({{ "+" if r.strand == "plus" else "-" }})
-              </td>
               <td>
                 {{ r.gencode_transcript }}
                 {% if r.refseq_transcript %}
@@ -91,13 +97,15 @@
                   {{ r.uniprot_ac }}
                 {% endif %}
               </td>
-              <td>p.{{ r.amino_acid }}{{ r.protein_position }}</td>
+              <td class="protein-position-cell">
+                p.{{ r.amino_acid }}{{ r.protein_position }}
+              </td>
               <td><a href="{{ r.metadome_link }}" target="_blank" rel="noopener">{{ r.metadome_label }}</a></td>
             </tr>
           {% endfor %}
         {% elif selected_chromosome and selected_position %}
           <tr>
-            <td colspan="7">No mappings found for this position.</td>
+            <td colspan="5">No mappings found for this position.</td>
           </tr>
         {% endif %}
       </tbody>

@@ -37,8 +37,8 @@ function normalizeChromosome(chromosome) {
     const raw = String(chromosome || "").trim();
     if (raw.length === 0) return null;
     const noChr = raw.replace(/^chr/i, "");
-    if (/^(?:[1-9]|1[0-9]|2[0-2]|X|Y|M|MT)$/i.test(noChr)) {
-        return noChr.toUpperCase() === "MT" ? "M" : noChr.toUpperCase();
+    if (/^(?:[1-9]|1[0-9]|2[0-2]|X|Y)$/i.test(noChr)) {
+        return "chr" + noChr.toUpperCase();
     }
     return null;
 }
