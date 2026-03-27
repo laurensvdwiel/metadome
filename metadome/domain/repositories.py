@@ -721,7 +721,8 @@ class MappingRepository:
                     "uniprot_residue": r.uniprot_residue,
                     "base_pair": r.base_pair or "",
                     "codon": r.codon or "",
-                    "codon_position": (r.codon_base_pair_position + 1) if r.codon_base_pair_position is not None else None,
+                    "codon_position": (
+                                r.codon_base_pair_position + 1) if r.codon_base_pair_position is not None else None,
                     "strand": r.strand.value if r.strand is not None else "",
                 }
                 for r in rows
@@ -751,9 +752,45 @@ class MappingRepository:
 
         gene_ids = {h["gene_id"] for h in hits if h["gene_id"] is not None}
         protein_ids = {h["protein_id"] for h in hits if h["protein_id"] is not None}
+        mapping_ids = {h["mapping_id"] for h in hits if h["mapping_id"] is not None}
 
         genes_by_id = GeneRepository.retrieve_genes_by_ids(gene_ids)
         proteins_by_id = ProteinRepository.retrieve_proteins_by_ids(protein_ids)
+
+        mapping_pfam_domains = defaultdict(list)
+        if mapping_ids:
+            _session = db._make_scoped_session(options={})
+            try:
+                pfam_rows = _session.query(
+                    MetaDomainMapping.mapping_id,
+                    Interpro.ext_db_id,
+                    Interpro.region_name
+                ).join(
+                    Interpro, Interpro.id == MetaDomainMapping.interpro_id
+                ).filter(
+                    MetaDomainMapping.mapping_id.in_(mapping_ids)
+                ).all()
+
+                seen_per_mapping = defaultdict(set)
+                for row in pfam_rows:
+                    if not row.ext_db_id:
+                        continue
+
+                    if row.ext_db_id in seen_per_mapping[row.mapping_id]:
+                        continue
+
+                    seen_per_mapping[row.mapping_id].add(row.ext_db_id)
+                    mapping_pfam_domains[row.mapping_id].append({
+                        "name": row.region_name or row.ext_db_id,
+                        "ext_db_id": row.ext_db_id,
+                    })
+            except (AlchemyResourceClosedError, AlchemyOperationalError, PsycopOperationalError) as e:
+                raise RecoverableError(str(e))
+            except:
+                _log.error(traceback.format_exc())
+                raise
+            finally:
+                _session.remove()
 
         grouped = defaultdict(lambda: {
             "positions": [],
@@ -769,7 +806,8 @@ class MappingRepository:
             "codon": "",
             "codon_position": None,
             "amino_acid": "",
-            "protein_position": None
+            "protein_position": None,
+            "pfam_domains": []
         })
 
         for h in hits:
@@ -808,6 +846,10 @@ class MappingRepository:
             item["amino_acid"] = protein_letters_1to3.get(h["uniprot_residue"], "") if h["uniprot_residue"] else ""
             item["protein_position"] = protein_position_1_based
 
+            for pfam_domain in mapping_pfam_domains.get(h["mapping_id"], []):
+                if pfam_domain["ext_db_id"] not in {d["ext_db_id"] for d in item["pfam_domains"]}:
+                    item["pfam_domains"].append(pfam_domain)
+
         results = []
         for _, item in grouped.items():
             results.append({
@@ -825,6 +867,7 @@ class MappingRepository:
                 "codon_position": item["codon_position"],
                 "amino_acid": item["amino_acid"],
                 "protein_position": item["protein_position"],
+                "pfam_domains": sorted(item["pfam_domains"], key=lambda d: d["ext_db_id"]),
             })
 
         results.sort(key=lambda r: (

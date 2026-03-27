@@ -90,6 +90,20 @@ document.addEventListener("DOMContentLoaded", function() {
         row.cells[2].innerHTML = uniprotAc
             ? buildExternalAnchorOrFallback(uniprotHref, uniprotAc)
             : "";
+
+        const pfamCell = row.querySelector(".pfam-domain-cell");
+        if (pfamCell) {
+            const pfamEntries = Array.from(pfamCell.querySelectorAll(".pfam-domain-entry"));
+            if (pfamEntries.length > 0) {
+                const renderedEntries = pfamEntries.map(function(entry) {
+                    const pfamId = entry.dataset.pfamId || "";
+                    const label = entry.dataset.pfamLabel || entry.textContent.trim();
+                    const pfamHref = window.METADOME_LINKS.pfam(pfamId);
+                    return buildExternalAnchorOrFallback(pfamHref, label);
+                });
+                pfamCell.innerHTML = renderedEntries.join(", ");
+            }
+        }
     });
 
     const headers = table.querySelectorAll("th.sortable");

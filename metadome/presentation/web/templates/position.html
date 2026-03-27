@@ -61,6 +61,7 @@
           <th class="sortable" data-sort="transcript">Transcript</th>
           <th>UniProt</th>
           <th class="sortable" data-sort="protein">Protein Position</th>
+          <th>Pfam Domain</th>
           <th>MetaDome</th>
         </tr>
       </thead>
@@ -100,12 +101,26 @@
               <td class="protein-position-cell">
                 p.{{ r.amino_acid }}{{ r.protein_position }}
               </td>
+              <td class="pfam-domain-cell">
+                {% if r.pfam_domains and r.pfam_domains|length > 0 %}
+                  {% for domain in r.pfam_domains %}
+                    <span
+                      class="pfam-domain-entry"
+                      data-pfam-id="{{ domain.ext_db_id }}"
+                      data-pfam-label="{{ domain.name }} ({{ domain.ext_db_id }})">
+                      {{ domain.name }} ({{ domain.ext_db_id }})
+                    </span>{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
               <td><a href="{{ r.metadome_link }}" target="_blank" rel="noopener">{{ r.metadome_label }}</a></td>
             </tr>
           {% endfor %}
         {% elif selected_chromosome and selected_position %}
           <tr>
-            <td colspan="5">No mappings found for this position.</td>
+            <td colspan="6">No mappings found for this position.</td>
           </tr>
         {% endif %}
       </tbody>
