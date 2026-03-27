@@ -672,9 +672,13 @@ function getVisualizationResult(transcript_id, genome_build) {
 			var geneDetails = document.getElementById("geneDetails");
 
 			var refSeqLinks = "";
-			if (obj.refseq_ids && obj.refseq_ids.trim().length > 0) {
+			const refseqIdsRaw = obj.refseq_ids;
+			const refseqArray = Array.isArray(refseqIdsRaw)
+				? refseqIdsRaw.map(id => String(id || "").trim()).filter(id => id.length > 0)
+				: String(refseqIdsRaw || "").split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+			if (refseqArray.length > 0) {
 				refSeqLinks += "RefSeq: ";
-				const refseqArray = obj.refseq_ids.split(',').map(id => id.trim()).filter(id => id.length > 0);
 
 				for (var i = 0; i < refseqArray.length; i++) {
 					if (i > 0) {
