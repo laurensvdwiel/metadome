@@ -50,6 +50,10 @@ def dashboard():
 def dashboard_tour():
     return render_template('dashboard.html')
 
+@bp.route('/dashboard/tour/<path:extra_path>', methods=['GET'], strict_slashes=False)
+def dashboard_tour_redirect(extra_path):
+    return redirect(url_for('web.dashboard_tour'))
+
 @bp.route('/dashboard_grch37/', methods=['GET'])
 def dashboard_grch37():
     genome_build_url_safe = genome_build_safety_check('GRCh37')
