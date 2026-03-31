@@ -9,14 +9,21 @@
     </header>
     <section class="modal-card-body">
         Please note that you are using a public alpha version of MetaDome 2.0. <br><br>
-        MetaDome 2.0  is actively under development, which means that some features may not work as expected, and that data can be incomplete or incorrect.<br>
+        MetaDome 2.0 is actively under development, which means that some features may not work as expected, and that data can be incomplete or incorrect.<br>
         We recommend using <a href="https://stuart.radboudumc.nl/metadome/">MetaDome 1.0.1</a> for production use.
         <br><br>
         If you would like to help us test and improve this version, please <a class="link is-info" href="{{ url_for('web.contact') }}">Contact us</a> with any issues or feature requests
     </section>
 	</div>
   </div>
-<!-- Staring definition of site content -->
+<!-- Starting definition of site content -->
+<script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
+<script>
+$(function() {
+  var availableTags = [{% for item in data %} {{ item|safe }},{% endfor %}];
+  window.METADOME_UI.initGeneAutocomplete("#frontpageQuery", availableTags);
+});
+</script>
 <section class="section">
   <div class="box">
     <section class="section">
@@ -46,13 +53,43 @@
     </section>
     <section class="section has-text-centered">
     <!-- Start a tolerance landscape -->
-      <div class="control is-expanded has-text-centered">
-        <button class="button is-link is-large" onclick='location.href="{{ url_for("web.dashboard_grch38") }}"'>
-          Start GRCh38 analysis</button>
-        <button class="button is-info is-large" onclick='location.href="{{ url_for("web.dashboard_grch37") }}"'>
-          Start GRCh37 analysis</button>
-        <p class="label" style="color: #00AFDC;"> or </p>
-        <button class="button is-info is-outlined is-large" onclick='location.href="{{ url_for("web.dashboard") }}?tour=true"'>
+      <form method="get" action="{{ url_for('web.frontpage_search') }}">
+        <div class="field is-grouped is-grouped-centered">
+          <div class="control">
+            <div class="select is-large">
+              <select name="genome_build">
+                {% for gb in genome_builds %}
+                  <option value="{{ gb }}" {% if selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="control is-expanded" style="max-width: 32rem;">
+            <input class="input is-large"
+                   id="frontpageQuery"
+                   type="text"
+                   name="query"
+                   placeholder="Gene name or chr1:12345 / chr1 12345"
+                   required>
+          </div>
+
+          <div class="control">
+            <button class="button is-link is-large" type="submit">
+              Analyse
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <p class="help has-text-centered mt-3">
+        Enter a gene name, or a genomic position such as <code class="html">chrX:123</code> or <code class="html">chrX 123</code>.
+      </p>
+
+      <p class="label mt-4" style="color: #00AFDC;">or</p>
+
+      <div class="control has-text-centered">
+        <button class="button is-info is-outlined is-large" onclick='location.href="{{ url_for("web.dashboard_tour") }}"'>
           Start the tour</button>
       </div>
     </section>

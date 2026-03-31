@@ -11,16 +11,13 @@
   };
 </script>
 <script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
+<script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/metadome/dashboard/visualization.js') }}"></script>
 <script src="{{ url_for('static', filename='js/metadome/dashboard/dashboard.js') }}"></script>
 <script>
-$( function() {
+$(function() {
   var availableTags = [{% for item in data %} {{ item|safe }},{% endfor %}];
-  $( "#geneName" ).autocomplete({
-    minLength: 3,
-    delay: 500,
-    source: availableTags
-  });
+  window.METADOME_UI.initGeneAutocomplete("#geneName", availableTags);
 });
 </script>
 

@@ -30,7 +30,40 @@ limiter = Limiter(
 
 @bp.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
+    genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
+    gene_names = GeneRepository.retrieve_all_gene_names_from_db()
+
+    return render_template(
+        'index.html',
+        genome_builds=genome_builds,
+        selected_genome_build=genome_build_safety_check('GRCh38'),
+        data=map(json.dumps, gene_names)
+    )
+
+@bp.route('/frontpage/search', methods=['GET'])
+def frontpage_search():
+    genome_build = genome_build_safety_check(request.args.get('genome_build', 'GRCh38'))
+    query = (request.args.get('query', '') or '').strip()
+
+    chromosome, position = parse_position_query(query)
+    if chromosome and position is not None:
+        return redirect(url_for(
+            'web.position_lookup',
+            genome_build=genome_build,
+            chromosome=chromosome,
+            position=position
+        ))
+
+    gene_name = parse_gene_query(query)
+    if gene_name:
+        return redirect(url_for(
+            'web.dashboard_gene_name',
+            genome_build=genome_build,
+            gene_name=gene_name
+        ))
+
+    flash("Please enter a gene name or genomic position.", "warning")
+    return redirect(url_for('web.index'))
 
 @bp.route('/dashboard_js')
 def dashboard_js():
@@ -248,7 +281,7 @@ def position_lookup(genome_build, chromosome, position):
 def contact():
     if MAIL_SERVER is None or MAIL_DEFAULT_SENDER is None or SUPPORT_EMAIL is None:
         return render_template('error.html', msg="Mail server is not configured, therefore there can be no mails sent to support."), 500
-    
+
     form = SupportForm()
     if request.method == 'POST':
         # 1. Check honeypot first
@@ -436,6 +469,16 @@ def genome_build_safety_check(genome_build):
         raise Exception("No genome build found for "+str(genome_build))
 
     return result[0]
+
+def parse_gene_query(query: str) -> str | None:
+    raw = (query or "").strip()
+    if not raw:
+        return None
+
+    if ":" in raw or any(ch.isspace() for ch in raw):
+        return None
+
+    return raw
 
 def parse_position_query(query: str) -> tuple[str | None, int | None]:
     raw = (query or "").strip()
