@@ -195,7 +195,7 @@ def retrieve_pfam_aligned_codons(pfam_id, genome_build):
         time_step - start_time) + " seconds")
     return meta_codons_per_consensus_pos, consensus_length, n_instances
 
-def generate_pfam_aligned_codons(pfam_id): #@todo mark for deletion
+def generate_pfam_aligned_codons(pfam_id): #@todo mark for deletion, requires digging through code to revise to new prebuilding
     """
     Utilizes the Pfam HMMER alignment files to generate a list of dictionaries (meta_codons_per_consensus_pos)
     wherein all aligned codons per domain consensus positions are located
