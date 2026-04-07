@@ -2,10 +2,6 @@ from metadome.default_settings import GNOMAD_GRCH37_VCF_FILE, GNOMAD_GRCH38_VCF_
  CLINVAR_CONSIDERED_CLINSIG, CLINVAR_GRCH37_VCF_FILE, CLINVAR_GRCH38_VCF_FILE
 from metadome.domain.parsers.tabix import tabix_query, variant_coordinate_system
 
-
-# @todo for all annotaters, especially the new ones, need to ensure that chr prepended for tabix query is necessary and make it dynamic based on argument.
-# @todo also need to ensure that the returned value abides the expected return (e.g. with or without chr) for metadome architecture
-
 def GRCh37_annotateTranscriptWithClinvarData(chromosome, regions):
     """
     Annotates variants found within the ClinVar dataset.
