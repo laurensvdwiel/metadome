@@ -374,6 +374,11 @@ def method():
 def help_page():
     return render_template('faq.html')
 
+@bp.route('/privacy', methods=['GET'])
+def privacy():
+    return render_template('privacy.html')
+
+
 @bp.route('/visualization_error/<genome_build>/<transcript_id>/', methods=['GET'])
 def visualization_error(genome_build, transcript_id):
     stacktrace, error_timestamp = retrieve_error(transcript_id, genome_build)

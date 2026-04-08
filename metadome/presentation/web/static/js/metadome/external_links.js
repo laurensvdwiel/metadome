@@ -112,5 +112,46 @@ window.METADOME_LINKS = {
         return fillTemplate("https://www.uniprot.org/uniprotkb/__UNIPROT__", {
             uniprot: String(uniprotAc).trim()
         });
+    },
+
+    about(key) {
+        const links = {
+            stanford: "https://www.stanford.edu/",
+            stanfordMedicine: "https://med.stanford.edu/",
+            radboudumcResearch: "https://www.radboudumc.nl/en/research",
+            radboudHumanGenetics: "https://www.radboudumc.nl/en/research/research-groups/genome-bioinformatics",
+            cmbi: "https://en.wikipedia.org/wiki/Center_for_Molecular_and_Biomolecular_Informatics",
+            metadomeApp: "https://www.metadome.app",
+            github: "https://github.com/laurensvdwiel/metadome",
+            githubReleases: "https://github.com/cmbi/laurensvdwiel/releases",
+            zenodo_metadome1: "https://zenodo.org/records/6625251",
+            zenodo_metadome2: "https://zenodo.org/records/19376150",
+            humu2019: "https://doi.org/10.1002/humu.23798",
+            humu2017: "https://doi.org/10.1002/humu.23313",
+            ajhg2023: "https://doi.org/10.1016/j.ajhg.2022.12.001",
+            nature2020: "https://doi.org/10.1038/s41586-020-2832-5",
+            humu2019Cover: "https://doi.org/10.1002/humu.23892",
+            ucscConstraintTrack: "https://genome.ucsc.edu/cgi-bin/hgTrackUi?hgsid=1735422030_sAYmaQ0c58lMHr1JWvkyZ4gtGBGI&db=hg38&c=chr1&g=constraintSuper",
+            mobidetails: "https://mobidetails.iurc.montp.inserm.fr/MD/about",
+            opensourceMit: "http://opensource.org/licenses/mit-license.php",
+            ccByNcSa40: "http://creativecommons.org/licenses/by-nc-sa/4.0/",
+            googleAnalytics: "https://marketingplatform.google.com/about/analytics/",
+            gencode: "https://www.gencodegenes.org/",
+            interpro: "https://www.ebi.ac.uk/interpro/",
+            hmmer: "http://hmmer.org/",
+            flask: "http://flask.pocoo.org/",
+            postgresql: "https://www.postgresql.org/",
+            redis: "https://redis.io/",
+            celery: "https://docs.celeryq.dev/",
+            rabbitmq: "https://www.rabbitmq.com/",
+            docker: "https://www.docker.com/",
+            bulma: "https://bulma.io/",
+            d3: "https://d3js.org/",
+            uniprotSite: "http://www.uniprot.org/",
+            pfamSite: "http://pfam.xfam.org/",
+            gnomadSite: "http://gnomad.broadinstitute.org/",
+            clinvarSite: "https://www.ncbi.nlm.nih.gov/clinvar/"
+        };
+        return links[key] || null;
     }
 };

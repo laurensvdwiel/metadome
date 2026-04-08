@@ -1,21 +1,4 @@
 {% extends "base.html" %} {% block content %}
-<!-- Alpha warning screen  //@todo remove this when out of alpha -->
-  <div class="modal" id="Alpha_warning_overlay">
-    <div class="modal-background" onclick='$("#Alpha_warning_overlay").removeClass("is-active");'></div>
-    <div class="modal-card">
-    <header class="modal-card-head">
-      <p class="modal-card-title">Warning: MetaDome 2.0 is a public alpha version</p>
-      <button class="delete" aria-label="close" onclick='$("#Alpha_warning_overlay").removeClass("is-active");'></button>
-    </header>
-    <section class="modal-card-body">
-        Please note that you are using a public alpha version of MetaDome 2.0. <br><br>
-        MetaDome 2.0 is actively under development, which means that some features may not work as expected, and that data can be incomplete or incorrect.<br>
-        We recommend using <a href="https://stuart.radboudumc.nl/metadome/">MetaDome 1.0.1</a> for production use.
-        <br><br>
-        If you would like to help us test and improve this version, please <a class="link is-info" href="{{ url_for('web.contact') }}">Contact us</a> with any issues or feature requests
-    </section>
-	</div>
-  </div>
 <!-- Starting definition of site content -->
 <script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
 <script>
@@ -26,32 +9,8 @@ $(function() {
 </script>
 <section class="section">
   <div class="box">
-    <section class="section">
-      <div class='content is-medium'>
-        <h1 class="title" style="color: #00AFDC;">Welcome to MetaDome 2.0</h1>
-        <p>
-         MetaDome analyses the mutation tolerance at each position in a human protein. 
-         It uses data from <a href="http://gnomad.broadinstitute.org/">gnomAD</a> and 
-         <a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>. 
-         MetaDome enhances the analysis of your gene of interest by parallel analysis 
-         of all homologous domains in the whole human genome.
-        </p>
-        <p>
-          Input your gene name and pick your transcript and MetaDome will collect and
-          combine available information to produce a tolerance landscape, annotate 
-          <a href="https://pfam.xfam.org/" target="_blank">Pfam</a> domains and 
-          pathogenic <a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">
-          ClinVar</a> variants, and provide meta-domain variant annotation.
-          Complete with results, ability to edit and download all the information.
-        </p>
-        <p>
-	      You can edit, print, and download the results. MetaDome usage is free, but we 
-	      hope you faithfully cite <a href="{{ url_for('web.about') }}#cite_us">our articles</a>.
-        </p>
-        
-      </div>
-    </section>
     <section class="section has-text-centered">
+    <img src="{{ url_for('static', filename='img/metadome_logo_2.png') }}">
     <!-- Start a tolerance landscape -->
       <form method="get" action="{{ url_for('web.frontpage_search') }}">
         <div class="field is-grouped is-grouped-centered">
@@ -83,7 +42,7 @@ $(function() {
       </form>
 
       <p class="help has-text-centered mt-3">
-        Enter a gene name, or a genomic position such as <code class="html">chrX:123</code> or <code class="html">chrX 123</code>.
+        Enter a gene name or a genomic position such as <code class="html">chrX:123</code> or <code class="html">chrX 123</code>.
       </p>
 
       <p class="label mt-4" style="color: #00AFDC;">or</p>
@@ -94,8 +53,26 @@ $(function() {
       </div>
     </section>
   </div>
+
+    <section class="section">
+      <div class='content is-medium'>
+        <p>
+            Enter a gene name or genomic position to generate a comprehensive tolerance landscape that integrates
+            <a href="http://gnomad.broadinstitute.org/" target="_blank">gnomAD</a> and
+            <a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a> data
+            to analyze mutation tolerance across homologous <a href="https://pfam.xfam.org/" target="_blank">Pfam</a>
+            domains within the human genome.
+        </p>
+        <p>
+	      You can edit, print, and download the results. MetaDome usage is free, but we
+	      hope you faithfully cite <a href="{{ url_for('web.about') }}#cite_us">our articles</a>.
+        </p>
+        <p><small><i><!-- @todo remove this section when published -->
+          MetaDome 2.0 is actively under development, which means that some features may not work as expected,
+          and that data can be incomplete or incorrect. We recommend using
+          <a href="https://stuart.radboudumc.nl/metadome/">MetaDome 1.0.1</a> for production use.
+        </i></small></p>
+      </div>
+    </section>
  </section>
-<script> //@todo remove this script when out of alpha
-	$("#Alpha_warning_overlay").addClass("is-active");
-</script>
 {% endblock %} {% block js %} {% endblock %}

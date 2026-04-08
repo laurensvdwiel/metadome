@@ -19,9 +19,83 @@ body {
 	background-color: #eeeeec;
 }
 
+.about-logo-grid {
+    align-items: center;
+}
+
+.about-logo-grid img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 72px;
+    object-fit: contain;
+    margin: 0 auto;
+}
+
 .feedback-text
 {
 	color: red;
 }
 
 .notification:empty, .notification:has(button.delete:only-child) { display: none !important; }
+
+.cookie-notice {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 72px;
+    margin: 0;
+    z-index: 1000;
+    border-radius: 0;
+    padding: 0.9rem 4.5rem 0.9rem 1rem;
+}
+
+.cookie-notice-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+}
+
+.cookie-notice-text {
+    flex: 1 1 520px;
+}
+
+.cookie-notice-actions {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+}
+
+.cookie-notice-close {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+}
+
+body.has-cookie-notice {
+    margin-bottom: 170px;
+}
+
+@media screen and (max-width: 768px) {
+    .cookie-notice {
+        bottom: 76px;
+        padding-right: 3.5rem;
+    }
+
+    .cookie-notice-content {
+        align-items: flex-start;
+    }
+
+    .cookie-notice-actions {
+        width: 100%;
+    }
+
+    body.has-cookie-notice {
+        margin-bottom: 250px;
+    }
+}
+
+/* Hides the recaptcha badge */
+.grecaptcha-badge {
+    visibility: hidden;
+}

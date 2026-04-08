@@ -1,0 +1,108 @@
+{% extends "base.html" %} {% block content %}
+
+<section class="section">
+  <div class="box">
+    <section class="section">
+      <div class="content">
+        <h1 class="title" style="color: #00AFDC;">Privacy Policy</h1>
+        <p style="margin-bottom: 2rem;"><strong>Effective Date:</strong> April 2026</p>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">1. Introduction</h3>
+        <p>
+          Welcome to MetaDome. While this section serves as our privacy policy to comply with regulations like the General Data Protection Regulation (GDPR), it is written as a straightforward description of how we handle potentially sensitive information. It explains how we collect, use, and protect your information when you visit and use our web server (<a href="https://www.metadome.app" target="_blank">www.metadome.app</a>).
+        </p>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">2. What Information We Collect</h3>
+        <p>When you use MetaDome, we may collect the following types of information:</p>
+        <div class="content" style="margin-top: 1rem;">
+          <ul>
+            <li>
+              <strong>Usage and Analytics Data:</strong> We use Google Analytics 4 (with basic settings) to help us understand how visitors use the site at an aggregate level. This includes tracking:
+              <ul>
+                <li>The specific URLs you navigate to (which inherently includes the gene, transcript, protein, or domain identifiers and positions you query).</li>
+                <li>Browser type and version.</li>
+                <li>Operating system.</li>
+                <li>Time and date of your visit.</li>
+              </ul>
+              <em>Note on IP Addresses: Google Analytics 4 does not log or store individual IP addresses. You can read more about Google's data privacy practices <a href="https://support.google.com/analytics/answer/12017362" target="_blank">here</a>.</em>
+            </li>
+            <li>Server Logs: While our analytics do not store individual IP addresses, our hosting infrastructure (Google Cloud Platform) automatically generates temporary server routing and error logs that may contain IP addresses. These logs are strictly required for security, abuse prevention, and debugging. They are not used to identify you and are automatically deleted or overwritten within 30 days.</li>
+            <li><strong>Contact Information:</strong> If you reach out to us via our contact form or email, we will collect your name, email address, and the contents of your message.</li>
+          </ul>
+        </div>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">3. How We Use Your Information</h3>
+        <p>We use the collected information exclusively for the following academic and operational purposes:</p>
+        <div class="content" style="margin-top: 1rem;">
+          <ul>
+            <li><strong>To Improve MetaDome:</strong> Understanding which features are most frequently used helps us prioritize database updates, assess the popularity of site features, and improve the service.</li>
+            <li><strong>Error Handling and Debugging:</strong> We log specific URLs that lead to a crash. This allows us to replicate issues, fix bugs, and ensure the stability of the server.</li>
+            <li><strong>To Report Aggregate Impact:</strong> We may use aggregate, non-personally identifiable usage statistics to report impact to our grant funding agencies and affiliated institutions.</li>
+            <li><strong>To Respond to Inquiries:</strong> If you contact us, we use your information solely to respond to your question or feedback.</li>
+            <li><strong>Correspondence Retention:</strong> If you reach out to us via email or our contact form, we retain your message and contact details for a maximum of 12 months to ensure your inquiry is fully resolved, after which the correspondence is securely deleted.</li>
+          </ul>
+        </div>
+
+        <div class="label" style="margin-top: 1.5rem;">Important Notice Regarding Sensitive Data</div>
+        <p>
+          The core visualisation of MetaDome occurs client-side (in your local browser) and is not directly accessible to us. Furthermore, we do not use analytics to identify individual users, nor do we attempt to link analytics information or specific gene, transcript, protein, or domain queries to personally identifiable information. MetaDome is an academic project: we do not sell, trade, or monetize your usage data, and we do not use it for advertising purposes.
+        </p>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">4. Cookies and Tracking Technologies</h3>
+        <p>
+          MetaDome uses Google Analytics to compile aggregate data about site traffic and site interaction. When you visit the site, you can accept or decline analytics cookies through the cookie notice displayed at the bottom of the page. If you decline, tracking is disabled. Your choice does not restrict access to the core functionality of the MetaDome web server. You can also review how analytics data is used on our <a href="{{ url_for('web.about') }}#privacy-analytics">About page</a>.
+        </p>
+
+        <a name='cookie_consent'></a>
+        <div class="label">Change your cookie consent</div>
+        <p>
+          <strong>Your current analytics cookie preference:</strong>
+          <span id="cookie-consent-status">Loading...</span>
+        </p>
+        <p>
+          You can update your analytics cookie preference at any time here. Choosing <strong>Accept</strong> enables analytics cookies for aggregate usage measurement. Choosing <strong>Decline</strong> disables analytics tracking. This does not affect access to the core functionality of MetaDome.
+        </p>
+        <div class="buttons">
+          <button type="button" class="button is-link is-light" onclick="window.metadomeAcceptCookies()">Accept analytics cookies</button>
+          <button type="button" class="button is-light" onclick="window.metadomeDeclineCookies()">Decline analytics cookies</button>
+          <button type="button" class="button is-white" onclick="window.metadomeResetCookieConsent()">Reset cookie notice</button>
+        </div>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">5. Data Sharing and Third Parties</h3>
+        <p>
+          MetaDome is an academic project. <strong>We do not sell, trade, rent, or otherwise profit from your personal information or query data.</strong> We may share anonymized, aggregate usage statistics with our affiliated institutions (Stanford University, Radboud University Medical Center) or in scientific publications. We share data with trusted service providers who assist us in operating our website, specifically Google Cloud Platform (GCP), which hosts our server infrastructure and acts as our data processor. GCP is contractually obligated to keep this information secure and confidential.
+        </p>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">6. Your Data Protection Rights</h3>
+        <p>Depending on your location, you have legal rights under the GDPR regarding your personal data, which include:</p>
+        <div class="content" style="margin-top: 1rem;">
+          <ul>
+            <li>The right to access the personal data we hold about you.</li>
+            <li>The right to request that we correct any inaccuracies.</li>
+            <li>The right to request the deletion of your personal data.</li>
+            <li>The right to object to the processing of your data.</li>
+          </ul>
+        </div>
+        <p style="margin-top: 1rem; padding: 1rem; background-color: #f9f9f9; border-left: 4px solid #00AFDC;">
+          <strong>Please note:</strong> Because we do not store personally identifiable analytics or link your identity to your queries, we generally do not hold retrievable personal data to turn over or delete upon request. Temporary security logs are not used to identify users. However, if you have contacted us via email or our contact form, you may request the deletion of that correspondence at any time prior to our standard 12-month automated deletion cycle.
+        </p>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">7. reCAPTCHA and Abuse Prevention</h3>
+        <p>
+          MetaDome uses Google reCAPTCHA on selected forms to help protect the site against spam, abuse, and automated misuse. reCAPTCHA may collect hardware and software information, interaction data, and other information needed for risk analysis. This processing is subject to the <a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a> and <a href="https://policies.google.com/terms" target="_blank">Google Terms of Service</a>. We utilize reCAPTCHA under the legal basis of legitimate interest strictly to protect our academic infrastructure from malicious attacks, and we do not use this service to profile individual users.
+        </p>
+
+        <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">8. Contact Us</h3>
+        <p>If you have any concerns about our use of website analytics or how your data is handled, please feel free to contact us:</p>
+        <div class="content" style="margin-top: 1rem;">
+          <ul>
+            <li><strong>Contact Form:</strong> <a href="{{ url_for('web.contact') }}">Click here to contact us</a></li>
+            <li><strong>Institutions:</strong> Developed in collaboration with Stanford University and Radboud University Medical Center.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
+
+{% endblock %} {% block js %} {% endblock %}

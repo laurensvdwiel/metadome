@@ -1,227 +1,188 @@
 {% extends "base.html" %} {% block content %}
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    if (!window.METADOME_LINKS || typeof window.METADOME_LINKS.about !== "function") {
+      return;
+    }
 
-<!-- Staring definition of site content -->
+    document.querySelectorAll("[data-about-link]").forEach(function(element) {
+      const href = window.METADOME_LINKS.about(element.dataset.aboutLink);
+      if (href) {
+        element.href = href;
+      }
+    });
+  });
+</script>
+<!-- Starting definition of site content -->
 <section class="section">
   <div class="box">
     <section class="section">
       <div class='content'>
         <h1 class="title" style="color: #00AFDC;">Mission</h1>
+
         <p>
-          MetaDome is developed at the department of <a
-            href="https://www.radboudumc.nl/en/research/departments/human-genetics"
-            target="_blank">Human Genetics</a> and the Centre for
-          Molecular and Biomolecular Informatics <a
-            href="http://www.cmbi.umcn.nl" target="_blank">CMBI</a> at
-          the <a href="https://www.radboudumc.nl/en/research"
-            target="_blank">Radboud University Medical Centre</a> in
-          Nijmegen.
+            MetaDome's mission is to advance the interpretation of human genetic variation by leveraging homologous
+            protein domain relationships. By aggregating data across protein domains, MetaDome amplifies the informational
+            value of a single variant, providing robust evidence for its potential functional and clinical impact across
+            evolutionary equivalent positions across the human proteome.
+            Designed for medical and research professionals in human genetics, our platform allows users to visualize
+            variants of interest against the backdrop of population-level variation. Ultimately, MetaDome aims to
+            deliver actionable insights that directly empower scientific publications, variant interpretation, and the
+            intelligent design of downstream experiments.
         </p>
 
-        <div class="columns is-mobile is-centered is-multiline"
-          style="align-items: center">
+        <div class="label">Who are we</div>
+        <p>
+          MetaDome 2.0 was developed at <a data-about-link="stanford" href="#" target="_blank">Stanford University</a>'s
+          <a data-about-link="stanfordMedicine" href="#" target="_blank">School of Medicine</a>, in collaboration with the
+          Department of <a data-about-link="radboudHumanGenetics" href="#" target="_blank">Human Genetics</a> at
+          <a data-about-link="radboudumcResearch" href="#" target="_blank">Radboud University Medical Center</a> (the Netherlands).
+          The original MetaDome 1.0 was established at Radboudumc by the Department of Human Genetics and the Centre for Molecular
+          and Biomolecular Informatics (<a data-about-link="cmbi" href="#" target="_blank">CMBI</a>).
+        </p>
+
+        <a name='cite_us'></a>
+        <h1 class="title" style="color: #00AFDC;">Academic Impact</h1>
+
+        <h3 class="title is-4" style="color: #00AFDC;">Citing MetaDome</h3>
+        <p>
+            If you use MetaDome in your research, please cite:
+        </p>
+        <p style="border-left: 4px solid #00AFDC; padding-left: 1rem; margin-bottom: 1.5rem;">
+          <strong>MetaDome: Pathogenicity analysis of genetic variants through aggregation of homologous human protein domains</strong><br>
+          <em>Human Mutation. 2019; 1-9. <a data-about-link="humu2019" href="#" target="_blank">10.1002/humu.23798</a></em>
+        </p>
+
+        <h3 class="title is-4" style="color: #00AFDC;">Notable Achievements</h3>
+        <ul style="margin-bottom: 1.5rem;">
+          <li>Integrated as a <a data-about-link="ucscConstraintTrack" href="#" target="_blank">human constraint scores track</a> in the UCSC Genome Browser (2021)</li>
+          <li>Added as an annotation track to <a data-about-link="mobidetails" href="#" target="_blank">MobiDetails</a> (2020)</li>
+          <li><a data-about-link="humu2019" href="#" target="_blank">MetaDome publication</a> recognized as a Top Accessed (2019) and Top Cited (2020) article in Human Mutation</li>
+          <li>Selected as an Editor's Choice Article and featured on the front cover of <a data-about-link="humu2019Cover" href="#" target="_blank">Human Mutation</a></li>
+        </ul>
+
+        <h3 class="title is-4" style="color: #00AFDC;">Related Publications</h3>
+        <ul>
+          <li>L. Wiel, J.E. Hampstead, <em>et al.</em> <strong><em>de novo</em> mutation hotspots in homologous protein domains identify function-altering mutations in neurodevelopmental disorders.</strong> <em><a data-about-link="ajhg2023" href="#" target="_blank">The American Journal of Human Genetics, January 2023</a></em></li>
+          <li>J. Kaplanis, K.E. Samocha, L. Wiel, Z. Zhang, <em>et al.</em> <strong>Evidence for 28 genetic disorders discovered by combining healthcare and research data.</strong> <em><a data-about-link="nature2020" href="#" target="_blank">Nature, October 2020</a></em></li>
+          <li>L. Wiel, <em>et al.</em> <strong>Aggregation of population-based genetic variation over protein domain homologues and its potential use in genetic diagnostics.</strong> <em><a data-about-link="humu2017" href="#" target="_blank">Human Mutation, November 2017</a></em></li>
+        </ul>
+
+        <a name='access'></a>
+        <h1 class="title" style="color: #00AFDC;">Access & Open Source</h1>
+
+        <ul>
+          <li><strong>Web Server:</strong> Freely accessible at <a data-about-link="metadomeApp" href="#" target="_blank">www.metadome.app</a></li>
+          <li><strong>Source Code:</strong> Open-source and available on <a data-about-link="github" href="#" target="_blank">GitHub/MetaDome</a></li>
+          <li><strong>Raw Data:</strong> Underlying mapping data is hosted on Zenodo for <a data-about-link="zenodo_metadome2" href="#" target="_blank">MetaDome 2.0</a> and <a data-about-link="zenodo_metadome1" href="#" target="_blank">MetaDome 1.0</a>.</li>
+        </ul>
+
+        <div class="label" style="margin-top: 1rem;">Local Deployment & Database Access</div>
+        <p>
+          Our open-source repository contains all necessary components to deploy a local instance of the MetaDome server. If you choose to do so, we kindly request that you include a link back to the official MetaDome web server. To accelerate your local setup, you can request access to our fully pre-compiled PostgreSQL database by <a href="{{ url_for('web.contact') }}">contacting us</a>.
+        </p>
+
+        <div class="label">Licensing</div>
+        <p>
+          The <a data-about-link="githubReleases" href="#" target="_blank">source code</a> is licensed under the
+          <a data-about-link="opensourceMit" href="#" target="_blank">MIT License</a>. The website content is licensed under
+          <a data-about-link="ccByNcSa40" href="#" target="_blank">CC BY-NC-SA 4.0</a>.
+        </p>
+
+        <h3 id="privacy-analytics" class="title is-4" style="color: #00AFDC; margin-top: 2rem;">Privacy & Analytics</h3>
+        <p>
+            MetaDome uses Google Analytics to analyse aggregate traffic and usage trends with the sole purpose to
+            maintain and improve MetaDome and to report aggregate usage statistics to scientific grant and publication
+            agencies. Furthermore, Google reCAPTCHA protects this site from malicious entities,
+            <a href="https://policies.google.com/privacy" target="_blank">Google’s Privacy Policy</a>
+            and <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a> apply.
+            <br><br>
+            MetaDome will only track data using Google Analytics after you provide explicit consent via our cookie banner.
+            You can always update your consent <a href="{{ url_for('web.privacy') }}#cookie_consent"><strong>here</strong></a>.
+            You can accept or decline analytics cookies through the cookie notice shown on the site.
+            If you decline, analytics tracking is disabled, and the core functionality of MetaDome remains available.
+            All traffic and usage data we collect is pseudonymized and retained for a maximum of 14 months.
+            For complete details on how we handle data and cookies, please review our full <a href="{{ url_for('web.privacy') }}">Privacy Policy</a>.
+            <br><br>
+            MetaDome is an academic resource: we do not sell personal data, do not monetize usage data, do not use it
+            for advertising, and do not attempt to identify individual users from analytics information.
+            <br><br>
+            MetaDome performs its core visualizations client-side in your local browser, and we do not have access to
+            how you interact with these visualizations.
+        </p>
+
+        <h3 class="title is-4" style="color: #00AFDC;">Acknowledgments</h3>
+
+        <p>
+          MetaDome is built on top of amazing open-source projects and resources made freely available.
+          We would like to express our deepest gratitude to:
+        </p>
+
+        <div class="columns is-mobile is-centered is-multiline about-logo-grid">
           <a class="column is-one-fifth"
-            href="https://www.radboudumc.nl/en/research/departments/human-genetics"
-            target="_blank"><img class="image is-2by1"
-            src="{{ url_for('static', filename='img/human_genetics_nijmegen_logo.JPG') }}"
-            alt="Human Genetics Nijmegen"></a> <a
-            class="column is-one-fifth" href="http://www.cmbi.umcn.nl"
-            target="_blank"><img class="image is-2by1"
-            src="{{ url_for('static', filename='img/cmbi_logo.gif') }}"
-            alt="CMBI"></a> <a class="column is-one-fifth"
-            href="https://www.radboudumc.nl/en/research" target="_blank"><img
-            class="image is-2by1"
-            src="{{ url_for('static', filename='img/radboudumc_logo.png') }}"
-            alt="Radboudumc"></a>
-        </div>
-
-        <p>Our mission is to provide better insight into human
-          genetic variation in the context of the protein. By using
-          homologous domain relations to further enhance the amount of
-          information even a single genetic variant may provide. And to
-          provide further evidence for the functional impact of genetic
-          variants. MetaDome is aimed at professionals in the
-          (bio-)medical field of human genetics who wish to visualize
-          their mutation of interest in the context of normal genetic
-          variation and provide detailed information of similar variants
-          found across homologous domain positions. We hope that these
-          new insights can be used directly in a publication and/or for
-          intelligent design of further experiments.</p>
-          
-        <h3 class="title" style="color: #00AFDC;">Tutorial</h3>
-        <p>
-          To get more familiar with the using MetaDome and all of it's functionality 
-          we strongly advise to <a href="{{ url_for('web.dashboard') }}?tour=true">
-          start the tour</a>. If you feel that any questions are not addressed in the
-          FAQ below, please <a href="{{ url_for('web.contact') }}">contact us</a>.
-        </p>
-
-        <h3 class="title" style="color: #00AFDC;">Supported Web Browsers</h3>
-        <p>
-          MetaDome is designed to work with modern web browsers. We recommend using
-          We recommend using <a href="https://www.google.com/chrome/">Google Chrome</a>,
-          <a href ="https://www.apple.com/safari/">Apple Safari</a>, or
-          <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a>
-          to access all features of our web server.
-          If you experience any difficulties with MetaDome using these mentioned
-          browsers, please <a href="{{ url_for('web.contact') }}">contact us</a>.
-        </p>
-
-        <h1 class="title" style="color: #00AFDC;">Method</h1>
-
-        <p>
-          MetaDome integrates publicly available data of human genetic
-          variation to construct detailed information for a single
-          protein and its protein domains. More information on this
-          complex integration process can be found on the <a
-            href="{{ url_for('web.method') }}">method page</a>.
-        </p>
-		<a name='cite_us'></a>
-        
-        <h1 class="title" style="color: #00AFDC;">Citing MetaDome</h1>
-
-        <p>Please cite the MetaDome web server article : </p>
-        <p>
-          <strong> MetaDome: Pathogenicity analysis of genetic variants through 
-          aggregation of homologous human protein domains </strong>
-          <br>
-          <em> Human Mutation. 2019; 1-9. <a
-            href="https://doi.org/10.1002/humu.23798" target="_blank">
-              10.1002/humu.23798 </a>
-          </em>
-        </p>
-
-        <h3 class="title" style="color: #00AFDC;">Informal Notice</h3>
-
-        <p>Please express your gratitude for this free material by
-          citing the above article.</p>
-
-        <p>
-          The material provided is complete, correct to the best of our
-          knowledge, and holds all that is needed to start building your
-          own MetaDome server. If you do so, please provide a link to the
-          MetaDome server. If you want to get a flying start by getting
-          access to the fully built MetaDome database, feel free to <a
-            href="{{ url_for('web.contact') }}">contact us</a>.
-        </p>
-
-        <h3 class="title" style="color: #00AFDC;">Licensing</h3>
-
-        <p>
-          The <a href="https://github.com/cmbi/metadome/releases"
-            target="_blank">source code</a> is licensed <a
-            href="http://opensource.org/licenses/mit-license.php"
-            target="_blank">MIT</a>. The website content is licensed <a
-            href="http://creativecommons.org/licenses/by-nc-sa/4.0/"
-            target="_blank">CC ANS 4.0</a>
-        </p>
-        
-        <h3 class="title" style="color: #00AFDC;">Privacy</h3>
-        <p>
-			This section outlines the ways in which the MetaDome website handles information about users. 
-			This should not be read as a legal document, but as a description of how we handle information 
-			that could be considered sensitive.
-		</p>
-		<div class="label">Sensitive data</div>
-		<p>
-			MetaDome does not save any data that a user may provide. The visualization 
-			of MetaDome occurs client-side (in your local browser) and is not 
-			accessible to us. This means we can not know which genes, transcripts,
-			domains, and positions you are interested in. 
-		</p>
-		
-		<div class="label">Personalized tracking</div>
-		<p>
-			MetaDome makes use of <a href="http://www.google.com/analytics/" 
-			target="_blank">Google analytics</a> (GA) to help us analyze how users 
-			navigate the various site-pages. 
-			GA uses a single-pixel "web bug" image, which is served from every
-			page, a javascript script that collects information about each request, 
-			and cookies that maintain information about your usage of the site between 
-			visits. You can read more about how GA works on the GA 
-			<a href="http://www.google.com/analytics/" target="_blank">website</a>, 
-			which includes a <a class="ext" href="http://code.google.com/apis/analytics/docs/concepts/gaConceptsOverview.html">
-			detailed description</a> of how traffic is tracked and analysed.
-			<br><br>
-			We use the information generated by GA purely to assess the usefulness
-			and popularity of different features of the site. We have configured GA
-			to not provide the ability to track	individual users' usage of the site. 
-			However, GA does provides a high-level anonymized overview of the traffic that passes 
-			through the site, including such information as the approximate geographical 
-			location of users, how often and for how long they visited the site, etc. 
-			<br><br>
-			We will never (and will not allow any third party to) use the 
-			information by the GA to track or to collect any Personally 
-			Identifiable Information of visitors to our site.  
-			Neither will we will link, or seek to link, an IP address 
-			with the identity of a computer user.
-			<br><br>
-			If you have any concerns about our use of Google analytics, please
-			feel free to <a href="{{ url_for('web.contact') }}">contact us</a>.
-        </p>
-
-        <h3 class="title" style="color: #00AFDC;">Acknowledgments</h3>
-
-        <p>This software could not exist without the many great open
-          source projects and resources freely available to the
-          (non-)scientific community. Particularly we would like to
-          express our deepest thanks to the following projects that we
-          have used for building the MetaDome web server:</p>
-
-
-        <div class="columns is-mobile is-centered is-multiline"
-          style="align-items: center">
-          <a class="column is-one-fifth" href="http://www.uniprot.org/"
-            target="_blank"><img class="image is-2by1"
+            data-about-link="uniprotSite" href="#" target="_blank"><img class="image"
             src="{{ url_for('static', filename='img/uniprot_logo_medium.svg') }}"
-            alt="Uniprot"></a> <a class="column is-one-fifth"
-            href="https://www.gencodegenes.org/" target="_blank"><img
-            class="image is-2by1"
+            alt="UniProt"></a> <a class="column is-one-fifth"
+            data-about-link="gencode" href="#" target="_blank"><img
+            class="image"
             src="{{ url_for('static', filename='img/gencodegenes-logo-helix-av.png') }}"
-            alt="The GENCODE project produces high quality reference gene annotation and experimental validation for human and mouse genomes"></a>
-          <a class="column is-one-fifth" href="http://pfam.xfam.org/"
-            target="_blank"><img class="image is-2by1"
-            src="{{ url_for('static', filename='img/Pfam_logo.gif') }}"
-            alt="Pfam is a large collection of protein families, represented by multiple sequence alignments and hidden Markov models (HMMs)"></a>
+            alt="GENCODE"></a>
           <a class="column is-one-fifth"
-            href="http://gnomad.broadinstitute.org/" target="_blank"><img
-            class="image is-2by1"
-            src="{{ url_for('static', filename='img/gnomad_logo.png') }}"
-            alt="The Genome Aggregation Database (gnomAD)"></a> <a
-            class="column is-one-fifth"
-            href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank"><img
-            class="image is-2by1"
+            data-about-link="pfamSite" href="#" target="_blank"><img class="image"
+            src="{{ url_for('static', filename='img/pfam_logo.gif') }}"
+            alt="Pfam"></a>
+          <a class="column is-one-fifth"
+            data-about-link="gnomadSite" href="#" target="_blank"><img
+            class="image"
+            src="{{ url_for('static', filename='img/gnomAD_logo.svg') }}"
+            alt="gnomAD"></a>
+          <a class="column is-one-fifth"
+            data-about-link="clinvarSite" href="#" target="_blank"><img
+            class="image"
             src="{{ url_for('static', filename='img/clinvar_logo.png') }}"
-            alt="ClinVar is a freely accessible, public archive of reports of the relationships among human variations and phenotypes, with supporting evidence."></a>
+            alt="ClinVar"></a>
           <a class="column is-one-fifth"
-            href="https://www.ebi.ac.uk/interpro/" target="_blank"><img
-            class="image is-2by1"
-            src="{{ url_for('static', filename='img/InterPro_long_1600.png') }}"
-            alt="InterPro: protein sequence analysis & classification"></a>
-          <a class="column is-one-fifth" href="http://hmmer.org/"
-            target="_blank"><img class="image is-2by1"
+            data-about-link="interpro" href="#" target="_blank"><img
+            class="image"
+            src="{{ url_for('static', filename='img/interpro_newlogo-2-scaled-1.jpg') }}"
+            alt="InterPro"></a>
+          <a class="column is-one-fifth"
+            data-about-link="hmmer" href="#" target="_blank"><img class="image"
             src="{{ url_for('static', filename='img/hmmer_logo.png') }}"
-            alt="HMMER: biosequence analysis using profile hidden Markov models"></a>
-          <a class="column is-one-fifth" href="http://flask.pocoo.org/"
-            target="_blank"><img class="image is-2by1"
-            src="{{ url_for('static', filename='img/flask.svg') }}"
-            alt="Flask is a microframework for Python based on Werkzeug, Jinja 2 and good intentions."></a>
+            alt="HMMER"></a>
           <a class="column is-one-fifth"
-            href="https://www.postgresql.org/" target="_blank"><img
-            class="image is-2by1"
-            src="{{ url_for('static', filename='img/postgresql-logo.png') }}"
-            alt="POSTGRESQL: THE WORLD'S MOST ADVANCED OPEN SOURCE RELATIONAL DATABASE"></a>
-          <a class="column is-one-fifth" href="https://www.docker.com/"
-            target="_blank"><img class="image is-2by1"
-            src="{{ url_for('static', filename='img/docker-logo.png') }}"
-            alt="Docker - Build, Ship, and Run Any App, Anywhere"></a>
-          <a class="column is-one-fifth" href="https://bulma.io/"
-            target="_blank"><img class="image is-2by1"
-            src="{{ url_for('static', filename='img/bulma-logo.png') }}"
-            alt="Bulma: a modern CSS framework based on Flexbox"></a>
-          <a class="column is-one-fifth" href="https://d3js.org/"
-            target="_blank"><img class="image is-2by1"
+            data-about-link="flask" href="#" target="_blank"><img class="image"
+            src="{{ url_for('static', filename='img/flask.svg') }}"
+            alt="Flask"></a>
+          <a class="column is-one-fifth"
+            data-about-link="postgresql" href="#" target="_blank"><img
+            class="image"
+            src="{{ url_for('static', filename='img/postgresql_plain_logo.svg') }}"
+            alt="PostgreSQL"></a>
+          <a class="column is-one-fifth"
+            data-about-link="redis" href="#" target="_blank"><img class="image"
+            src="{{ url_for('static', filename='img/redis_logo.png') }}"
+            alt="Redis"></a>
+          <a class="column is-one-fifth"
+            data-about-link="celery" href="#" target="_blank"><img class="image"
+            src="{{ url_for('static', filename='img/celery-logo.png') }}"
+            alt="Celery"></a>
+          <a class="column is-one-fifth"
+            data-about-link="rabbitmq" href="#" target="_blank"><img class="image"
+            src="{{ url_for('static', filename='img/rabbitmq-logo-with-name.svg') }}"
+            alt="RabbitMQ"></a>
+          <a class="column is-one-fifth"
+            data-about-link="docker" href="#" target="_blank"><img class="image"
+            src="{{ url_for('static', filename='img/docker-logo-ocean-blue.svg') }}"
+            alt="Docker"></a>
+          <a class="column is-one-fifth"
+            data-about-link="bulma" href="#" target="_blank"><img class="image"
+            src="{{ url_for('static', filename='img/Bulma_Logo.svg') }}"
+            alt="Bulma"></a>
+          <a class="column is-one-fifth"
+            data-about-link="d3" href="#" target="_blank"><img class="image"
             src="{{ url_for('static', filename='img/D3js_logo.svg') }}"
-            alt="D3 is a JavaScript library for visualizing data with HTML, SVG, and CSS."></a>
+            alt="D3"></a>
         </div>
       </div>
     </section>

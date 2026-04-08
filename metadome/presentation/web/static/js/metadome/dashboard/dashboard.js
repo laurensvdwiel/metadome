@@ -309,47 +309,47 @@ var tour = new Tour({
 	  {
 	    element: "#genomeBuild",
 	    title: "Genome Build",
-	    content: "MetaDome support the human genome builds GRCh37 "+
-	    		"and GRCh38. By default the newest ('GRCh38') is" +
-	    		"selected. You can always check which genome build" +
-	    		"is selected in this field."
+	    content: "MetaDome supports the human genome builds GRCh37 "+
+    	    		"and GRCh38. By default, the newest build ('GRCh38') is " +
+    	    		"selected. You can always check which genome build " +
+    	    		"is selected in this field."
 	  },
 	  {
 	    element: "#retrieve_transcripts_control",
 	    title: "Gene of interest",
-	    content: "Input here your gene name of interest Then you" +
-	    		" can click the 'Get Transcripts' button to " +
-	    		"retrieve all the transcripts for your gene of " +
-	    		"interest.<br><br> For this example we fill in " +
-	    		"the 'T' gene."
+	    content: "Enter your gene name of interest. Then you " +
+    	    		"can click the 'Get Transcripts' button to " +
+    	    		"retrieve all transcripts for your gene of " +
+    	    		"interest.<br><br> For this example, we fill in " +
+    	    		"the 'T' gene."
 	  },
 	  {
 		element: "#geneNameHelpMessage",
 		title: "Get Transcripts",			
-		content: "After clicking the 'Get Transcripts' button, we "+
-				"check if there are any transcripts available for "+
-				"your gene of interest.<br><br>"+
-				"If the gene was not present in our database you " +
-				"would have seen the following message:<br><br>" +
-				"<div class='help is-danger'>No transcripts " +
-				"available in database for gene 'T'</div>"				
+		content: "After clicking the 'Get Transcripts' button, we " +
+    				"check whether any transcripts are available for " +
+    				"your gene of interest.<br><br>" +
+    				"If the gene is not present in our database, you " +
+    				"would see the following message:<br><br>" +
+    				"<div class='help is-danger'>No transcripts " +
+    				"available in database for gene 'T'</div>"
 	  },
 	  {
 		element: "#start_analysis_control",
 		title: "Select transcript & analyse your protein",
-		content: "Select the transcript of your interest from this "+
-				"dropdown menu. You can than click the 'Analyse " +
-				"Protein' button to start the analysis."
+		content: "Select the transcript of interest from this " +
+    				"dropdown menu. You can then click the 'Analyse " +
+    				"Protein' button to start the analysis."
 	  },
 	  {
 		element: "#loading_overlay",
 		title: "Loading screen",
 		content: "This analysis may take between 5 minutes and up " +
-				"to an hour to complete, but in this example: <br><br>" +
-				"<b>you can click next to continue</b>. <br><br> " +
-				"Luckily all results are stored after they "+
-				"complete, so the next time you query the same " +
-				"transcript it will load in a matter of seconds."
+    				"to an hour to complete, but in this example: <br><br>" +
+    				"<b>you can click Next to continue</b>. <br><br> " +
+    				"Luckily, all results are stored after they "+
+    				"complete, so the next time you query the same " +
+    				"transcript it will load in a matter of seconds."
 	  },
 	  {
 		element: "#content",
@@ -362,27 +362,25 @@ var tour = new Tour({
 		element: "#graph_control_field",
 		title: "Graph Control",
 		content: "Here, you may switch between different " +
-				"representations of the analysis result visualizations," +
-				" download the current view as an '.svg', reset any " +
-				"zooming of the graph or select, or display any known " +
-				"ClinVar variants.",
+    				"representations of the analysis results, download the " +
+    				"current view as an '.svg', reset any zooming of the " +
+    				"graph, or display known ClinVar variants.",
 	  },
 	  {
 		element: "#landscape_svg",
 		title: "Visualization",
 		content: "Here you may find the visualization of your results." +
-				"It is a graphic representation of the protein of your " +
-				"transcript of interest.<br><br> By default the " +
-				"metadomain variants are displayed.",
+					"It is a graphic representation of the protein for your " +
+    				"transcript of interest.<br><br> By default, " +
+    				"meta-domain variants are displayed.",
 	  },
 	  {
 		element: "#schematic_protein_zoom_text",
 		title: "Zooming in",
-		content: "You can zoom in on regions of your interest by " +
-				"clicking anywhere in the gray area and dragging " +
-				"the mouse. If you just click on any part in the " +
-				"protein the zooming is reset.<br><br> Go ahead " +
-				"and try for yourself",
+		content: "You can zoom in on regions of interest by " +
+    				"clicking anywhere in the gray area and dragging " +
+    				"the mouse. If you click anywhere in the protein, the " +
+    				"zoom resets.<br><br> Go ahead and try for yourself.",
 		placement: 'left',
 		backdropContainer: "#landscape_svg"
 	  },
@@ -390,48 +388,46 @@ var tour = new Tour({
 		element: "#checkbox_for_landscape",
 		title: "Switching between visualizations",
 		content: "Here you can switch between the 'Meta-domain " +
-				"Landscape' and the 'Tolerance Landscape' " +
-				"visualization modes.<br><br> Go ahead " +
-				"and try for yourself",
+    				"Landscape' and the 'Tolerance Landscape' " +
+    				"visualization modes.<br><br> Go ahead and try for " +
+    				"yourself.",
 		backdropContainer: "#landscape_svg"
 	  },
 	  {
 		element: "#clinvar_checkbox",
 		title: "Switching ClinVar variants",
-		content: "Here you can toggle the display of any ClinVar " +
-				"variants for your gene of interest. <br><br> Go ahead " +
-				"and try for yourself",
+		content: "Here you can toggle the display of ClinVar " +
+    				"variants for your gene of interest.<br><br> Go ahead " +
+    				"and try for yourself.",
 		backdropContainer: "#landscape_svg"
 	  },
 	  {
 		element: "#tolerance_axis",
 		title: "Schematic protein representation",
-		content: "For each gene a schematic protein is displayed for " +
-				"all the positions and the presence of any Pfam protein " +
-				"domains is annotated.<br><br> Here each position is " +
-				"hoverable and selectable. If you click a position you " +
-				"obtain much more information about it.",
+		content: "For each gene, a schematic protein is displayed " +
+    				"showing all positions, and the presence of any Pfam " +
+    				"protein domains is annotated.<br><br> Each position is " +
+    				"hoverable and selectable. Click a position to see more " +
+    				"information.",
 		backdropContainer: "#landscape_svg"
 	  },
 	  {
 		element: "#toleranceAxisRect_68",
 		title: "Selecting positions of interest",
-		content: "If you click a position it will become highlighted. " +
-				"And you may view more detailed information for that " +
-				"position.",
+		content: "If you click a position, it becomes highlighted, " +
+    				"and you can view more detailed information for that position.",
 		backdropContainer: "#landscape_svg"
 	  },
 	  {
 		element: "#selected_positions_information",
 		title: "More info for a selected position",
-		content: "All the highlighted positions that you have selected " +
-				"will be put into this list. Here a short overview is " +
-				"displayed on any known gnomAD or ClinVar variants " +
-				"present at this position. Also variants that are " +
-				"homologously related to this position are displayed " +
-				"if the position is part of a Pfam protein domain." +
-				"<br><br> Clicking a selected position provides a " +
-				"pop-up with even more details.",
+		content: "All highlighted positions you have selected are " +
+    				"listed here. A short overview of any known gnomAD or " +
+    				"ClinVar variants at this position is shown. Variants " +
+    				"that are homologous to this position are also shown " +
+    				"when the position is part of a Pfam protein domain." +
+    				"<br><br> Clicking a selected position provides a " +
+    				"popup with more details.",
 	  },
 ]});
 tour.init();
