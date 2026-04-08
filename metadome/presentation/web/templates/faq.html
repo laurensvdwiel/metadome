@@ -1,205 +1,207 @@
 {% extends "base.html" %} {% block content %}
 
-<!-- Starting definition of site content -->
-<section class="section">
-  <div class="box">
+    <!-- Starting definition of site content -->
     <section class="section">
-      <div class='content'>
-        <h1 class="title" style="color: #00AFDC;">Frequently Asked Questions</h1>
-
-        <p>
-          If your question is not answered here, please do not hesitate to <a
-            href="{{ url_for('web.contact') }}">contact us</a>.
-        </p>
-
-        <h3 class="title" style="color: #00AFDC;">General questions</h3>
         <div class="box">
-	        <div class="label">What is MetaDome?</div>
-	        <div class="box">
-	        	MetaDome is a fast and easy-to-use web server that offers an easily
-	        	accessible and unique perspective for researchers and
-	        	clinicians to interpret variants of unknown significance via
-	        	'meta-domains', a concept that we have previously validated
-	        	(<a href="https://doi.org/10.1002/humu.23313" target="_blank">
-          		L. Wiel et al. Human Mutation, 2017 </a>). It makes use of protein
-          		domain homology within the human genome to transfer genetic variant
-          		information across homologous domains. MetaDome can visualise
-          		meta-domain information and gene-wide profiles of genetic tolerance.
-	        </div>
+            <section class="section">
+                <div class='content'>
+                    <h1 class="title" style="color: #00AFDC;">Frequently Asked Questions</h1>
 
-	        <div class="label">How can I use MetaDome?</div>
-	        <div class="box">
-				MetaDome analyses can be performed by querying a gene name
-				and selecting the desired transcript. The result is a visualisation that users
-				can interact with to highlight positions of interest and
-				obtain more detailed information about those positions. This includes
-				regional tolerance to missense variation and the presence or absence
-				of variation at corresponding positions within homologous domains.
-				<br><br>
-				To become more familiar with using MetaDome and all of its functionality,
-				we strongly advise you to <a href="{{ url_for('web.dashboard') }}?tour=true">
-				start the tour</a>.
-	        </div>
+                    <p>
+                        If your question is not answered here, please do not hesitate to <a
+                            href="{{ url_for('web.contact') }}">contact us</a>.
+                    </p>
 
-	        <div class="label">Can I use my smartphone or tablet to access MetaDome?</div>
-	        <div class="box">
-	        	Although we recommend using a laptop or desktop computer with a compatible
-	        	browser for the best user experience, we designed the user interface
-	        	to be usable on mobile devices as well. If you encounter any problems or
-	        	see any possible improvements, please
-	        	<a href="{{ url_for('web.contact') }}">contact us</a>.
-	        </div>
+                    <h3 class="title" style="color: #00AFDC;">General questions</h3>
+                    <div class="box">
+                        <div class="label">What is MetaDome?</div>
+                        <div class="box">
+                            MetaDome is a fast and easy-to-use web server that offers an easily
+                            accessible and unique perspective for researchers and
+                            clinicians to interpret variants of unknown significance via
+                            'meta-domains', a concept that we have previously validated
+                            (<a href="https://doi.org/10.1002/humu.23313" target="_blank">
+                            L. Wiel et al. Human Mutation, 2017 </a>). It makes use of protein
+                            domain homology within the human genome to transfer genetic variant
+                            information across homologous domains. MetaDome can visualise
+                            meta-domain information and gene-wide profiles of genetic tolerance.
+                        </div>
 
-	        <div class="label">Which desktop browsers are compatible with MetaDome?</div>
-	        <div class="box">
-		        <p>
-		          The MetaDome web server is developed and extensively tested using
-		          <a href="https://www.google.com/chrome/">Google Chrome</a> and
-		          <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a>. We
-		          recommend using one of these browsers to access all functionality.
-		          Here is a list of compatible and tested browsers:
-		        </p>
-		        <table class="table">
-				  <thead>
-				    <tr>
-				      <th><abbr title="OS">OS</abbr></th>
-				      <th><abbr title="Version">Version</abbr></th>
-				      <th><abbr title="Chrome">Chrome</abbr></th>
-				      <th><abbr title="Firefox">Firefox</abbr></th>
-				      <th><abbr title="Microsoft Edge">Microsoft Edge</abbr></th>
-				      <th><abbr title="Microsoft IE">Microsoft IE</abbr></th>
-				      <th><abbr title="Safari">Safari</abbr></th>
-				    </tr>
-				  </thead>
-				  <tbody>
-				    <tr>
-				      <th>Linux</th>
-				      <td>Ubuntu 16.04 and 18.04</td>
-				      <td>70.0</td>
-				      <td>63.0</td>
-				      <td>n/a</td>
-				      <td>n/a</td>
-				      <td>n/a</td>
-				    </tr>
-				    <tr>
-				      <th>macOS</th>
-				      <td>Mojave</td>
-				      <td>70.0</td>
-				      <td>63.0</td>
-				      <td>n/a</td>
-				      <td>n/a</td>
-				      <td>Not supported</td>
-				    </tr>
-				    <tr>
-				      <th>Windows</th>
-				      <td>7 and 10</td>
-				      <td>70.0</td>
-				      <td>63.0</td>
-				      <td>Not tested</td>
-				      <td>Not supported</td>
-				      <td>n/a</td>
-				    </tr>
-				  </tbody>
-				</table>
-	        </div>
+                        <div class="label">How can I use MetaDome?</div>
+                        <div class="box">
+                            MetaDome analyses can be performed by querying a gene name
+                            and selecting the desired transcript. The result is a visualisation that users
+                            can interact with to highlight positions of interest and
+                            obtain more detailed information about those positions. This includes
+                            regional tolerance to missense variation and the presence or absence
+                            of variation at corresponding positions within homologous domains.
+                            <br><br>
+                            To become more familiar with using MetaDome and all of its functionality,
+                            we strongly advise you to <a href="{{ url_for('web.dashboard') }}?tour=true">
+                            start the tour</a>.
+                        </div>
 
-	        <div class="label">I have run into a problem with MetaDome. What can I do?</div>
-			<div class="box">
-				Although we have extensively tested MetaDome and are constantly monitoring
-				the server for downtime, problems can still occur. If you encounter issues or behaviour you
-				did not expect, we would highly appreciate it if you could
-				<a href="{{ url_for('web.contact') }}">contact us</a>.
-			</div>
+                        <div class="label">Can I use my smartphone or tablet to access MetaDome?</div>
+                        <div class="box">
+                            Although we recommend using a laptop or desktop computer with a compatible
+                            browser for the best user experience, we designed the user interface
+                            to be usable on mobile devices as well. If you encounter any problems or
+                            see any possible improvements, please
+                            <a href="{{ url_for('web.contact') }}">contact us</a>.
+                        </div>
 
-	        <div class="label">What data are the results in MetaDome based on?</div>
-			<div class="box">
-				MetaDome combines data from various public resources. The underlying data
-				in MetaDome currently contains information from 56,319 human transcripts
-				(<a href="https://www.gencodegenes.org/" target="_blank">GENCODE</a>),
-				71,419 <a href="https://pfam.xfam.org/" target="_blank">Pfam</a>
-				protein domain instances, 12,164,292 population-based genetic variants from
-				<a href="http://gnomad.broadinstitute.org/">gnomAD</a>, and 34,076 pathogenic mutations from
-				<a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>.
-			</div>
+                        <div class="label">Which desktop browsers are compatible with MetaDome?</div>
+                        <div class="box">
+                            <p>
+                                The MetaDome web server is developed and extensively tested using
+                                <a href="https://www.google.com/chrome/">Google Chrome</a> and
+                                <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a>. We
+                                recommend using one of these browsers to access all functionality.
+                                Here is a list of compatible and tested browsers:
+                            </p>
+                            <table class="table">
+                                <thead>
+                                <tr>
+                                    <th><abbr title="OS">OS</abbr></th>
+                                    <th><abbr title="Version">Version</abbr></th>
+                                    <th><abbr title="Chrome">Chrome</abbr></th>
+                                    <th><abbr title="Firefox">Firefox</abbr></th>
+                                    <th><abbr title="Microsoft Edge">Microsoft Edge</abbr></th>
+                                    <th><abbr title="Microsoft IE">Microsoft IE</abbr></th>
+                                    <th><abbr title="Safari">Safari</abbr></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <th>Linux</th>
+                                    <td>Ubuntu 16.04 and 18.04</td>
+                                    <td>70.0</td>
+                                    <td>63.0</td>
+                                    <td>n/a</td>
+                                    <td>n/a</td>
+                                    <td>n/a</td>
+                                </tr>
+                                <tr>
+                                    <th>macOS</th>
+                                    <td>Mojave</td>
+                                    <td>70.0</td>
+                                    <td>63.0</td>
+                                    <td>n/a</td>
+                                    <td>n/a</td>
+                                    <td>Not supported</td>
+                                </tr>
+                                <tr>
+                                    <th>Windows</th>
+                                    <td>7 and 10</td>
+                                    <td>70.0</td>
+                                    <td>63.0</td>
+                                    <td>Not tested</td>
+                                    <td>Not supported</td>
+                                    <td>n/a</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-			<div class="label">How often is the underlying data updated?</div>
-			<div class="box">
-				Currently, MetaDome requires manual reannotation of the underlying data.
-				In a future version, MetaDome is expected to support automatic downloading
-				of new data releases and automatic reannotation.
-			</div>
+                        <div class="label">I have run into a problem with MetaDome. What can I do?</div>
+                        <div class="box">
+                            Although we have extensively tested MetaDome and are constantly monitoring
+                            the server for downtime, problems can still occur. If you encounter issues or behaviour you
+                            did not expect, we would highly appreciate it if you could
+                            <a href="{{ url_for('web.contact') }}">contact us</a>.
+                        </div>
 
-	        <div class="label">Is MetaDome still under construction?</div>
-			<div class="box">
-				MetaDome has been released, but we are still actively
-				working to improve it based on feedback. If you have any ideas for improvement,
-				please <a href="{{ url_for('web.contact') }}">contact us</a>.
-				Current improvements that we are working on can be found
-				<a href="https://github.com/cmbi/metadome/issues">here</a>.
-			</div>
+                        <div class="label">What data are the results in MetaDome based on?</div>
+                        <div class="box">
+                            MetaDome combines data from various public resources. The underlying data
+                            in MetaDome currently contains information from 56,319 human transcripts
+                            (<a href="https://www.gencodegenes.org/" target="_blank">GENCODE</a>),
+                            71,419 <a href="https://pfam.xfam.org/" target="_blank">Pfam</a>
+                            protein domain instances, 12,164,292 population-based genetic variants from
+                            <a href="http://gnomad.broadinstitute.org/">gnomAD</a>, and 34,076 pathogenic mutations from
+                            <a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>.
+                        </div>
 
-			<div class="label">Why can I not select my gene/transcript for analysis?</div>
-			<div class="box">
-				For the sake of high data quality, we have limited the transcripts and genes
-				suitable for MetaDome analysis to <a href="https://www.gencodegenes.org/" target="_blank">GENCODE</a>
-				Basic transcripts whose translation is identically matched with a
-				<a href="http://www.uniprot.org/" target="_blank">Swiss-Prot</a> protein
-				sequence. All GENCODE Basic transcripts are validated as expressed mRNA,
-				and all Swiss-Prot proteins are curated by experts.
-			</div>
+                        <div class="label">How often is the underlying data updated?</div>
+                        <div class="box">
+                            Currently, MetaDome requires manual reannotation of the underlying data.
+                            In a future version, MetaDome is expected to support automatic downloading
+                            of new data releases and automatic reannotation.
+                        </div>
 
-			<div class="label">I cannot find the domain that should be in my gene of interest.</div>
-			<div class="box">
-				All annotated protein domains in MetaDome come from
-				<a href="https://pfam.xfam.org/" target="_blank">Pfam</a>.
-				Pfam has a strict definition of what constitutes a protein domain and differs from
-				other protein domain annotation services. We specifically chose Pfam
-				because the underlying method is suitable for identifying homologously identical
-				positions across protein domains that can be used directly to transfer variant
-				information.
-			</div>
+                        <div class="label">Is MetaDome still under construction?</div>
+                        <div class="box">
+                            MetaDome has been released, but we are still actively
+                            working to improve it based on feedback. If you have any ideas for improvement,
+                            please <a href="{{ url_for('web.contact') }}">contact us</a>.
+                            Current improvements that we are working on can be found
+                            <a href="https://github.com/cmbi/metadome/issues">here</a>.
+                        </div>
 
+                        <div class="label">Why can I not select my gene/transcript for analysis?</div>
+                        <div class="box">
+                            For the sake of high data quality, we have limited the transcripts and genes
+                            suitable for MetaDome analysis to <a href="https://www.gencodegenes.org/" target="_blank">GENCODE</a>
+                            Basic transcripts whose translation is identically matched with a
+                            <a href="http://www.uniprot.org/" target="_blank">Swiss-Prot</a> protein
+                            sequence. All GENCODE Basic transcripts are validated as expressed mRNA,
+                            and all Swiss-Prot proteins are curated by experts.
+                        </div>
+
+                        <div class="label">I cannot find the domain that should be in my gene of interest.</div>
+                        <div class="box">
+                            All annotated protein domains in MetaDome come from
+                            <a href="https://pfam.xfam.org/" target="_blank">Pfam</a>.
+                            Pfam has a strict definition of what constitutes a protein domain and differs from
+                            other protein domain annotation services. We specifically chose Pfam
+                            because the underlying method is suitable for identifying homologously identical
+                            positions across protein domains that can be used directly to transfer variant
+                            information.
+                        </div>
+
+                    </div>
+
+                    <h3 class="title" style="color: #00AFDC;">Interpretation of a MetaDome analysis</h3>
+                    <div class="box">
+                        <div class="label">Why are there black boxes in the meta-domain landscape?</div>
+                        <div class="box">
+                            The black boxes represent positions that cannot be aligned to the Pfam
+                            domain consensus. For these positions, we
+                            cannot transfer variant information across homologous domains.
+                        </div>
+
+                        <div class="label">How is the tolerance landscape computed?</div>
+                        <div class="box">
+                            Tolerance is computed as a missense-over-synonymous
+                            variant count ratio, which is calculated in a sliding-window manner to
+                            provide a per-position indication of regional tolerance to missense variation.
+                            The variants are based on gnomAD and corrected for codon composition.
+                            For more information, we suggest reading
+                            <a href="{{ url_for('web.method') }}#tolerance_computation">"Computing genetic
+                                tolerance and generating a tolerance landscape"</a>.
+                        </div>
+
+                        <div class="label">What do the tolerance landscape colours indicate?</div>
+                        <div class="box">
+                            The colours are based on missense-over-synonymous ratio computations
+                            across the entire protein for all proteins. Yellow (neutral)
+                            is based on the average missense-over-synonymous ratio score that would
+                            be obtained in this way, while red (intolerant) and blue (tolerant) are
+                            based on the highest and lowest scores.
+                        </div>
+
+                        <div class="label">For meta-domain information in the positional information, what does
+                            alignment coverage mean?
+                        </div>
+                        <div class="box">
+                            This corresponds to how many homologous positions are aligned to that
+                            specific position. In general, we advise maintaining a minimum of
+                            80% alignment coverage for high-quality results.
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
-
-        <h3 class="title" style="color: #00AFDC;">Interpretation of a MetaDome analysis</h3>
-        <div class="box">
-			<div class="label">Why are there black boxes in the meta-domain landscape?</div>
-			<div class="box">
-				The black boxes represent positions that cannot be aligned to the Pfam
-				domain consensus. For these positions, we
-				cannot transfer variant information across homologous domains.
-			</div>
-
-			<div class="label">How is the tolerance landscape computed?</div>
-			<div class="box">
-				Tolerance is computed as a missense-over-synonymous
-				variant count ratio, which is calculated in a sliding-window manner to
-				provide a per-position indication of regional tolerance to missense variation.
-				The variants are based on gnomAD and corrected for codon composition.
-				For more information, we suggest reading
-				<a href="{{ url_for('web.method') }}#tolerance_computation">"Computing genetic
-				tolerance and generating a tolerance landscape"</a>.
-			</div>
-
-			<div class="label">What do the tolerance landscape colours indicate?</div>
-			<div class="box">
-				The colours are based on missense-over-synonymous ratio computations
-				across the entire protein for all proteins. Yellow (neutral)
-				is based on the average missense-over-synonymous ratio score that would
-				be obtained in this way, while red (intolerant) and blue (tolerant) are
-				based on the highest and lowest scores.
-			</div>
-
-			<div class="label">For meta-domain information in the positional information, what does alignment coverage mean?</div>
-			<div class="box">
-				This corresponds to how many homologous positions are aligned to that
-				specific position. In general, we advise maintaining a minimum of
-				80% alignment coverage for high-quality results.
-			</div>
-		</div>
-      </div>
     </section>
-  </div>
-</section>
 
 {% endblock %} {% block js %} {% endblock %}

@@ -1,56 +1,78 @@
 {% extends "base.html" %} {% block content %}
 
-<section class="section">
-  <div class="box">
-    <div class='content'>
+    <section class="section">
+        <div class="box">
+            <div class='content'>
 
-      <h3 class="title" style="color: #00AFDC;">Get in touch with
-        us</h3>
-      <p>If your query is about an analysis in MetaDome, please include each of the following information:
-      <ul>
-        <li>The gene name and transcription</li>
-        <li>A description of the problem</li>
-        <li>Your expectation</li>
-      </ul>
-      </p>
-      <hr>
-        <div class="notification is-{{ 'danger' if category == 'error' else category }}"> <button class="delete"></button> {{ message }} </div>
-      <form id="metadom_contact_form" method="post"
-        action="{{ url_for('web.contact') }}" role="form"
-        enctype="multipart/form-data">
-        {{ form.hidden_tag() }}
+                <h3 class="title" style="color: #00AFDC;">Get in touch with
+                    us</h3>
+                <p>If your query is about an analysis in MetaDome, please include each of the following information:
+                <ul>
+                    <li>The gene name and transcription</li>
+                    <li>A description of the problem</li>
+                    <li>Your expectation</li>
+                </ul>
+                </p>
+                <hr>
+                <div class="notification is-{{ 'danger' if category == 'error' else category }}">
+                    <button class="delete"></button>
+                    {{ message }} </div>
+                <form id="metadom_contact_form" method="post"
+                      action="{{ url_for('web.contact') }}" role="form"
+                      enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
 
-        <div class="field">
-          <label class="label" style="color: #00AFDC;">Email</label>
-          <div class="control">{{ form.email(class_='input',
+                    <div class="field">
+                        <label class="label" style="color: #00AFDC;">Email</label>
+                        <div class="control">{{ form.email(class_='input',
             type_="email", placeholder='your@email.address') }}</div>
-        </div>
+                    </div>
 
-        <div class="field">
-          <label class="label" style="color: #00AFDC;">Message</label>
-          <div class="control">{{ form.body(class_='textarea',
+                    <div class="field">
+                        <label class="label" style="color: #00AFDC;">Message</label>
+                        <div class="control">{{ form.body(class_='textarea',
             placeholder='Please provide a description', rows='10') }}</div>
+                    </div>
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="website"
+                                                                                              tabindex="-1"
+                                                                                              autocomplete="off"></div>
+                    <input type="hidden" name="recaptcha_token" id="recaptcha_token">
+                    <hr>
+                    <div class="control is-expanded has-text-centered">
+                        <button class="button is-info is-medium" type="submit" id="submit-button">
+                            Submit
+                        </button>
+                    </div>
+
+                </form>
+            </div>
         </div>
-          <div style="position: absolute; left: -5000px;" aria-hidden="true"> <input type="text" name="website" tabindex="-1" autocomplete="off"> </div>
-          <input type="hidden" name="recaptcha_token" id="recaptcha_token">
-        <hr>
-        <div class="control is-expanded has-text-centered">
-          <button class="button is-info is-medium" type="submit" id="submit-button">
-            Submit</button>
-        </div>
-        
-      </form>
-    </div>
-  </div>
-</section>
+    </section>
 
 
 {% endblock %}
 {% block js %}
 
-<script> document.addEventListener('DOMContentLoaded', () => { (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => { const $notification = $delete.parentNode; $delete.addEventListener('click', () => { $notification.parentNode.removeChild($notification); }); }); });
-document.getElementById('metadom_contact_form').addEventListener('submit', function(e) { e.preventDefault(); const submitBtn = document.getElementById('submit-button'); submitBtn.classList.add('is-loading'); submitBtn.disabled = true;
-grecaptcha.ready(function() { grecaptcha.execute('{{ config.RECAPTCHA_SITE_KEY }}', {action: 'contact'}) .then(function(token) { document.getElementById('recaptcha_token').value = token; document.getElementById('metadom_contact_form').submit(); }); }); });
-</script>
+    <script> document.addEventListener('DOMContentLoaded', () => {
+        (document.querySelectorAll('.notification .delete') || []).forEach(($delete) => {
+            const $notification = $delete.parentNode;
+            $delete.addEventListener('click', () => {
+                $notification.parentNode.removeChild($notification);
+            });
+        });
+    });
+    document.getElementById('metadom_contact_form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submit-button');
+        submitBtn.classList.add('is-loading');
+        submitBtn.disabled = true;
+        grecaptcha.ready(function () {
+            grecaptcha.execute('{{ config.RECAPTCHA_SITE_KEY }}', {action: 'contact'}).then(function (token) {
+                document.getElementById('recaptcha_token').value = token;
+                document.getElementById('metadom_contact_form').submit();
+            });
+        });
+    });
+    </script>
 
 {% endblock %}

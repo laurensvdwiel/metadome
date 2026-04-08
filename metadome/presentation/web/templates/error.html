@@ -1,14 +1,14 @@
 {% extends "base.html" %} {% block content %}
 
-<h2>Error processing request</h2>
-<hr>
+    <h2>Error processing request</h2>
+    <hr>
 
-<p class="lead">There was an error processing your request. This
-	isn't your fault, it's ours. The system administrator has been notified
-	and will address the issue as quickly as possible. The reason for the
-	failure is:</p>
+    <p class="lead">There was an error processing your request. This
+        isn't your fault, it's ours. The system administrator has been notified
+        and will address the issue as quickly as possible. The reason for the
+        failure is:</p>
 
-<code class="red">{{ msg }}</code>
-<code class="red">{{ stack_trace }}</code>
+    <code class="red">{{ msg }}</code>
+    <code class="red">{{ stack_trace }}</code>
 
 {% endblock %} {% block js %} {% endblock %}

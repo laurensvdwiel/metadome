@@ -1,214 +1,246 @@
 {% extends "base.html" %} {% block content %}
 
-<!-- Scripts needed for functionality on this page -->
-<script src="{{ url_for('static', filename='js/d3-v6-tip.min.js') }}"></script>
-<script>
-  window.METADOME_CONFIG = {
-    dashboardUrl: "{{ url_for('web.dashboard') }}",
-    submitVisualizationUrl: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
-    metadomainAnnotationUrl: "{{ url_for('api.get_metadomain_annotation') }}",
-    exampleGeneJsonUrl: "{{ url_for('static', filename='json/example_T_gene.json') }}"
-  };
-</script>
-<script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
-<script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
-<script src="{{ url_for('static', filename='js/metadome/dashboard/visualization.js') }}"></script>
-<script src="{{ url_for('static', filename='js/metadome/dashboard/dashboard.js') }}"></script>
-<script>
-$(function() {
-  var availableTags = [{% for item in data %} {{ item|safe }},{% endfor %}];
-  window.METADOME_UI.initGeneAutocomplete("#geneName", availableTags);
-});
-</script>
+    <!-- Scripts needed for functionality on this page -->
+    <script src="{{ url_for('static', filename='js/d3-v6-tip.min.js') }}"></script>
+    <script>
+        window.METADOME_CONFIG = {
+            dashboardUrl: "{{ url_for('web.dashboard') }}",
+            submitVisualizationUrl: "{{ url_for('api.submit_visualization_job_for_transcript') }}",
+            metadomainAnnotationUrl: "{{ url_for('api.get_metadomain_annotation') }}",
+            exampleGeneJsonUrl: "{{ url_for('static', filename='json/example_T_gene.json') }}"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/metadome/dashboard/visualization.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/metadome/dashboard/dashboard.js') }}"></script>
+    <script>
+        $(function () {
+            var availableTags = [{% for item in data %} {{ item|safe }},{% endfor %}];
+            window.METADOME_UI.initGeneAutocomplete("#geneName", availableTags);
+        });
+    </script>
 
-<!-- Custom stylesheet for this page -->
-<link rel="stylesheet"
-  href="{{ url_for('static', filename='css/tolerance_graph.css') }}">
+    <!-- Custom stylesheet for this page -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/tolerance_graph.css') }}">
 
-<!-- Staring definition of site content -->
-<section class="section" id="content">
-  <!-- Loading screen -->
-  <div class="modal" id="loading_overlay">
-    <div class="modal-background" style="background: rgba(0, 0, 0, 0.5);"></div>
-    <div class="modal-content">
-      <div class="box has-text-centered" style="background: rgba(0, 0, 0, 0.0);">
-        <label id="loading_label" class="label" style="color: white;">Loading...</label>
-        <div class="button is-text is-loading" style="display: block; margin: auto;"></div>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Modal overlay for displaying domain information -->
-  <div class="modal" id="domain_information_overlay">
-    <div class="modal-background" onclick='$("#domain_information_overlay").removeClass("is-active");'></div>
-    <div class="modal-card">
-      <header class="modal-card-head">
-        <p class="modal-card-title" id='domain_information_overlay_title'></p>
-        <button class="delete" aria-label="close" onclick='$("#domain_information_overlay").removeClass("is-active");'></button>
-      </header>
-      <section class="modal-card-body">
-        <p id='domain_information_overlay_content'></p>
-      </section>
-    </div>
-  </div>
-  
-  <!-- Modal overlay for displaying positional information -->
-  <div class="modal" id="positional_information_overlay">
-    <div class="modal-background" onclick='$("#positional_information_overlay").removeClass("is-active"); d3.selectAll(".tr").classed("is-selected", false);'></div>
-    <div class="modal-card">
-      <header class="modal-card-head">
-        <p class="modal-card-title" id='positional_information_overlay_title'></p>
-        <button class="delete" aria-label="close" onclick='$("#positional_information_overlay").removeClass("is-active"); d3.selectAll(".tr").classed("is-selected", false);'></button>
-      </header>
-      <section class="modal-card-body">
-        <!-- Content ... -->
-        <div id='positional_information_overlay_body'></div>
-      </section>
-      <footer class="modal-card-foot">
-      </footer>
-    </div>
-  </div>
-  
-  <!-- Start of the page content -->
-  <div class="container">
-        <!-- Tolerance landscape form -->
-    <div class="field">
-
-      <!-- Gene name input -->
-      <div class="field has-addons" id="retrieve_transcripts_control">
-        <div class="control">
-          <button class="button is-static is-fullwidth" type="text" name="genomeBuild"
-            id="genomeBuild" value="{{ genome_build }}">{{ genome_build }}</button>
-        </div>
-        <div class="control is-expanded">
-          <input class="input is-fullwidth" type="text" name="geneName"
-            id="geneName" size="20" onclick="this.setSelectionRange(0, this.value.length)"
-            placeholder="Type here your gene name of interest" required />
-        </div>
-        <div class="control">
-          <button id="getTranscriptsButton" class="button is-info is-fullwidth" onclick="getTranscriptButtonPress()">
-            Get transcripts</button>
-        </div>
-      </div>
-      <div id="geneNameHelpMessage" class="help"></div>
-
-      <!-- Transcript selection -->
-      <div class="field has-addons" id="start_analysis_control">
-        <div class="control is-expanded">
-          <div class="select is-fullwidth">
-            <select name="gtID" id="gtID" required disabled>
-              <option value="" disabled selected hidden>Please
-                first retrieve the transcripts</option>
-            </select>
-          </div>
-        </div>
-        <div class="control">
-          <button id='getToleranceButton' type="submit"
-            class="button is-static is-fullwidth" onclick="getToleranceButtonPress();">Analyse Protein</button>
-        </div>
-      </div>
-      <!-- Toggling advanced mode -->
-      <div class="box is-hidden" id="graph_control_field">
-      <div class="label"><label class="label"> Graph control </label></div>
-      <div class="label"><label class="label" id="geneDetails"></label></div>
-        <div class="field is-grouped" id="graph_control_field_checkboxes">
-          <div class="control" id="checkbox_for_landscape">
-            <label class="radio"> 
-              <input checked value="metadomain_landscape" name="landscape_checkbox" type="radio" onclick="toggleToleranceLandscapeOrMetadomainLandscape()" id="checkbox_for_landscape_default">
-              Show <abbr title="A bar chart over each domain annotated with gnomAD and Pathogenic ClinVar missense counts, present in other domains throughout the human genome for that domain position">Meta-domain landscape</abbr>
-            </label>
-            <label class="radio"> 
-              <input value="tolerance_landscape" name="landscape_checkbox" type="radio" onclick="toggleToleranceLandscapeOrMetadomainLandscape()"  id="checkbox_for_landscape_alternative">
-              Show Protein's <abbr title="A graph that displays missense over synonymous ratios per position for the entire protein, based on gnomAD variants">Tolerance Landscape</abbr>
-            </label>
-          </div>
-        </div>
-        
-        <div class="field is-grouped">
-            <div class="control"
-            <label class="text">
-                <input type="checkbox" id="exon_checkbox" onchange="toggleExonVisualization(this)">
-                Show Exons
-            </label>
+    <!-- Staring definition of site content -->
+    <section class="section" id="content">
+        <!-- Loading screen -->
+        <div class="modal" id="loading_overlay">
+            <div class="modal-background" style="background: rgba(0, 0, 0, 0.5);"></div>
+            <div class="modal-content">
+                <div class="box has-text-centered" style="background: rgba(0, 0, 0, 0.0);">
+                    <label id="loading_label" class="label" style="color: white;">Loading...</label>
+                    <div class="button is-text is-loading" style="display: block; margin: auto;"></div>
+                </div>
             </div>
-          <div class="control">
-            <label class="text">
-              Display ClinVar variants:
-            </label>
-            <label class="checkbox"> <input id="clinvar_checkbox"
-              type="checkbox" onclick="toggleClinvarVariantsInProtein(this)">
-              in this protein
-            </label>
-            <label class="checkbox"> <input id="clinvar_homologues_checkbox"
-              type="checkbox" onclick="toggleHomologousClinvarVariantsInProtein(this)">
-              in homologue protein domains
-            </label>
-          </div>
         </div>
-        
-        <div class="field is-grouped" id="graph_control_field_buttons">
-          <div class="control">
-            <button id='dlSVG' name="downloadButton" type="button"
-              class="button is-info is-outlined">Download current visualization</button>
-          </div>
-          <div class="control">
-            <button class="button is-info" id="reset_zoom" onclick='resetZoom()'>Reset Zoom</button>
-          </div>
-          <div class="control">
-            {% if transcript_id|length > 0 %}
-              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.transcript", genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id) }}"'>Reset Page</button>
-            {% else %}
-              <button class="button" id="reset_button" onclick='location.href="{{ url_for("web.dashboard", genome_build=genome_build) }}"'>Reset Page</button>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div id='toleranceGraphContainer' class="container is-hidden" style='overflow-x: auto;'>
-    <svg xmlns="http://www.w3.org/2000/svg" id="landscape_svg"></svg>
-    <div id="graph"></div>
-  </div>
-  <div id='selected_positions_information' class="container is-hidden">
-    <div class="field"> 
-      <div id="selected_positions">
-        <div class="label"><label class="title">Selected positions</label></div> 
-        <p id="selected_positions_explanation">Click on one of positions in the schematic protein to obtain more information</p>
-        <table class="table is-hoverable is-fullwidth is-hidden" id="position_information_table">
-          <thead>
-            <tr style='border-style:hidden;'>
-              <th><abbr title="Position in protein">Position</abbr></th>
-              <th><abbr title="The amino acid residue at this position">Residue</abbr></th>
-              <th><abbr title="Is this residue part of a protein domain">Protein domain</abbr></th>
-              <th><abbr title="ClinVar variants found at this position in the genome">ClinVar variants at position</abbr></th>
-              <th colspan='2'><abbr title="Variants found across the genome that are related to this position via meta-domains">Related variants</abbr></th>
-            </tr>
-            <tr>
-              <th colspan='4'></th>
-              <th><abbr title="gnomAD variants found across the genome that are related to this position via meta-domains">gnomAD*</abbr></th>
-              <th><abbr title="ClinVar variants found across the genome that are related to this position via meta-domains">ClinVar*</abbr></th>
-            </tr>
-          </thead>
-          <tfoot>
-          </tfoot>
-          <tbody id="position_information_tbody">
-          </tbody>
-        </table>
-      </div>
-   </div> 
-  </div>
-  <!-- Hidden select element for genome builds -->
-  <div type="hidden">
-    <select id="genomeBuilds" name="genomeBuilds" class="is-invisible">
-       {% for genome_build in all_genome_builds %}
-          <option value="{{ genome_build }}">{{ genome_build }}</option>
-       {% endfor %}
-    </select>
-  </div>
-  <div>
-    <h2 id="error-feedback" class="feedback-text"></h2>
-  </div>
-</section>
+        <!-- Modal overlay for displaying domain information -->
+        <div class="modal" id="domain_information_overlay">
+            <div class="modal-background" onclick='$("#domain_information_overlay").removeClass("is-active");'></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title" id='domain_information_overlay_title'></p>
+                    <button class="delete" aria-label="close"
+                            onclick='$("#domain_information_overlay").removeClass("is-active");'></button>
+                </header>
+                <section class="modal-card-body">
+                    <p id='domain_information_overlay_content'></p>
+                </section>
+            </div>
+        </div>
+
+        <!-- Modal overlay for displaying positional information -->
+        <div class="modal" id="positional_information_overlay">
+            <div class="modal-background"
+                 onclick='$("#positional_information_overlay").removeClass("is-active"); d3.selectAll(".tr").classed("is-selected", false);'></div>
+            <div class="modal-card">
+                <header class="modal-card-head">
+                    <p class="modal-card-title" id='positional_information_overlay_title'></p>
+                    <button class="delete" aria-label="close"
+                            onclick='$("#positional_information_overlay").removeClass("is-active"); d3.selectAll(".tr").classed("is-selected", false);'></button>
+                </header>
+                <section class="modal-card-body">
+                    <!-- Content ... -->
+                    <div id='positional_information_overlay_body'></div>
+                </section>
+                <footer class="modal-card-foot">
+                </footer>
+            </div>
+        </div>
+
+        <!-- Start of the page content -->
+        <div class="container">
+            <!-- Tolerance landscape form -->
+            <div class="field">
+
+                <!-- Gene name input -->
+                <div class="field has-addons" id="retrieve_transcripts_control">
+                    <div class="control">
+                        <button class="button is-static is-fullwidth" type="text" name="genomeBuild"
+                                id="genomeBuild" value="{{ genome_build }}">{{ genome_build }}</button>
+                    </div>
+                    <div class="control is-expanded">
+                        <input class="input is-fullwidth" type="text" name="geneName"
+                               id="geneName" size="20" onclick="this.setSelectionRange(0, this.value.length)"
+                               placeholder="Type here your gene name of interest" required/>
+                    </div>
+                    <div class="control">
+                        <button id="getTranscriptsButton" class="button is-info is-fullwidth"
+                                onclick="getTranscriptButtonPress()">
+                            Get transcripts
+                        </button>
+                    </div>
+                </div>
+                <div id="geneNameHelpMessage" class="help"></div>
+
+                <!-- Transcript selection -->
+                <div class="field has-addons" id="start_analysis_control">
+                    <div class="control is-expanded">
+                        <div class="select is-fullwidth">
+                            <select name="gtID" id="gtID" required disabled>
+                                <option value="" disabled selected hidden>Please
+                                    first retrieve the transcripts
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="control">
+                        <button id='getToleranceButton' type="submit"
+                                class="button is-static is-fullwidth" onclick="getToleranceButtonPress();">Analyse
+                            Protein
+                        </button>
+                    </div>
+                </div>
+                <!-- Toggling advanced mode -->
+                <div class="box is-hidden" id="graph_control_field">
+                    <div class="label"><label class="label"> Graph control </label></div>
+                    <div class="label"><label class="label" id="geneDetails"></label></div>
+                    <div class="field is-grouped" id="graph_control_field_checkboxes">
+                        <div class="control" id="checkbox_for_landscape">
+                            <label class="radio">
+                                <input checked value="metadomain_landscape" name="landscape_checkbox" type="radio"
+                                       onclick="toggleToleranceLandscapeOrMetadomainLandscape()"
+                                       id="checkbox_for_landscape_default">
+                                Show <abbr
+                                    title="A bar chart over each domain annotated with gnomAD and Pathogenic ClinVar missense counts, present in other domains throughout the human genome for that domain position">Meta-domain
+                                landscape</abbr>
+                            </label>
+                            <label class="radio">
+                                <input value="tolerance_landscape" name="landscape_checkbox" type="radio"
+                                       onclick="toggleToleranceLandscapeOrMetadomainLandscape()"
+                                       id="checkbox_for_landscape_alternative">
+                                Show Protein's <abbr
+                                    title="A graph that displays missense over synonymous ratios per position for the entire protein, based on gnomAD variants">Tolerance
+                                Landscape</abbr>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="field is-grouped">
+                        <div class="control"
+                        <label class="text">
+                            <input type="checkbox" id="exon_checkbox" onchange="toggleExonVisualization(this)">
+                            Show Exons
+                        </label>
+                    </div>
+                    <div class="control">
+                        <label class="text">
+                            Display ClinVar variants:
+                        </label>
+                        <label class="checkbox"> <input id="clinvar_checkbox"
+                                                        type="checkbox" onclick="toggleClinvarVariantsInProtein(this)">
+                            in this protein
+                        </label>
+                        <label class="checkbox"> <input id="clinvar_homologues_checkbox"
+                                                        type="checkbox"
+                                                        onclick="toggleHomologousClinvarVariantsInProtein(this)">
+                            in homologue protein domains
+                        </label>
+                    </div>
+                </div>
+
+                <div class="field is-grouped" id="graph_control_field_buttons">
+                    <div class="control">
+                        <button id='dlSVG' name="downloadButton" type="button"
+                                class="button is-info is-outlined">Download current visualization
+                        </button>
+                    </div>
+                    <div class="control">
+                        <button class="button is-info" id="reset_zoom" onclick='resetZoom()'>Reset Zoom</button>
+                    </div>
+                    <div class="control">
+                        {% if transcript_id|length > 0 %}
+                            <button class="button" id="reset_button"
+                                    onclick='location.href="{{ url_for("web.transcript", genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id) }}"'>
+                                Reset Page
+                            </button>
+                        {% else %}
+                            <button class="button" id="reset_button"
+                                    onclick='location.href="{{ url_for("web.dashboard", genome_build=genome_build) }}"'>
+                                Reset Page
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div id='toleranceGraphContainer' class="container is-hidden" style='overflow-x: auto;'>
+            <svg xmlns="http://www.w3.org/2000/svg" id="landscape_svg"></svg>
+            <div id="graph"></div>
+        </div>
+        <div id='selected_positions_information' class="container is-hidden">
+            <div class="field">
+                <div id="selected_positions">
+                    <div class="label"><label class="title">Selected positions</label></div>
+                    <p id="selected_positions_explanation">Click on one of positions in the schematic protein to obtain
+                        more information</p>
+                    <table class="table is-hoverable is-fullwidth is-hidden" id="position_information_table">
+                        <thead>
+                        <tr style='border-style:hidden;'>
+                            <th><abbr title="Position in protein">Position</abbr></th>
+                            <th><abbr title="The amino acid residue at this position">Residue</abbr></th>
+                            <th><abbr title="Is this residue part of a protein domain">Protein domain</abbr></th>
+                            <th><abbr title="ClinVar variants found at this position in the genome">ClinVar variants at
+                                position</abbr></th>
+                            <th colspan='2'><abbr
+                                    title="Variants found across the genome that are related to this position via meta-domains">Related
+                                variants</abbr></th>
+                        </tr>
+                        <tr>
+                            <th colspan='4'></th>
+                            <th><abbr
+                                    title="gnomAD variants found across the genome that are related to this position via meta-domains">gnomAD*</abbr>
+                            </th>
+                            <th><abbr
+                                    title="ClinVar variants found across the genome that are related to this position via meta-domains">ClinVar*</abbr>
+                            </th>
+                        </tr>
+                        </thead>
+                        <tfoot>
+                        </tfoot>
+                        <tbody id="position_information_tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Hidden select element for genome builds -->
+        <div type="hidden">
+            <select id="genomeBuilds" name="genomeBuilds" class="is-invisible">
+                {% for genome_build in all_genome_builds %}
+                    <option value="{{ genome_build }}">{{ genome_build }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <h2 id="error-feedback" class="feedback-text"></h2>
+        </div>
+    </section>
 
 {% endblock %} {% block js %} {% endblock %}

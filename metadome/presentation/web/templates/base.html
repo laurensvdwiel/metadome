@@ -190,7 +190,8 @@
                             <div class="select">
                                 <select name="genome_build">
                                     {% for gb in navbar_genome_builds %}
-                                        <option value="{{ gb }}" {% if navbar_selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
+                                        <option value="{{ gb }}"
+                                                {% if navbar_selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
                                     {% endfor %}
                                 </select>
                             </div>

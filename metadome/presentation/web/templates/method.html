@@ -1,131 +1,155 @@
 {% extends "base.html" %} {% block content %}
 
-<!-- Starting definition of site content -->
-<section class="section">
-  <div class="box">
+    <!-- Starting definition of site content -->
     <section class="section">
-      <div class='content'>
-        <h1 class="title" style="color: #00AFDC;">Summary</h1>
-        <p>
-          In our previous work (<a href="https://doi.org/10.1002/humu.23313" target="_blank">
-          L. Wiel et al. Human Mutation, 2017 </a>) we observed that the presence of pathogenic
-          missense variants at an aligned homologous domain position is often paired with the
-          absence of population variation, and vice versa. We realised that this type of information
-          could be of great benefit to genetic diagnostics, and that it would therefore be helpful
-          to have an easy-to-use web server that could provide access to this wealth of
-          information without the need for a bioinformatics intermediary.
-        </p>
-        <p>
-          The MetaDome web server is a further extension of our framework that maps population
-          variation and known pathogenic mutations onto “meta-domains”. MetaDome takes as input
-          a gene of interest and allows the user to select the preferred transcript.
-          Using this information, MetaDome provides protein domain and pathogenic variant
-          annotation, and generates a ‘tolerance landscape’ for the gene’s protein,
-          which visualises regional tolerance to normal genetic variation.
-          Furthermore, MetaDome uses homologous protein domain relationships to aggregate
-          population-based and pathogenic variants found across the genome that are aligned
-          to the same position in the domain of the gene of interest.
-          The use of these annotations can improve the interpretation of genetic variation.
-        </p>
+        <div class="box">
+            <section class="section">
+                <div class='content'>
+                    <h1 class="title" style="color: #00AFDC;">Summary</h1>
+                    <p>
+                        In our previous work (<a href="https://doi.org/10.1002/humu.23313" target="_blank">
+                        L. Wiel et al. Human Mutation, 2017 </a>) we observed that the presence of pathogenic
+                        missense variants at an aligned homologous domain position is often paired with the
+                        absence of population variation, and vice versa. We realised that this type of information
+                        could be of great benefit to genetic diagnostics, and that it would therefore be helpful
+                        to have an easy-to-use web server that could provide access to this wealth of
+                        information without the need for a bioinformatics intermediary.
+                    </p>
+                    <p>
+                        The MetaDome web server is a further extension of our framework that maps population
+                        variation and known pathogenic mutations onto “meta-domains”. MetaDome takes as input
+                        a gene of interest and allows the user to select the preferred transcript.
+                        Using this information, MetaDome provides protein domain and pathogenic variant
+                        annotation, and generates a ‘tolerance landscape’ for the gene’s protein,
+                        which visualises regional tolerance to normal genetic variation.
+                        Furthermore, MetaDome uses homologous protein domain relationships to aggregate
+                        population-based and pathogenic variants found across the genome that are aligned
+                        to the same position in the domain of the gene of interest.
+                        The use of these annotations can improve the interpretation of genetic variation.
+                    </p>
 
-        <h1 class="title" style="color: #00AFDC;">Software architecture of MetaDome</h1>
+                    <h1 class="title" style="color: #00AFDC;">Software architecture of MetaDome</h1>
 
-        <p>
-          MetaDome is primarily developed in Python and makes use of the
-          <a href="http://flask.pocoo.org/" target="_blank">Flask framework</a>
-          for the web server and communication between the front end, the back end, and the database.
-          The software architecture follows the
-          <a href="https://en.wikipedia.org/wiki/Domain-driven_design" target="_blank">
-          domain-driven design paradigm</a>.
-          The code is open source and can be found in our <a href="https://github.com/cmbi/metadome"
-          target="_blank">GitHub repository</a>.
-          Detailed instructions on how to deploy the MetaDome web server are also provided there.
-          To ensure MetaDome can be deployed in any environment, we have containerised the
-          application using <a href="https://www.docker.com/" target="_blank">Docker</a>.
-        </p>
-        <p>
-          The visualisation layer of the MetaDome web server is a fully interactive and
-          responsive HTML web page generated partially by the Flask framework, while
-          navigation and styling are provided using the CSS framework <a href="https://bulma.io/" target="_blank">Bulma</a>.
-          The visualisation of all data is performed using JavaScript, which relies heavily on the
-          <a href="https://d3js.org/" target="_blank">D3 framework</a>.
-        </p>
+                    <p>
+                        MetaDome is primarily developed in Python and makes use of the
+                        <a href="http://flask.pocoo.org/" target="_blank">Flask framework</a>
+                        for the web server and communication between the front end, the back end, and the database.
+                        The software architecture follows the
+                        <a href="https://en.wikipedia.org/wiki/Domain-driven_design" target="_blank">
+                            domain-driven design paradigm</a>.
+                        The code is open source and can be found in our <a href="https://github.com/cmbi/metadome"
+                                                                           target="_blank">GitHub repository</a>.
+                        Detailed instructions on how to deploy the MetaDome web server are also provided there.
+                        To ensure MetaDome can be deployed in any environment, we have containerised the
+                        application using <a href="https://www.docker.com/" target="_blank">Docker</a>.
+                    </p>
+                    <p>
+                        The visualisation layer of the MetaDome web server is a fully interactive and
+                        responsive HTML web page generated partially by the Flask framework, while
+                        navigation and styling are provided using the CSS framework <a href="https://bulma.io/"
+                                                                                       target="_blank">Bulma</a>.
+                        The visualisation of all data is performed using JavaScript, which relies heavily on the
+                        <a href="https://d3js.org/" target="_blank">D3 framework</a>.
+                    </p>
 
-        <h1 class="title" style="color: #00AFDC;">Datasets of population and disease-causing genetic variation</h1>
+                    <h1 class="title" style="color: #00AFDC;">Datasets of population and disease-causing genetic
+                        variation</h1>
 
-        <p>
-          Population variation is obtained from the Genome Aggregation Database
-          (<a href="http://gnomad.broadinstitute.org/" target="_blank">gnomAD</a>). MetaDome uses the VCF file
-          and selects all synonymous and missense variants that meet the PASS filter criteria. For
-          disease-causing missense variants, the VCF file from the public archive of clinically relevant variants
-          (<a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>) with
-          disease-causing (Pathogenic) status is used.
-        </p>
+                    <p>
+                        Population variation is obtained from the Genome Aggregation Database
+                        (<a href="http://gnomad.broadinstitute.org/" target="_blank">gnomAD</a>). MetaDome uses the VCF
+                        file
+                        and selects all synonymous and missense variants that meet the PASS filter criteria. For
+                        disease-causing missense variants, the VCF file from the public archive of clinically relevant
+                        variants
+                        (<a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>) with
+                        disease-causing (Pathogenic) status is used.
+                    </p>
 
-        <h1 class="title" style="color: #00AFDC;">A mapping between the world of genomics and proteomics</h1>
+                    <h1 class="title" style="color: #00AFDC;">A mapping between the world of genomics and
+                        proteomics</h1>
 
-        <p>
-          MetaDome features a PostgreSQL relational database in which a complete mapping between genomic and protein
-          positions is stored together with domain region annotation. The mapping is auto-generated by the MetaDome
-          web server from the <a href="https://www.gencodegenes.org/" target="blank">GENCODE</a> Basic set and the
-          <a href="http://www.uniprot.org/" target="_blank">UniProtKB/Swiss-Prot</a> databank. The auto-generation is performed for
-          each translation in the GENCODE set via a protein-protein BLAST against human Swiss-Prot canonical and isoform
-          sequences. Only identical sequences are used for the mapping; for all others, only the existence of the
-          transcript is registered in the database.
-        </p>
-        <p>
-          Next, for each identical match between a translation and a Swiss-Prot sequence, a ClustalW2 alignment is made
-          between the two sequences. Then, for each nucleotide, a mapping is made between the genomic position and
-          the protein position, which is stored in the database. As only the protein-coding information of a gene is
-          needed for MetaDome, each mapping represents part of a codon. Each mapping is linked to a gene
-          translation and a Swiss-Prot entry.
-        </p>
-        <p>
-          After the mapping process is complete, each Swiss-Prot sequence in the database is annotated via
-          <a href="https://www.ebi.ac.uk/interpro/" target="_blank">InterProScan</a> for <a href="http://pfam.xfam.org/"
-          target="_blank">Pfam-A</a> protein domains, and each of these results is stored in the database.
-          After this step, construction of the database is finished, but it is followed by the construction of all
-          meta-domain alignments. If you require a pre-built version of our database, please <a href="{{ url_for('web.contact') }}">contact us</a>.
-        </p>
+                    <p>
+                        MetaDome features a PostgreSQL relational database in which a complete mapping between genomic
+                        and protein
+                        positions is stored together with domain region annotation. The mapping is auto-generated by the
+                        MetaDome
+                        web server from the <a href="https://www.gencodegenes.org/" target="blank">GENCODE</a> Basic set
+                        and the
+                        <a href="http://www.uniprot.org/" target="_blank">UniProtKB/Swiss-Prot</a> databank. The
+                        auto-generation is performed for
+                        each translation in the GENCODE set via a protein-protein BLAST against human Swiss-Prot
+                        canonical and isoform
+                        sequences. Only identical sequences are used for the mapping; for all others, only the existence
+                        of the
+                        transcript is registered in the database.
+                    </p>
+                    <p>
+                        Next, for each identical match between a translation and a Swiss-Prot sequence, a ClustalW2
+                        alignment is made
+                        between the two sequences. Then, for each nucleotide, a mapping is made between the genomic
+                        position and
+                        the protein position, which is stored in the database. As only the protein-coding information of
+                        a gene is
+                        needed for MetaDome, each mapping represents part of a codon. Each mapping is linked to a gene
+                        translation and a Swiss-Prot entry.
+                    </p>
+                    <p>
+                        After the mapping process is complete, each Swiss-Prot sequence in the database is annotated via
+                        <a href="https://www.ebi.ac.uk/interpro/" target="_blank">InterProScan</a> for <a
+                            href="http://pfam.xfam.org/"
+                            target="_blank">Pfam-A</a> protein domains, and each of these results is stored in the
+                        database.
+                        After this step, construction of the database is finished, but it is followed by the
+                        construction of all
+                        meta-domain alignments. If you require a pre-built version of our database, please <a
+                            href="{{ url_for('web.contact') }}">contact us</a>.
+                    </p>
 
-        <h1 class="title" style="color: #00AFDC;">Composing a meta-domain</h1>
+                    <h1 class="title" style="color: #00AFDC;">Composing a meta-domain</h1>
 
-        <p>
-          Meta-domains consist of homologous Pfam protein domain instances that are annotated for all
-          protein sequences in our database via InterProScan. All domains that have multiple instances
-          annotated to proteins are considered candidates for meta-domains. We consider protein domain
-          homologues to have the same Pfam domain identifier occurring more than once in different
-          regions of the genome. For each domain that meets this criterion, we generate a multiple
-          sequence alignment (MSA) in the following manner. We retrieve all sequences for these
-          domain instances, then retrieve the Pfam HMM corresponding to the identifier and use the
-          <a href="http://hmmer.org/" target="_blank">HMMER</a> tool to align these protein sequences.
-          This results in a Stockholm-formatted MSA file, which can be interpreted by alignment
-          visualisation software such as <a href="http://www.jalview.org/" target="_blank">Jalview</a>.
-          In this Stockholm-formatted file, all columns that correspond to the domain consensus represent
-          the same homologous positions.
-        </p>
-        <p>
-          These Stockholm files are retrieved by the MetaDome web server when a user requests meta-domain
-          information for a position of interest. Upon retrieval of the Stockholm file,
-          the mapping database is used to obtain the corresponding genomic positions for each residue.
-          These genomic positions are then used to annotate gnomAD or ClinVar single-nucleotide variants found in the same columns.
-        </p>
+                    <p>
+                        Meta-domains consist of homologous Pfam protein domain instances that are annotated for all
+                        protein sequences in our database via InterProScan. All domains that have multiple instances
+                        annotated to proteins are considered candidates for meta-domains. We consider protein domain
+                        homologues to have the same Pfam domain identifier occurring more than once in different
+                        regions of the genome. For each domain that meets this criterion, we generate a multiple
+                        sequence alignment (MSA) in the following manner. We retrieve all sequences for these
+                        domain instances, then retrieve the Pfam HMM corresponding to the identifier and use the
+                        <a href="http://hmmer.org/" target="_blank">HMMER</a> tool to align these protein sequences.
+                        This results in a Stockholm-formatted MSA file, which can be interpreted by alignment
+                        visualisation software such as <a href="http://www.jalview.org/" target="_blank">Jalview</a>.
+                        In this Stockholm-formatted file, all columns that correspond to the domain consensus represent
+                        the same homologous positions.
+                    </p>
+                    <p>
+                        These Stockholm files are retrieved by the MetaDome web server when a user requests meta-domain
+                        information for a position of interest. Upon retrieval of the Stockholm file,
+                        the mapping database is used to obtain the corresponding genomic positions for each residue.
+                        These genomic positions are then used to annotate gnomAD or ClinVar single-nucleotide variants
+                        found in the same columns.
+                    </p>
 
-        <h1 class="title" style="color: #00AFDC;">Computing genetic tolerance and generating a tolerance landscape</h1>
-        <a name="tolerance_computation"></a>
+                    <h1 class="title" style="color: #00AFDC;">Computing genetic tolerance and generating a tolerance
+                        landscape</h1>
+                    <a name="tolerance_computation"></a>
 
-        <p>
-          We use the non-synonymous-over-synonymous ratio to quantify genetic tolerance in our Tolerance Landscape
-          visualisation. In our setting, this score is based on single-nucleotide missense and synonymous
-          variants (SNVs) from gnomAD in a protein-coding region. This score is corrected for the sequence
-          composition of the protein-coding region based on the total possible missense and synonymous SNVs.
-          The generation of a Tolerance Landscape is the result of computing this ratio in a sliding window of 21
-          residues across the entirety of the protein of interest (for example, ten residues to the left and right of each residue).
-        </p>
+                    <p>
+                        We use the non-synonymous-over-synonymous ratio to quantify genetic tolerance in our Tolerance
+                        Landscape
+                        visualisation. In our setting, this score is based on single-nucleotide missense and synonymous
+                        variants (SNVs) from gnomAD in a protein-coding region. This score is corrected for the sequence
+                        composition of the protein-coding region based on the total possible missense and synonymous
+                        SNVs.
+                        The generation of a Tolerance Landscape is the result of computing this ratio in a sliding
+                        window of 21
+                        residues across the entirety of the protein of interest (for example, ten residues to the left
+                        and right of each residue).
+                    </p>
 
-      </div>
+                </div>
+            </section>
+        </div>
     </section>
-  </div>
-</section>
 
 {% endblock %} {% block js %} {% endblock %}
