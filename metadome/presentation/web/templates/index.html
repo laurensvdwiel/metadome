@@ -6,9 +6,9 @@
                 <img src="{{ url_for('static', filename='img/metadome_logo_2.png') }}">
                 <!-- Start a tolerance landscape -->
                 <form method="get" action="{{ url_for('web.frontpage_search') }}">
-                    <div class="field is-grouped is-grouped-centered">
-                        <div class="control">
-                            <div class="select is-large">
+                    <div class="columns is-centered is-vcentered is-variable is-2">
+                        <div class="column is-full-mobile is-narrow-tablet is-narrow-desktop">
+                            <div class="select is-large is-fullwidth">
                                 <select name="genome_build">
                                     {% for gb in navbar_genome_builds %}
                                         <option value="{{ gb }}"
@@ -18,7 +18,7 @@
                             </div>
                         </div>
 
-                        <div class="control is-expanded" style="max-width: 32rem;">
+                        <div class="column is-full-mobile is-two-thirds-tablet is-half-desktop">
                             <input class="input is-large"
                                    id="frontpageQuery"
                                    type="text"
@@ -27,8 +27,8 @@
                                    required>
                         </div>
 
-                        <div class="control">
-                            <button class="button is-link is-large" type="submit">
+                        <div class="column is-full-mobile is-narrow-tablet is-narrow-desktop">
+                            <button class="button is-link is-large is-fullwidth" type="submit">
                                 Analyse
                             </button>
                         </div>

@@ -14,9 +14,9 @@
             <script src="{{ url_for('static', filename='js/metadome/position/position.js') }}"></script>
 
             <form method="get" action="{{ url_for('web.position_lookup_search') }}">
-                <div class="field is-grouped">
-                    <div class="control">
-                        <div class="select">
+                <div class="columns is-variable is-2">
+                    <div class="column is-full-mobile is-narrow-tablet is-narrow-desktop">
+                        <div class="select is-fullwidth">
                             <select name="genome_build">
                                 {% for gb in genome_builds if genome_builds is defined %}
                                     <option value="{{ gb }}"
@@ -29,14 +29,14 @@
                         </div>
                     </div>
 
-                    <div class="control is-expanded">
+                    <div class="column is-full-mobile is-two-thirds-tablet is-half-desktop">
                         <input class="input" type="text" name="query"
                                placeholder="chr1:12345 or chr1 12345"
                                value="{{ selected_query or '' }}" required>
                     </div>
 
-                    <div class="control">
-                        <button class="button is-info" type="submit">Search</button>
+                    <div class="column is-full-mobile is-narrow-tablet is-narrow-desktop">
+                        <button class="button is-info is-fullwidth" type="submit">Search</button>
                     </div>
                 </div>
             </form>
