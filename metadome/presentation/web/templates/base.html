@@ -153,7 +153,12 @@
 
             var availableTags = [{% for item in navbar_gene_data %} {{ item|safe }},{% endfor %}];
             if (window.METADOME_UI) {
-                window.METADOME_UI.initGeneAutocomplete("#navbarQuery", availableTags);
+                if (document.querySelector("#navbarQuery")) {
+                    window.METADOME_UI.initGeneAutocomplete("#navbarQuery", availableTags);
+                }
+                if (document.querySelector("#frontpageQuery")) {
+                    window.METADOME_UI.initGeneAutocomplete("#frontpageQuery", availableTags);
+                }
             }
         });
     </script>
@@ -265,31 +270,39 @@
     </div>
 </div>
 
-<div class="container">{% block content %} {% endblock %}</div>
-<footer class="modal-footer" style="background-color: #f9f9f9;">
-    <div class="container">
-        <div class="content has-text-centered" style="color: gray">
-            <p>
-                <strong>MetaDome Version {{ g.metadome_version }}</strong>,
-                <small>
-                    <a class="view-all-versions"
-                       href="https://github.com/cmbi/metadom/releases"
-                       target="_blank">View all versions</a>
-                </small>
-                <br>
-                <small>
-                    Please review <a href="{{ url_for('web.privacy') }}">MetaDome's Privacy Policy</a>
-                    for details on how we handle analytics, cookies, and contact data.
-                    reCAPTCHA protects this site, <a href="https://policies.google.com/privacy" target="_blank">Google’s
-                    Privacy Policy</a>
-                    and <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a> apply.
-                </small>
-                <br>
-            </p>
+    <div class="container">{% block content %} {% endblock %}</div>
+    <footer class="modal-footer" style="background-color: #f9f9f9;">
+        <div class="container">
+            <div class="content has-text-centered" style="color: gray">
+                <p>
+                    <strong>MetaDome Version {{ g.metadome_version }}</strong>,
+                    <small>
+                        <a class="view-all-versions"
+                           data-external-link-group="MetaDome"
+                           data-external-link-key="githubReleases"
+                           href="#"
+                           target="_blank">View all versions</a>
+                    </small>
+                    <br>
+                    <small>
+                        Please review <a href="{{ url_for('web.privacy') }}">MetaDome's Privacy Policy</a>
+                        for details on how we handle analytics, cookies, and contact data.
+                        reCAPTCHA protects this site, <a data-external-link-group="External.privacy"
+                                                         data-external-link-key="googlePrivacy"
+                                                         href="#"
+                                                         target="_blank">Google’s
+                        Privacy Policy</a>
+                        and <a data-external-link-group="External.privacy"
+                               data-external-link-key="googleTerms"
+                               href="#"
+                               target="_blank">Terms of Service</a> apply.
+                    </small>
+                    <br>
+                </p>
+            </div>
         </div>
-    </div>
-</footer>
-{% block js %} {% endblock %}
+    </footer>
+    {% block js %} {% endblock %}
 
 </body>
 </html>

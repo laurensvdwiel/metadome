@@ -7,7 +7,10 @@
                 <div class='content'>
                     <h1 class="title" style="color: #00AFDC;">Summary</h1>
                     <p>
-                        In our previous work (<a href="https://doi.org/10.1002/humu.23313" target="_blank">
+                        In our previous work (<a data-external-link-group="MetaDome.papers"
+                                                 data-external-link-key="humu2017"
+                                                 href="#"
+                                                 target="_blank">
                         L. Wiel et al. Human Mutation, 2017 </a>) we observed that the presence of pathogenic
                         missense variants at an aligned homologous domain position is often paired with the
                         absence of population variation, and vice versa. We realised that this type of information
@@ -32,24 +35,41 @@
 
                     <p>
                         MetaDome is primarily developed in Python and makes use of the
-                        <a href="http://flask.pocoo.org/" target="_blank">Flask framework</a>
+                        <a data-external-link-group="External.resources"
+                           data-external-link-key="flask"
+                           href="#"
+                           target="_blank">Flask framework</a>
                         for the web server and communication between the front end, the back end, and the database.
                         The software architecture follows the
-                        <a href="https://en.wikipedia.org/wiki/Domain-driven_design" target="_blank">
+                        <a data-external-link-group="External.resources"
+                           data-external-link-key="ddd"
+                           href="#"
+                           target="_blank">
                             domain-driven design paradigm</a>.
-                        The code is open source and can be found in our <a href="https://github.com/cmbi/metadome"
+                        The code is open source and can be found in our <a data-external-link-group="MetaDome"
+                                                                           data-external-link-key="github"
+                                                                           href="#"
                                                                            target="_blank">GitHub repository</a>.
                         Detailed instructions on how to deploy the MetaDome web server are also provided there.
                         To ensure MetaDome can be deployed in any environment, we have containerised the
-                        application using <a href="https://www.docker.com/" target="_blank">Docker</a>.
+                        application using <a data-external-link-group="External.resources"
+                                             data-external-link-key="docker"
+                                             href="#"
+                                             target="_blank">Docker</a>.
                     </p>
                     <p>
                         The visualisation layer of the MetaDome web server is a fully interactive and
                         responsive HTML web page generated partially by the Flask framework, while
-                        navigation and styling are provided using the CSS framework <a href="https://bulma.io/"
-                                                                                       target="_blank">Bulma</a>.
+                        navigation and styling are provided using the CSS framework <a
+                            data-external-link-group="External.resources"
+                            data-external-link-key="bulma"
+                            href="#"
+                            target="_blank">Bulma</a>.
                         The visualisation of all data is performed using JavaScript, which relies heavily on the
-                        <a href="https://d3js.org/" target="_blank">D3 framework</a>.
+                        <a data-external-link-group="External.resources"
+                           data-external-link-key="d3"
+                           href="#"
+                           target="_blank">D3 framework</a>.
                     </p>
 
                     <h1 class="title" style="color: #00AFDC;">Datasets of population and disease-causing genetic
@@ -57,12 +77,18 @@
 
                     <p>
                         Population variation is obtained from the Genome Aggregation Database
-                        (<a href="http://gnomad.broadinstitute.org/" target="_blank">gnomAD</a>). MetaDome uses the VCF
+                        (<a data-external-link-group="External.resources"
+                            data-external-link-key="gnomad"
+                            href="#"
+                            target="_blank">gnomAD</a>). MetaDome uses the VCF
                         file
                         and selects all synonymous and missense variants that meet the PASS filter criteria. For
                         disease-causing missense variants, the VCF file from the public archive of clinically relevant
                         variants
-                        (<a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>) with
+                        (<a data-external-link-group="External.resources"
+                            data-external-link-key="clinvar"
+                            href="#"
+                            target="_blank">ClinVar</a>) with
                         disease-causing (Pathogenic) status is used.
                     </p>
 
@@ -74,9 +100,15 @@
                         and protein
                         positions is stored together with domain region annotation. The mapping is auto-generated by the
                         MetaDome
-                        web server from the <a href="https://www.gencodegenes.org/" target="blank">GENCODE</a> Basic set
+                        web server from the <a data-external-link-group="External.resources"
+                                               data-external-link-key="gencode"
+                                               href="#"
+                                               target="blank">GENCODE</a> Basic set
                         and the
-                        <a href="http://www.uniprot.org/" target="_blank">UniProtKB/Swiss-Prot</a> databank. The
+                        <a data-external-link-group="External.resources"
+                           data-external-link-key="uniprot"
+                           href="#"
+                           target="_blank">UniProtKB/Swiss-Prot</a> databank. The
                         auto-generation is performed for
                         each translation in the GENCODE set via a protein-protein BLAST against human Swiss-Prot
                         canonical and isoform
@@ -96,8 +128,13 @@
                     </p>
                     <p>
                         After the mapping process is complete, each Swiss-Prot sequence in the database is annotated via
-                        <a href="https://www.ebi.ac.uk/interpro/" target="_blank">InterProScan</a> for <a
-                            href="http://pfam.xfam.org/"
+                        <a data-external-link-group="External.resources"
+                           data-external-link-key="interpro"
+                           href="#"
+                           target="_blank">InterProScan</a> for <a
+                            data-external-link-group="External.resources"
+                            data-external-link-key="pfam"
+                            href="#"
                             target="_blank">Pfam-A</a> protein domains, and each of these results is stored in the
                         database.
                         After this step, construction of the database is finished, but it is followed by the
@@ -116,9 +153,15 @@
                         regions of the genome. For each domain that meets this criterion, we generate a multiple
                         sequence alignment (MSA) in the following manner. We retrieve all sequences for these
                         domain instances, then retrieve the Pfam HMM corresponding to the identifier and use the
-                        <a href="http://hmmer.org/" target="_blank">HMMER</a> tool to align these protein sequences.
+                        <a data-external-link-group="External.resources"
+                           data-external-link-key="hmmer"
+                           href="#"
+                           target="_blank">HMMER</a> tool to align these protein sequences.
                         This results in a Stockholm-formatted MSA file, which can be interpreted by alignment
-                        visualisation software such as <a href="http://www.jalview.org/" target="_blank">Jalview</a>.
+                        visualisation software such as <a data-external-link-group="External.resources"
+                                                          data-external-link-key="jalview"
+                                                          href="#"
+                                                          target="_blank">Jalview</a>.
                         In this Stockholm-formatted file, all columns that correspond to the domain consensus represent
                         the same homologous positions.
                     </p>

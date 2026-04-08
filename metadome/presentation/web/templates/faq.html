@@ -20,7 +20,10 @@
                             accessible and unique perspective for researchers and
                             clinicians to interpret variants of unknown significance via
                             'meta-domains', a concept that we have previously validated
-                            (<a href="https://doi.org/10.1002/humu.23313" target="_blank">
+                            (<a data-external-link-group="MetaDome.papers"
+                                data-external-link-key="humu2017"
+                                href="#"
+                                target="_blank">
                             L. Wiel et al. Human Mutation, 2017 </a>). It makes use of protein
                             domain homology within the human genome to transfer genetic variant
                             information across homologous domains. MetaDome can visualise
@@ -37,7 +40,7 @@
                             of variation at corresponding positions within homologous domains.
                             <br><br>
                             To become more familiar with using MetaDome and all of its functionality,
-                            we strongly advise you to <a href="{{ url_for('web.dashboard') }}?tour=true">
+                            we strongly advise you to <a href="{{ url_for('web.dashboard_tour') }}">
                             start the tour</a>.
                         </div>
 
@@ -54,8 +57,14 @@
                         <div class="box">
                             <p>
                                 The MetaDome web server is developed and extensively tested using
-                                <a href="https://www.google.com/chrome/">Google Chrome</a> and
-                                <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a>. We
+                                <a data-external-link-group="External.resources"
+                                   data-external-link-key="chrome"
+                                   href="#"
+                                   target="_blank">Google Chrome</a> and
+                                <a data-external-link-group="External.resources"
+                                   data-external-link-key="firefox"
+                                   href="#"
+                                   target="_blank">Firefox</a>. We
                                 recommend using one of these browsers to access all functionality.
                                 Here is a list of compatible and tested browsers:
                             </p>
@@ -115,11 +124,23 @@
                         <div class="box">
                             MetaDome combines data from various public resources. The underlying data
                             in MetaDome currently contains information from 56,319 human transcripts
-                            (<a href="https://www.gencodegenes.org/" target="_blank">GENCODE</a>),
-                            71,419 <a href="https://pfam.xfam.org/" target="_blank">Pfam</a>
+                            (<a data-external-link-group="External.resources"
+                                data-external-link-key="gencode"
+                                href="#"
+                                target="_blank">GENCODE</a>),
+                            71,419 <a data-external-link-group="External.resources"
+                                      data-external-link-key="pfam"
+                                      href="#"
+                                      target="_blank">Pfam</a>
                             protein domain instances, 12,164,292 population-based genetic variants from
-                            <a href="http://gnomad.broadinstitute.org/">gnomAD</a>, and 34,076 pathogenic mutations from
-                            <a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>.
+                            <a data-external-link-group="External.resources"
+                               data-external-link-key="gnomad"
+                               href="#"
+                               target="_blank">gnomAD</a>, and 34,076 pathogenic mutations from
+                            <a data-external-link-group="External.resources"
+                               data-external-link-key="clinvar"
+                               href="#"
+                               target="_blank">ClinVar</a>.
                         </div>
 
                         <div class="label">How often is the underlying data updated?</div>
@@ -135,15 +156,24 @@
                             working to improve it based on feedback. If you have any ideas for improvement,
                             please <a href="{{ url_for('web.contact') }}">contact us</a>.
                             Current improvements that we are working on can be found
-                            <a href="https://github.com/cmbi/metadome/issues">here</a>.
+                            <a data-external-link-group="MetaDome"
+                               data-external-link-key="githubIssues"
+                               href="#"
+                               target="_blank">here</a>.
                         </div>
 
                         <div class="label">Why can I not select my gene/transcript for analysis?</div>
                         <div class="box">
                             For the sake of high data quality, we have limited the transcripts and genes
-                            suitable for MetaDome analysis to <a href="https://www.gencodegenes.org/" target="_blank">GENCODE</a>
+                            suitable for MetaDome analysis to <a data-external-link-group="External.resources"
+                                                                 data-external-link-key="gencode"
+                                                                 href="#"
+                                                                 target="_blank">GENCODE</a>
                             Basic transcripts whose translation is identically matched with a
-                            <a href="http://www.uniprot.org/" target="_blank">Swiss-Prot</a> protein
+                            <a data-external-link-group="External.resources"
+                               data-external-link-key="uniprot"
+                               href="#"
+                               target="_blank">Swiss-Prot</a> protein
                             sequence. All GENCODE Basic transcripts are validated as expressed mRNA,
                             and all Swiss-Prot proteins are curated by experts.
                         </div>
@@ -151,7 +181,10 @@
                         <div class="label">I cannot find the domain that should be in my gene of interest.</div>
                         <div class="box">
                             All annotated protein domains in MetaDome come from
-                            <a href="https://pfam.xfam.org/" target="_blank">Pfam</a>.
+                            <a data-external-link-group="External.resources"
+                               data-external-link-key="pfam"
+                               href="#"
+                               target="_blank">Pfam</a>.
                             Pfam has a strict definition of what constitutes a protein domain and differs from
                             other protein domain annotation services. We specifically chose Pfam
                             because the underlying method is suitable for identifying homologously identical
