@@ -3,7 +3,7 @@
 <script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
 <script>
 $(function() {
-  var availableTags = [{% for item in data %} {{ item|safe }},{% endfor %}];
+  var availableTags = [{% for item in navbar_gene_data %} {{ item|safe }},{% endfor %}];
   window.METADOME_UI.initGeneAutocomplete("#frontpageQuery", availableTags);
 });
 </script>
@@ -17,8 +17,8 @@ $(function() {
           <div class="control">
             <div class="select is-large">
               <select name="genome_build">
-                {% for gb in genome_builds %}
-                  <option value="{{ gb }}" {% if selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
+                {% for gb in navbar_genome_builds %}
+                  <option value="{{ gb }}" {% if navbar_selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
                 {% endfor %}
               </select>
             </div>

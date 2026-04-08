@@ -28,17 +28,21 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
-@bp.route('/', methods=['GET'])
-def index():
+@bp.app_context_processor
+def inject_navbar_search_context():
     genome_builds = GeneRepository.retrieve_all_genome_builds_from_db()
     gene_names = GeneRepository.retrieve_all_gene_names_from_db()
+    gene_data = list(map(json.dumps, gene_names))
 
-    return render_template(
-        'index.html',
-        genome_builds=genome_builds,
-        selected_genome_build=genome_build_safety_check('GRCh38'),
-        data=map(json.dumps, gene_names)
-    )
+    return {
+        "navbar_genome_builds": genome_builds,
+        "navbar_selected_genome_build": genome_build_safety_check('GRCh38'),
+        "navbar_gene_data": gene_data
+    }
+
+@bp.route('/', methods=['GET'])
+def index():
+    return render_template('index.html')
 
 @bp.route('/frontpage/search', methods=['GET'])
 def frontpage_search():

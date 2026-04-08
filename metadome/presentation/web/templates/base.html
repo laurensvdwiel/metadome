@@ -1,266 +1,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="{{ url_for('static', filename='js/d3.v7.min-7.9.0.js') }}"></script>
-<script src="{{ url_for('static', filename='js/jquery-3.7.1.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/jquery-ui-1.14.1.js') }}"></script>
-<script src="{{ url_for('static', filename='js/bootstrap-tour-standalone-v0.12.0.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/d3.v7.min-7.9.0.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery-3.7.1.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery-ui-1.14.1.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap-tour-standalone-v0.12.0.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
 
-<title>{% block title %}MetaDome web server{% endblock %}</title>
+    <title>{% block title %}MetaDome web server{% endblock %}</title>
 
-<!-- recaptcha v3 -->
-{% if config.RECAPTCHA_SITE_KEY %}
-<script src="https://www.google.com/recaptcha/api.js?render={{ config.RECAPTCHA_SITE_KEY }}"></script>
-{% endif %}
-
-<!-- Needed for ownership verification in Google -->
-{% if config.GOOGLE_SITE_VERIFICATION %}
-<meta name="google-site-verification" content="{{ config.GOOGLE_SITE_VERIFICATION }}" />
-{% endif %}
-
-<script>
-  function metadomeGetCookieConsent() {
-    return localStorage.getItem("metadome_cookie_consent");
-  }
-
-  function metadomeSetCookieConsent(value) {
-    localStorage.setItem("metadome_cookie_consent", value);
-  }
-
-  function metadomeHideCookieNotice() {
-    var notice = document.getElementById("cookie-notice");
-    if (notice) {
-      notice.classList.add("is-hidden");
-      document.body.classList.remove("has-cookie-notice");
-    }
-  }
-
-  function metadomeShowCookieNotice() {
-    var notice = document.getElementById("cookie-notice");
-    if (notice) {
-      notice.classList.remove("is-hidden");
-      document.body.classList.add("has-cookie-notice");
-    }
-  }
-
-  function metadomeLoadAnalytics() {
-    if (window.metadomeAnalyticsLoaded) {
-      return;
-    }
-
-    {% if config.GOOGLE_ANALYTICS_ID %}
-    window.metadomeAnalyticsLoaded = true;
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = function gtag() {
-      dataLayer.push(arguments);
-    };
-    gtag("js", new Date());
-    gtag("config", "{{ config.GOOGLE_ANALYTICS_ID }}");
-
-    var script = document.createElement("script");
-    script.async = true;
-    script.src = "https://www.googletagmanager.com/gtag/js?id={{ config.GOOGLE_ANALYTICS_ID }}";
-    document.head.appendChild(script);
+    <!-- recaptcha v3 -->
+    {% if config.RECAPTCHA_SITE_KEY %}
+        <script src="https://www.google.com/recaptcha/api.js?render={{ config.RECAPTCHA_SITE_KEY }}"></script>
     {% endif %}
-  }
 
-  window.metadomeRenderCookieConsentStatus = function() {
-    var statusElement = document.getElementById("cookie-consent-status");
-    if (!statusElement) {
-      return;
-    }
+    <!-- Needed for ownership verification in Google -->
+    {% if config.GOOGLE_SITE_VERIFICATION %}
+        <meta name="google-site-verification" content="{{ config.GOOGLE_SITE_VERIFICATION }}"/>
+    {% endif %}
 
-    var consent = metadomeGetCookieConsent();
-    var label = "Not yet set";
+    <script>
+        function metadomeGetCookieConsent() {
+            return localStorage.getItem("metadome_cookie_consent");
+        }
 
-    if (consent === "accepted") {
-      label = "Accepted";
-    } else if (consent === "declined") {
-      label = "Declined";
-    }
+        function metadomeSetCookieConsent(value) {
+            localStorage.setItem("metadome_cookie_consent", value);
+        }
 
-    statusElement.textContent = label;
-  };
+        function metadomeHideCookieNotice() {
+            var notice = document.getElementById("cookie-notice");
+            if (notice) {
+                notice.classList.add("is-hidden");
+                document.body.classList.remove("has-cookie-notice");
+            }
+        }
 
-  window.metadomeAcceptCookies = function() {
-    metadomeSetCookieConsent("accepted");
-    metadomeHideCookieNotice();
-    metadomeLoadAnalytics();
-    window.metadomeRenderCookieConsentStatus();
-  };
+        function metadomeShowCookieNotice() {
+            var notice = document.getElementById("cookie-notice");
+            if (notice) {
+                notice.classList.remove("is-hidden");
+                document.body.classList.add("has-cookie-notice");
+            }
+        }
 
-  window.metadomeDeclineCookies = function() {
-    metadomeSetCookieConsent("declined");
-    metadomeHideCookieNotice();
-    window.metadomeRenderCookieConsentStatus();
-  };
+        function metadomeLoadAnalytics() {
+            if (window.metadomeAnalyticsLoaded) {
+                return;
+            }
 
-  window.metadomeResetCookieConsent = function() {
-    localStorage.removeItem("metadome_cookie_consent");
-    metadomeShowCookieNotice();
-    window.metadomeRenderCookieConsentStatus();
-  };
+            {% if config.GOOGLE_ANALYTICS_ID %}
+                window.metadomeAnalyticsLoaded = true;
+                window.dataLayer = window.dataLayer || [];
+                window.gtag = function gtag() {
+                    dataLayer.push(arguments);
+                };
+                gtag("js", new Date());
+                gtag("config", "{{ config.GOOGLE_ANALYTICS_ID }}");
 
-  document.addEventListener("DOMContentLoaded", function() {
-    var consent = metadomeGetCookieConsent();
-    var acceptButton = document.getElementById("cookie-consent-accept");
-    var declineButton = document.getElementById("cookie-consent-decline");
-    var closeButton = document.getElementById("cookie-consent-close");
+                var script = document.createElement("script");
+                script.async = true;
+                script.src = "https://www.googletagmanager.com/gtag/js?id={{ config.GOOGLE_ANALYTICS_ID }}";
+                document.head.appendChild(script);
+            {% endif %}
+        }
 
-    if (consent === "accepted") {
-      metadomeHideCookieNotice();
-      metadomeLoadAnalytics();
-    } else if (consent === "declined") {
-      metadomeHideCookieNotice();
-    } else {
-      metadomeShowCookieNotice();
-    }
+        window.metadomeRenderCookieConsentStatus = function () {
+            var statusElement = document.getElementById("cookie-consent-status");
+            if (!statusElement) {
+                return;
+            }
 
-    window.metadomeRenderCookieConsentStatus();
+            var consent = metadomeGetCookieConsent();
+            var label = "Not yet set";
 
-    if (acceptButton) {
-      acceptButton.addEventListener("click", function() {
-        window.metadomeAcceptCookies();
-      });
-    }
+            if (consent === "accepted") {
+                label = "Accepted";
+            } else if (consent === "declined") {
+                label = "Declined";
+            }
 
-    if (declineButton) {
-      declineButton.addEventListener("click", function() {
-        window.metadomeDeclineCookies();
-      });
-    }
+            statusElement.textContent = label;
+        };
 
-    if (closeButton) {
-      closeButton.addEventListener("click", function() {
-        metadomeHideCookieNotice();
-      });
-    }
-  });
-</script>
+        window.metadomeAcceptCookies = function () {
+            metadomeSetCookieConsent("accepted");
+            metadomeHideCookieNotice();
+            metadomeLoadAnalytics();
+            window.metadomeRenderCookieConsentStatus();
+        };
 
-<script>
-	$(document).ready(function() {
-	  // Check for click events on the navbar burger icon
-	  $(".navbar-burger").click(function() {
-	      // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
-	      $(".navbar-burger").toggleClass("is-active");
-	      $(".navbar-menu").toggleClass("is-active");
+        window.metadomeDeclineCookies = function () {
+            metadomeSetCookieConsent("declined");
+            metadomeHideCookieNotice();
+            window.metadomeRenderCookieConsentStatus();
+        };
 
-	  });
-	});
-</script>
+        window.metadomeResetCookieConsent = function () {
+            localStorage.removeItem("metadome_cookie_consent");
+            metadomeShowCookieNotice();
+            window.metadomeRenderCookieConsentStatus();
+        };
 
-<link rel="icon" type="image/png"
-  href="{{ url_for('static', filename='img/favicon.png') }}">
-<link rel="stylesheet"
-  href="{{ url_for('static', filename='css/bulma/1.0.4/bulma.min.css') }}">
-<link rel="stylesheet"
-  href="{{ url_for('static', filename='css/jquery_ui/jquery-ui-1.14.1.css') }}">
-<link rel="stylesheet"
-  href="{{ url_for('static', filename='css/bootstrap-tour/v0.12.0/bootstrap-tour-standalone.min.css') }}">
-<link rel="stylesheet"
-  href="{{ url_for('static', filename='css/site.css') }}">
+        document.addEventListener("DOMContentLoaded", function () {
+            var consent = metadomeGetCookieConsent();
+            var acceptButton = document.getElementById("cookie-consent-accept");
+            var declineButton = document.getElementById("cookie-consent-decline");
+            var closeButton = document.getElementById("cookie-consent-close");
 
-  {{ JSGlue.include() }}
+            if (consent === "accepted") {
+                metadomeHideCookieNotice();
+                metadomeLoadAnalytics();
+            } else if (consent === "declined") {
+                metadomeHideCookieNotice();
+            } else {
+                metadomeShowCookieNotice();
+            }
+
+            window.metadomeRenderCookieConsentStatus();
+
+            if (acceptButton) {
+                acceptButton.addEventListener("click", function () {
+                    window.metadomeAcceptCookies();
+                });
+            }
+
+            if (declineButton) {
+                declineButton.addEventListener("click", function () {
+                    window.metadomeDeclineCookies();
+                });
+            }
+
+            if (closeButton) {
+                closeButton.addEventListener("click", function () {
+                    metadomeHideCookieNotice();
+                });
+            }
+        });
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $(".navbar-burger").click(function () {
+                $(".navbar-burger").toggleClass("is-active");
+                $(".navbar-menu").toggleClass("is-active");
+            });
+
+            var availableTags = [{% for item in navbar_gene_data %} {{ item|safe }},{% endfor %}];
+            if (window.METADOME_UI) {
+                window.METADOME_UI.initGeneAutocomplete("#navbarQuery", availableTags);
+            }
+        });
+    </script>
+
+    <link rel="icon" type="image/png"
+          href="{{ url_for('static', filename='img/favicon.png') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/bulma/1.0.4/bulma.min.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/jquery_ui/jquery-ui-1.14.1.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/bootstrap-tour/v0.12.0/bootstrap-tour-standalone.min.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/site.css') }}">
+
+    {{ JSGlue.include() }}
 </head>
 <body class="modal-body">
-  <nav class="navbar is-fixed-top" style="background-color: #f9f9f9;">
+<nav class="navbar is-fixed-top" style="background-color: #f9f9f9;">
     <div class="navbar-brand">
-      <a class="navbar-item" href="{{ url_for('web.index') }}"> <img
-        src="{{ url_for('static', filename='img/metadome_logo_2.png') }}">
-      </a>
+        <a class="navbar-item" href="{{ url_for('web.index') }}"> <img
+                src="{{ url_for('static', filename='img/metadome_logo_2.png') }}">
+        </a>
     </div>
 
     <div id='navbar_menu' class="navbar-menu">
-      <div class="navbar-start">
-        <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.dashboard_grch38') }}"><b>GRCh38
-              Analysis</b></a>
-        </div>
-        <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.dashboard_grch37') }}"><i>GRCh37
-              Analysis</i></a>
-        </div>
-        <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.dashboard_tour') }}">Start Tour</a>
-        </div>
-      </div>
+        <div class="navbar-start">
+            <div class="navbar-item" style="width: 100%; max-width: 52rem;">
+                <form method="get"
+                      action="{{ url_for('web.frontpage_search') }}"
+                      style="width: 100%;">
+                    <div class="field is-grouped is-grouped-multiline mb-0">
+                        <div class="control">
+                            <div class="select">
+                                <select name="genome_build">
+                                    {% for gb in navbar_genome_builds %}
+                                        <option value="{{ gb }}" {% if navbar_selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
 
-      <div class="navbar-end">
-        <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.help_page') }}">FAQ</a>
+                        <div class="control is-expanded" style="min-width: 18rem;">
+                            <input class="input"
+                                   id="navbarQuery"
+                                   type="text"
+                                   name="query"
+                                   placeholder="Gene name or genomic position"
+                                   required>
+                        </div>
+
+                        <div class="control">
+                            <button class="button is-link" type="submit">Analyse</button>
+                        </div>
+
+                        <div class="control">
+                            <a class="button is-info is-light" href="{{ url_for('web.dashboard_tour') }}">Start Tour</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
-        <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.about') }}">About</a>
+
+        <div class="navbar-end">
+            <div class="navbar-item">
+                <a class="link is-info" href="{{ url_for('web.help_page') }}">FAQ</a>
+            </div>
+            <div class="navbar-item">
+                <a class="link is-info" href="{{ url_for('web.about') }}">About</a>
+            </div>
+            <div class="navbar-item">
+                <a class="link is-info" href="{{ url_for('web.method') }}">Methods</a>
+            </div>
+            <div class="navbar-item">
+                <a class="link is-info" href="{{ url_for('web.contact') }}">Contact us</a>
+            </div>
         </div>
-        <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.method') }}">Methods</a>
-        </div>
-        <div class="navbar-item">
-          <a class="link is-info" href="{{ url_for('web.contact') }}">Contact us</a>
-        </div>
-      </div>
     </div>
-    
+
     <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
-	  <span aria-hidden="true"></span>
-	  <span aria-hidden="true"></span>
-	  <span aria-hidden="true"></span>
-	</a>
-  </nav>
-  <section class="hero is-primary" style="background-color: #006991;">
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+    </a>
+</nav>
+<section class="hero is-primary" style="background-color: #006991;">
     <div class="hero-body">
-      <div class="container">{% block page_title %}{% endblock %}</div>
+        <div class="container">{% block page_title %}{% endblock %}</div>
     </div>
-  </section>
+</section>
 
-  <div id="cookie-notice" class="notification is-primary is-hidden cookie-notice" role="region" aria-label="Cookie notice">
+<div id="cookie-notice" class="notification is-primary is-hidden cookie-notice" role="region"
+     aria-label="Cookie notice">
     <button id="cookie-consent-close" class="delete cookie-notice-close" aria-label="Dismiss cookie notice"></button>
     <div class="cookie-notice-content">
         <div class="content mb-0 cookie-notice-text has-text-centered">
-          This website uses analytics cookies to help us understand usage and improve MetaDome.
-          We do not sell or profit from this data, and we do not identify individual users.
-          You can accept or decline tracking. See our
-          <a href="{{ url_for('web.privacy') }}"><strong>Privacy Policy</strong></a>
-          and
-          <a href="{{ url_for('web.about') }}#privacy-analytics"><strong>how we use data</strong></a>.
+            This website uses analytics cookies to help us understand usage and improve MetaDome.
+            We do not sell or profit from this data, and we do not identify individual users.
+            You can accept or decline tracking. See our
+            <a href="{{ url_for('web.privacy') }}"><strong>Privacy Policy</strong></a>
+            and
+            <a href="{{ url_for('web.about') }}#privacy-analytics"><strong>how we use data</strong></a>.
         </div>
         <div class="buttons are-small mb-0 cookie-notice-actions">
             <button id="cookie-consent-accept" class="button is-light">Accept</button>
             <button id="cookie-consent-decline" class="button is-info is-inverted">Decline</button>
         </div>
     </div>
-  </div>
+</div>
 
-  <div class="container">{% block content %} {% endblock %}</div>
-    <footer class="modal-footer" style="background-color: #f9f9f9;">
-      <div class="container">
+<div class="container">{% block content %} {% endblock %}</div>
+<footer class="modal-footer" style="background-color: #f9f9f9;">
+    <div class="container">
         <div class="content has-text-centered" style="color: gray">
-          <p>
-            <strong>MetaDome Version {{ g.metadome_version }}</strong>,
-            <small>
-              <a class="view-all-versions"
-                 href="https://github.com/cmbi/metadom/releases"
-                 target="_blank">View all versions</a>
-            </small>
-            <br>
-            <small>
-              Please review <a href="{{ url_for('web.privacy') }}">MetaDome's Privacy Policy</a>
-              for details on how we handle analytics, cookies, and contact data.
-              reCAPTCHA protects this site, <a href="https://policies.google.com/privacy" target="_blank">Google’s Privacy Policy</a>
-              and <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a> apply.
-            </small>
-            <br>
-          </p>
+            <p>
+                <strong>MetaDome Version {{ g.metadome_version }}</strong>,
+                <small>
+                    <a class="view-all-versions"
+                       href="https://github.com/cmbi/metadom/releases"
+                       target="_blank">View all versions</a>
+                </small>
+                <br>
+                <small>
+                    Please review <a href="{{ url_for('web.privacy') }}">MetaDome's Privacy Policy</a>
+                    for details on how we handle analytics, cookies, and contact data.
+                    reCAPTCHA protects this site, <a href="https://policies.google.com/privacy" target="_blank">Google’s
+                    Privacy Policy</a>
+                    and <a href="https://policies.google.com/terms" target="_blank">Terms of Service</a> apply.
+                </small>
+                <br>
+            </p>
         </div>
-      </div>
-    </footer>
-  {% block js %} {% endblock %}
+    </div>
+</footer>
+{% block js %} {% endblock %}
 
 </body>
 </html>
