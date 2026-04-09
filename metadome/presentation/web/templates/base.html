@@ -49,6 +49,13 @@
             }
         }
 
+        function metadomeGetAnalyticsPageLocation() {
+            var url = new URL(window.location.href);
+            url.search = "";
+            url.hash = "";
+            return url.toString();
+        }
+
         function metadomeLoadAnalytics() {
             if (window.metadomeAnalyticsLoaded) {
                 return;
@@ -61,7 +68,9 @@
                     dataLayer.push(arguments);
                 };
                 gtag("js", new Date());
-                gtag("config", "{{ config.GOOGLE_ANALYTICS_ID }}");
+                gtag("config", "{{ config.GOOGLE_ANALYTICS_ID }}", {
+                    page_location: metadomeGetAnalyticsPageLocation()
+                });
 
                 var script = document.createElement("script");
                 script.async = true;

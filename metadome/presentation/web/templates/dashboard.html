@@ -10,8 +10,6 @@
             exampleGeneJsonUrl: "{{ url_for('static', filename='json/example_T_gene.json') }}"
         };
     </script>
-    <script src="{{ url_for('static', filename='js/metadome/external_links.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/metadome/gene_autocomplete.js') }}"></script>
     <script src="{{ url_for('static', filename='js/metadome/dashboard/visualization.js') }}"></script>
     <script src="{{ url_for('static', filename='js/metadome/dashboard/dashboard.js') }}"></script>
     <script>
@@ -56,12 +54,12 @@
         <!-- Modal overlay for displaying positional information -->
         <div class="modal" id="positional_information_overlay">
             <div class="modal-background"
-                 onclick='$("#positional_information_overlay").removeClass("is-active"); d3.selectAll(".tr").classed("is-selected", false);'></div>
+                 onclick='closePositionalInformationOverlay();'></div>
             <div class="modal-card">
                 <header class="modal-card-head">
                     <p class="modal-card-title" id='positional_information_overlay_title'></p>
                     <button class="delete" aria-label="close"
-                            onclick='$("#positional_information_overlay").removeClass("is-active"); d3.selectAll(".tr").classed("is-selected", false);'></button>
+                            onclick='closePositionalInformationOverlay();'></button>
                 </header>
                 <section class="modal-card-body">
                     <!-- Content ... -->

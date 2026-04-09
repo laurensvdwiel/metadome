@@ -145,75 +145,88 @@ def dashboard_gene_name(genome_build, gene_name):
 
 @bp.route('/dashboard/<genome_build>/<gene_name>/<transcript_id>/', methods=['GET'])
 def transcript(genome_build, gene_name, transcript_id):
-    valid_transcript_id_format = False
-    transcript_id_corrected = transcript_id.strip().upper()
+    transcript_context = _get_valid_transcript_context(genome_build, gene_name, transcript_id)
 
-    if transcript_id_corrected.startswith('ENST'):
-        transcript_id_corrected_tail = transcript_id_corrected[4:]
-        if '.' in transcript_id_corrected_tail:
-            main_part, dot_part = transcript_id_corrected_tail.split('.', 1)
-            valid_transcript_id_format = main_part.isdigit() and dot_part.isdigit()
-        else:
-            valid_transcript_id_format = transcript_id_corrected_tail.isdigit()
-
-    if not valid_transcript_id_format:
+    if not transcript_context['format_valid']:
         _log.error("Transcript id '%s' in transcript() is not valid. Redirected to gene_name endpoint.", transcript_id)
-        return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
+        return _redirect_to_gene_dashboard(genome_build, gene_name)
 
-    if transcript_id_corrected != transcript_id:
-        return redirect(url_for('web.transcript', genome_build=genome_build, gene_name=gene_name,
-                                transcript_id=transcript_id_corrected))
+    if transcript_context['normalized_transcript_id'] != transcript_id:
+        return redirect(url_for(
+            'web.transcript',
+            genome_build=genome_build,
+            gene_name=gene_name,
+            transcript_id=transcript_context['normalized_transcript_id']
+        ))
 
-    transcript_ids_for_gene = json.loads(
-        get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8')
+    if transcript_context['transcript_match'] is None:
+        _log.error(
+            "Transcript id '%s' in transcript() is not valid for gene '%s'. Redirected to gene_name endpoint.",
+            transcript_context['normalized_transcript_id'],
+            gene_name
+        )
+        return _redirect_to_gene_dashboard(genome_build, gene_name)
+
+    if not transcript_context['has_protein_data']:
+        _log.warning(
+            "Transcript id '%s' for gene '%s' has no protein data. Redirected to gene_name endpoint.",
+            transcript_context['normalized_transcript_id'],
+            gene_name
+        )
+        return _redirect_to_gene_dashboard(genome_build, gene_name)
+
+    if _dashboard_query_state_is_invalid(request.args, transcript_context['aa_length']):
+        _log.warning(
+            "Invalid dashboard query state for transcript '%s'. Redirecting to clean transcript URL.",
+            transcript_context['normalized_transcript_id']
+        )
+        return _redirect_to_clean_transcript(
+            genome_build,
+            gene_name,
+            transcript_context['normalized_transcript_id']
+        )
+
+    return _render_dashboard(
+        genome_build,
+        gene_name=gene_name,
+        transcript_id=transcript_context['normalized_transcript_id']
     )
-
-    transcript_match = None
-    if 'transcript_ids' in transcript_ids_for_gene:
-        for transcript_data in transcript_ids_for_gene['transcript_ids']:
-            gencode_id = transcript_data['gencode_id']
-            if gencode_id == transcript_id or gencode_id.split('.')[0] == transcript_id:
-                transcript_match = transcript_data
-                break
-
-    if transcript_match is None:
-        _log.error("Transcript id '%s' in transcript() is not valid for gene '%s'. Redirected to gene_name endpoint.",
-                   transcript_id, gene_name)
-        return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
-
-    if not transcript_match.get('has_protein_data', False):
-        _log.warning("Transcript id '%s' for gene '%s' has no protein data. Redirected to gene_name endpoint.",
-                     transcript_id, gene_name)
-        return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
-
-    return _render_dashboard(genome_build, gene_name=gene_name, transcript_id=transcript_id)
 
 @bp.route('/dashboard/<genome_build>/<gene_name>/<transcript_id>/p.<int:position>', methods=['GET'], strict_slashes=False)
 def transcript_position(genome_build, gene_name, transcript_id, position):
-    """Handle position-specific links - validate position against transcript length"""
+    """Legacy position-specific links redirect to the transcript route with query-string state."""
 
-    transcript_ids_for_gene = json.loads(
-        get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8')
-    )
+    transcript_context = _get_valid_transcript_context(genome_build, gene_name, transcript_id)
 
-    valid_position = False
-    if transcript_ids_for_gene and 'transcript_ids' in transcript_ids_for_gene:
-        for transcript_data in transcript_ids_for_gene['transcript_ids']:
-            transcript_gencode_id = transcript_data['gencode_id']
-            if transcript_gencode_id == transcript_id or transcript_gencode_id.split('.')[0] == transcript_id:
-                aa_length = transcript_data['aa_length']
-                if 1 <= position <= aa_length:
-                    valid_position = True
-                else:
-                    _log.warning(f"Position {position} out of range for {transcript_id} (length: {aa_length})")
-                break
+    if transcript_context['transcript_match'] is None or not transcript_context['has_protein_data']:
+        _log.warning("Invalid transcript '%s' for legacy position link, redirecting to transcript view", transcript_id)
+        return _redirect_to_clean_transcript(
+            genome_build,
+            gene_name,
+            transcript_context['normalized_transcript_id']
+        )
 
-    if not valid_position:
-        _log.warning(f"Invalid position {position} for {transcript_id}, redirecting to transcript view")
-        return redirect(
-            url_for('web.transcript', genome_build=genome_build, gene_name=gene_name, transcript_id=transcript_id))
+    if transcript_context['aa_length'] is None or not (1 <= position <= transcript_context['aa_length']):
+        _log.warning(
+            "Position %s out of range for %s (length: %s)",
+            position,
+            transcript_context['normalized_transcript_id'],
+            transcript_context['aa_length']
+        )
+        return _redirect_to_clean_transcript(
+            genome_build,
+            gene_name,
+            transcript_context['normalized_transcript_id']
+        )
 
-    return _render_dashboard(genome_build, gene_name=gene_name, transcript_id=transcript_id)
+    return redirect(url_for(
+        'web.transcript',
+        genome_build=genome_build,
+        gene_name=gene_name,
+        transcript_id=transcript_context['normalized_transcript_id'],
+        selected_positions=str(position),
+        positional_information=position
+    ))
 
 @bp.route('/position/', methods=['GET'])
 def position_lookup_home():
@@ -460,6 +473,122 @@ def exception_error_handler(error):  # pragma: no cover
     _log.error("Unhandled exception:\n{}".format(error))
     _log.error(traceback.format_exc())
     return render_template('error.html', msg=error, stack_trace=traceback.format_exc()), 500
+
+def _normalize_transcript_id(transcript_id):
+    return (transcript_id or "").strip().upper()
+
+def _is_valid_transcript_id_format(transcript_id):
+    if not transcript_id.startswith('ENST'):
+        return False
+
+    transcript_id_tail = transcript_id[4:]
+    if '.' in transcript_id_tail:
+        main_part, dot_part = transcript_id_tail.split('.', 1)
+        return main_part.isdigit() and dot_part.isdigit()
+
+    return transcript_id_tail.isdigit()
+
+def _redirect_to_gene_dashboard(genome_build, gene_name):
+    return redirect(url_for('web.dashboard_gene_name', genome_build=genome_build, gene_name=gene_name))
+
+def _redirect_to_clean_transcript(genome_build, gene_name, transcript_id):
+    return redirect(url_for(
+        'web.transcript',
+        genome_build=genome_build,
+        gene_name=gene_name,
+        transcript_id=transcript_id
+    ))
+
+def _get_valid_transcript_context(genome_build, gene_name, transcript_id):
+    normalized_transcript_id = _normalize_transcript_id(transcript_id)
+    format_valid = _is_valid_transcript_id_format(normalized_transcript_id)
+
+    transcript_match = None
+    if format_valid:
+        transcript_match = _get_transcript_match(genome_build, gene_name, normalized_transcript_id)
+
+    has_protein_data = bool(transcript_match and transcript_match.get('has_protein_data', False))
+    aa_length = transcript_match.get('aa_length') if transcript_match else None
+
+    return {
+        'normalized_transcript_id': normalized_transcript_id,
+        'format_valid': format_valid,
+        'transcript_match': transcript_match,
+        'has_protein_data': has_protein_data,
+        'aa_length': aa_length
+    }
+
+def _get_transcript_match(genome_build, gene_name, transcript_id):
+    transcript_ids_for_gene = json.loads(
+        get_transcript_ids_for_gene(genome_build, gene_name).get_data().decode('utf-8')
+    )
+
+    if 'transcript_ids' not in transcript_ids_for_gene:
+        return None
+
+    for transcript_data in transcript_ids_for_gene['transcript_ids']:
+        gencode_id = transcript_data['gencode_id']
+        if gencode_id == transcript_id or gencode_id.split('.')[0] == transcript_id:
+            return transcript_data
+
+    return None
+
+def _parse_selected_positions_query(raw_selected_positions, aa_length):
+    if raw_selected_positions is None or raw_selected_positions == "":
+        return []
+
+    if aa_length is None:
+        return None
+
+    if not re.fullmatch(r"\d+(,\d+)*", raw_selected_positions):
+        return None
+
+    positions = [int(value) for value in raw_selected_positions.split(',')]
+
+    if len(set(positions)) != len(positions):
+        return None
+
+    if positions != sorted(positions):
+        return None
+
+    if any(position < 1 or position > aa_length for position in positions):
+        return None
+
+    return positions
+
+def _parse_positional_information_query(raw_positional_information, aa_length):
+    if raw_positional_information is None or raw_positional_information == "":
+        return None
+
+    if aa_length is None:
+        return False
+
+    if not str(raw_positional_information).isdigit():
+        return False
+
+    position = int(raw_positional_information)
+    if not (1 <= position <= aa_length):
+        return False
+
+    return position
+
+def _dashboard_query_state_is_invalid(args, aa_length):
+    selected_positions = _parse_selected_positions_query(args.get('selected_positions'), aa_length)
+    positional_information = _parse_positional_information_query(args.get('positional_information'), aa_length)
+
+    if selected_positions is None:
+        return True
+
+    if positional_information is False:
+        return True
+
+    allowed_keys = {'selected_positions', 'positional_information'}
+    query_keys = set(args.keys())
+
+    if not query_keys.issubset(allowed_keys):
+        return True
+
+    return False
 
 def validate_genome_build(genome_build):
     """ Validate the genome build against the available genome builds in the db."""

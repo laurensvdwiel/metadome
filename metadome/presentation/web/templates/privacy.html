@@ -29,7 +29,12 @@
                                 includes tracking:
                                 <ul>
                                     <li>The specific URLs you navigate to (which inherently includes the gene,
-                                        transcript, protein, or domain identifiers and positions you query).
+                                        transcript, or protein identifiers you query).
+                                    </li>
+                                    <li>We do <strong>not</strong> send URL parameters such as selected
+                                        protein positions or region selection to be tracked in Google Analytics.
+                                        Therefore, we cannot know which regions or positions in a gene, transcript, or
+                                        protein you are interested in.
                                     </li>
                                     <li>Browser type and version.</li>
                                     <li>Operating system.</li>
@@ -86,9 +91,11 @@
                     <p>
                         The core visualisation of MetaDome occurs client-side (in your local browser) and is not
                         directly accessible to us. Furthermore, we do not use analytics to identify individual users,
-                        nor do we attempt to link analytics information or specific gene, transcript, protein, or domain
-                        queries to personally identifiable information. MetaDome is an academic project: we do not sell,
-                        trade, or monetize your usage data, and we do not use it for advertising purposes.
+                        nor do we attempt to link analytics information or specific gene or transcript queries to
+                        personally identifiable information. Position selections made within the dashboard are kept in
+                        the browser URL for sharing and restore purposes, but are not sent to Google Analytics. MetaDome
+                        is an academic project: we do not sell, trade, or monetize your usage data, and we do not use
+                        it for advertising purposes.
                     </p>
 
                     <h3 class="title is-4" style="color: #00AFDC; margin-top: 2rem;">4. Cookies and Tracking

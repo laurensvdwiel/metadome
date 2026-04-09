@@ -58,21 +58,7 @@ function keyPress (e) {
     if (global_debugging) {console.info('%c Function keyPress(e) called with e = ' + e, info_style);}
     if(e.key === "Escape") {
     	$("#domain_information_overlay").removeClass("is-active");
-    	$("#positional_information_overlay").removeClass("is-active");
-        d3.selectAll(".tr").classed("is-selected", false);
-
-        // New: if the URL ends with /p.<n>/, remove that segment (shareable state cleared)
-        try {
-            const url = new URL(window.location.href);
-            const segments = url.pathname.split('/').filter(s => s.length > 0);
-            if (segments.length > 0 && /^p\.\d+$/.test(segments[segments.length - 1])) {
-                segments.pop();
-                url.pathname = '/' + segments.join('/') + '/';
-                window.history.replaceState({}, "", url.toString());
-            }
-        } catch (err) {
-            // no-op
-        }
+        closePositionalInformationOverlay();
     }
 }
 
@@ -713,6 +699,12 @@ function createPositionalInformation(domain_metadomain_coverage, transcript_id, 
     // Retrieve the needed information for the GET request
     var protein_position = position_json.values[0].protein_pos;
 
+    try {
+        setDashboardUrlState(getCurrentlySelectedPositionsFromTable(), protein_position);
+    } catch (err) {
+        // no-op
+    }
+
     // Construct the request for this domain and the aligned positions
     var requested_domains = {};
     var domain_ids = Object.keys(position_json.values[0].domains);
@@ -1119,53 +1111,56 @@ function getToleranceButtonPress() {
 async function checkForSelectedPosition() {
     if (global_debugging) {console.info('%c Function checkForSelectedPosition() called', info_style);}
 
-    const path = window.location.pathname;
-    const pathSegments = path.split('/').filter(segment => segment.length > 0);
+    const urlState = getDashboardUrlState();
+    const requestedSelectedPositions = Array.isArray(urlState.selected_positions) ? urlState.selected_positions : [];
+    const requestedPositionalInformation = Number.isInteger(urlState.positional_information)
+        ? urlState.positional_information
+        : null;
 
-    if (pathSegments.length < 6) {
+    if (requestedSelectedPositions.length === 0 && requestedPositionalInformation === null) {
         if (global_debugging) {
-            console.info('%c No position segment present in path', info_style);
+            console.info('%c No selected_positions or positional_information in query string', info_style);
         }
         return;
     }
-
-    const positionSegment = pathSegments[5];
-    const match = /^p\.(\d+)$/.exec(positionSegment);
-
-    if (!match) {
-        if (global_debugging) {
-            console.info('%c No valid p.<position> segment found in path', info_style);
-        }
-        return;
-    }
-
-    const position = parseInt(match[1], 10);
-    const elementId = 'toleranceAxisRect_' + position;
 
     let attempts = 0;
     const maxAttempts = 100;
 
-    const checkElement = setInterval(function() {
+    const checkElements = setInterval(function() {
         attempts++;
-        const element = document.getElementById(elementId);
 
-        if (element) {
-            clearInterval(checkElement);
+        const positionsToSelect = requestedSelectedPositions.slice();
+        if (
+            Number.isInteger(requestedPositionalInformation) &&
+            !positionsToSelect.includes(requestedPositionalInformation)
+        ) {
+            positionsToSelect.push(requestedPositionalInformation);
+            positionsToSelect.sort((a, b) => a - b);
+        }
 
-            const transcript_id = element.getAttribute('data-transcript-id');
-            const domain_coverage_str = element.getAttribute('data-domain-coverage');
+        const allPresent = positionsToSelect.every(function(position) {
+            return !!document.getElementById('toleranceAxisRect_' + position);
+        });
 
-            if (!transcript_id || !domain_coverage_str) {
-                console.error('Missing data attributes on element');
-                return;
-            }
+        if (allPresent) {
+            clearInterval(checkElements);
 
-            const domain_metadomain_coverage = JSON.parse(domain_coverage_str);
-            const d3Element = d3.select('#' + elementId);
-            const boundData = d3Element.datum();
+            positionsToSelect.forEach(function(position) {
+                const elementId = 'toleranceAxisRect_' + position;
+                const element = document.getElementById(elementId);
+                const transcript_id = element.getAttribute('data-transcript-id');
+                const domain_coverage_str = element.getAttribute('data-domain-coverage');
 
-            if (boundData && transcript_id && domain_metadomain_coverage) {
-                if (!boundData.values[0].selected) {
+                if (!transcript_id || !domain_coverage_str) {
+                    return;
+                }
+
+                const domain_metadomain_coverage = JSON.parse(domain_coverage_str);
+                const d3Element = d3.select('#' + elementId);
+                const boundData = d3Element.datum();
+
+                if (boundData && !boundData.values[0].selected) {
                     d3Element.style("fill", "green").style("fill-opacity", 0.7);
                     boundData.values[0].selected = true;
 
@@ -1180,17 +1175,41 @@ async function checkForSelectedPosition() {
                     document.getElementById("selected_positions_explanation").innerHTML =
                         'Click on one of the selected positions in the table to view more information';
                 }
+            });
 
-                createPositionalInformation(
-                    domain_metadomain_coverage,
-                    transcript_id,
-                    boundData
-                );
+            if (Number.isInteger(requestedPositionalInformation)) {
+                const elementId = 'toleranceAxisRect_' + requestedPositionalInformation;
+                const element = document.getElementById(elementId);
+
+                if (!element) {
+                    return;
+                }
+
+                const transcript_id = element.getAttribute('data-transcript-id');
+                const domain_coverage_str = element.getAttribute('data-domain-coverage');
+
+                if (!transcript_id || !domain_coverage_str) {
+                    return;
+                }
+
+                const domain_metadomain_coverage = JSON.parse(domain_coverage_str);
+                const d3Element = d3.select('#' + elementId);
+                const boundData = d3Element.datum();
+
+                if (boundData) {
+                    createPositionalInformation(
+                        domain_metadomain_coverage,
+                        transcript_id,
+                        boundData
+                    );
+                }
+            } else {
+                syncDashboardUrlState();
             }
         } else if (attempts >= maxAttempts) {
-            clearInterval(checkElement);
+            clearInterval(checkElements);
             if (global_debugging) {
-                console.info('%c Position p.' + position + ' not found after ' + maxAttempts + ' attempts', info_style);
+                console.info('%c Requested positions not found after ' + maxAttempts + ' attempts', info_style);
             }
         }
     }, 100);
@@ -1220,16 +1239,8 @@ function parseDashboardPath() {
         genome_build: pathSegments[2] || "",
         gene_name: pathSegments[3] || "",
         transcript_id: pathSegments[4] || "",
-        position: null,
         is_tour: pathSegments[2] === 'tour'
     };
-
-    if (pathSegments.length > 5) {
-        const match = /^p\.(\d+)$/.exec(pathSegments[5]);
-        if (match) {
-            parsed.position = parseInt(match[1], 10);
-        }
-    }
 
     if (global_debugging) {
         console.info('%c Parsed dashboard path:', info_style);

@@ -4,32 +4,93 @@
 var selected_positions = 0;
 var meta_domain_ids = new Set();
 
-// New: keep selected position shareable in the PATH, like
-// /dashboard/<genome_build>/<gene_name>/<transcript_id>/p.<pos>
-function setPositionInPath(pos) {
+function getDashboardUrlState() {
+    const url = new URL(window.location.href);
+    const rawSelectedPositions = url.searchParams.get("selected_positions");
+    const rawPositionalInformation = url.searchParams.get("positional_information");
+
+    const parsedSelectedPositions = rawSelectedPositions
+        ? rawSelectedPositions.split(",")
+            .map(value => parseInt(value, 10))
+            .filter(value => Number.isInteger(value))
+        : [];
+
+    const parsedPositionalInformation = rawPositionalInformation !== null
+        ? parseInt(rawPositionalInformation, 10)
+        : null;
+
+    return {
+        selected_positions: parsedSelectedPositions,
+        positional_information: Number.isInteger(parsedPositionalInformation) ? parsedPositionalInformation : null
+    };
+}
+
+function setDashboardUrlState(selectedPositionList, positionalInformation) {
     try {
         const url = new URL(window.location.href);
 
-        // Preserve query params (e.g. ?debug=True) but change only the path
-        const segments = url.pathname.split('/').filter(s => s.length > 0);
+        if (selectedPositionList && selectedPositionList.length > 0) {
+            const orderedUniquePositions = Array.from(new Set(
+                selectedPositionList
+                    .map(value => parseInt(value, 10))
+                    .filter(value => Number.isInteger(value))
+            )).sort((a, b) => a - b);
 
-        // Remove existing trailing p.<n> segment if present
-        if (segments.length > 0 && /^p\.\d+$/.test(segments[segments.length - 1])) {
-            segments.pop();
+            url.searchParams.set("selected_positions", orderedUniquePositions.join(","));
+        } else {
+            url.searchParams.delete("selected_positions");
         }
 
-        // If pos is provided, append p.<pos>
-        if (pos !== null && typeof pos !== 'undefined') {
-            segments.push(`p.${parseInt(pos, 10)}`);
+        if (Number.isInteger(positionalInformation)) {
+            url.searchParams.set("positional_information", String(positionalInformation));
+        } else {
+            url.searchParams.delete("positional_information");
         }
 
-        url.pathname = '/' + segments.join('/') + '/';
-
-        // Replace so clicks don't spam history; use pushState if you prefer
         window.history.replaceState({}, "", url.toString());
     } catch (e) {
         // no-op
     }
+}
+
+function getCurrentlySelectedPositionsFromTable() {
+    const positions = [];
+
+    d3.selectAll('#position_information_tbody tr').each(function() {
+        const headerCell = d3.select(this).select('th');
+        const position = parseInt(headerCell.text(), 10);
+        if (Number.isInteger(position)) {
+            positions.push(position);
+        }
+    });
+
+    return positions.sort((a, b) => a - b);
+}
+
+function syncDashboardUrlState() {
+    const currentState = getDashboardUrlState();
+    const selectedPositionList = getCurrentlySelectedPositionsFromTable();
+
+    let positionalInformation = currentState.positional_information;
+    if (Number.isInteger(positionalInformation) && !selectedPositionList.includes(positionalInformation)) {
+        positionalInformation = null;
+    }
+
+    setDashboardUrlState(selectedPositionList, positionalInformation);
+}
+
+function clearPositionalInformationFromUrl() {
+    try {
+        setDashboardUrlState(getCurrentlySelectedPositionsFromTable(), null);
+    } catch (e) {
+        // no-op
+    }
+}
+
+function closePositionalInformationOverlay() {
+    $("#positional_information_overlay").removeClass("is-active");
+    d3.selectAll(".tr").classed("is-selected", false);
+    clearPositionalInformationFromUrl();
 }
 
 // Defer DOM-dependent initialization
@@ -308,24 +369,30 @@ var positionTip = d3.tip()
 	    var positionTip_str = "<span>";
 
         // Parse and simplify exon numbers
-	    const exonNumbers = d.values[0].exon_numbers.split(', ').map(num => parseInt(num.trim()));
-	    const uniqueExons = [...new Set(exonNumbers)].sort((a, b) => a - b);
-	    const exonDisplay = uniqueExons.length === 1 ? `Exon ${uniqueExons[0]}` : `Exon ${uniqueExons.join(',')}`;
+	    const exonNumbers = d.values[0].exon_numbers.split(', ').map(function(num) {
+            return parseInt(num.trim(), 10);
+        });
+	    const uniqueExons = [...new Set(exonNumbers)].sort(function(a, b) {
+            return a - b;
+        });
+	    const exonDisplay = uniqueExons.length === 1
+            ? "Exon " + uniqueExons[0]
+            : "Exon " + uniqueExons.join(',');
 
 	    positionTip_str += "Position: p." + d.values[0].protein_pos + " " + d.values[0].cdna_pos + " " + exonDisplay + "</br>";
 	    positionTip_str += "Codon: " + d.values[0].ref_codon + "</br>";
 	    positionTip_str += "Residue: " + d.values[0].ref_aa_triplet + "</br>";
-	    positionTip_str += "Tolerance score (dn/ds): "+ (Math.round((d.values[0].sw_dn_ds)*100)/100) +' ('+tolerance_rating(d.values[0].sw_dn_ds) +')';
+	    positionTip_str += "Tolerance score (dn/ds): " + (Math.round((d.values[0].sw_dn_ds) * 100) / 100) + ' (' + tolerance_rating(d.values[0].sw_dn_ds) + ')';
 	    if (d.values[0].domains.length > 0){
-		positionTip_str += "</br> In domain(s): ";
-		var n_domains_at_position = d.values[0].domains.length;
-		for (var i = 0; i < n_domains_at_position; i++){
-		    if (i+1 == n_domains_at_position){
-			positionTip_str+= d.values[0].domains[i].ID;
-		    }else{
-			positionTip_str+= d.values[0].domains[i].ID+", ";
+		    positionTip_str += "</br> In domain(s): ";
+		    var n_domains_at_position = d.values[0].domains.length;
+		    for (var i = 0; i < n_domains_at_position; i++){
+		        if (i + 1 == n_domains_at_position){
+			        positionTip_str += d.values[0].domains[i].ID;
+		        } else {
+			        positionTip_str += d.values[0].domains[i].ID + ", ";
+		        }
 		    }
-		}
 	    }
 	    positionTip_str += "</br> Click to select this position</span>";
 	    return positionTip_str;
@@ -673,7 +740,6 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .style("clip-path", "url(#clip)")
     .style("fill", "green")
     .on("click", function(event, d) {
-        setPositionInPath(d.values[0].protein_pos);
         createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
     })
     .on("pointerenter", function(event, d) {
@@ -710,7 +776,6 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .style("clip-path", "url(#clip)")
     .style("fill", "red")
     .on("click", function(event, d) {
-        setPositionInPath(d.values[0].protein_pos);
         createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
     })
     .on("pointerenter", function(event, d) {
@@ -924,12 +989,7 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
                 document.getElementById("selected_positions_explanation").innerHTML =
                     'Click on one of the selected positions in the table to view more information';
 
-                // New: update shareable URL state in the PATH
-                setPositionInPath(d.values[0].protein_pos);
-
-                // If you want click-on-axis to also open the popup immediately, uncomment:
-                // createPositionalInformation(domain_metadomain_coverage, transcript_id, d);
-
+                syncDashboardUrlState();
             } else {
                 d3.select(this).style("fill", "orange").style("fill-opacity", 0.5);
                 d.values[0].selected = false;
@@ -940,10 +1000,9 @@ function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, tr
                     $("#position_information_table").addClass('is-hidden');
                     document.getElementById("selected_positions_explanation").innerHTML =
                         'Click on one of positions in the schematic protein to obtain more information';
-
-                    // New: clear URL position segment when nothing is selected
-                    setPositionInPath(null);
                 }
+
+                syncDashboardUrlState();
             }
         });
 }
