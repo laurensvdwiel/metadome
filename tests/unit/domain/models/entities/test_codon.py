@@ -1,123 +1,287 @@
 import unittest
+from builtins import NotImplementedError
 
-from metadome.domain.models.entities.codon import Codon, MalformedCodonException
-from metadome.domain.models.gene import Strand
+from metadome.domain.models.entities.codon import MalformedCodonException, Codon
+from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant, \
+    MalformedVariantException, VariantType
 
-class mock_Mapping(object):
-    strand = Strand.plus
-    uniprot_position = 125
-    chromosome = 'chr1'
-    gene_id = 1
-    protein_id = 1
-    
-    def __init__(self, id, base_pair, codon, codon_base_pair_position,
-                 cDNA_position, amino_acid_residue, chromosome_position):
-        self.id = id
-        self.base_pair = base_pair
-        self.codon = codon
-        self.codon_base_pair_position = codon_base_pair_position
-        self.cDNA_position = cDNA_position
-        self.amino_acid_residue = amino_acid_residue
-        self.chromosome_position = chromosome_position
 
-class Test_codon(unittest.TestCase):
-    
-    def test_init_from_dict_fail(self):
-        _d = {}
-        
-        with self.assertRaises(MalformedCodonException):
-            Codon.initializeFromDict(_d)
-        
+class mock_Codon(Codon):
+    @classmethod
+    def mock_Methionine(cls):
+        _d = {
+            'chr': 'chr1',
+            'gencode_transcription_id': 'test_transcript',
+            'cDNA_position_three': 3,
+            'uniprot_position': 125,
+            'chromosome_position_base_pair_three': 3,
+            'cDNA_position_one': 1,
+            'strand': '+',
+            'uniprot_ac': 'test_protein_ac',
+            'base_pair_representation': 'ATG',
+            'chromosome_position_base_pair_two': 2,
+            'cDNA_position_two': 2,
+            'chromosome_position_base_pair_one': 1,
+            'amino_acid_residue': 'M',
+            'exon_number_base_pair_one': 1,
+            'exon_number_base_pair_two': 1,
+            'exon_number_base_pair_three': 1,
+        }
+        return super(mock_Codon, cls).initializeFromDict(_d)
+
+
+class Test_SingleNucleotideVariant(unittest.TestCase):
+    def test_interpret_variant_type_from_residues(self):
+        self.assertTrue(SingleNucleotideVariant.interpret_variant_type_from_residues('M', 'I') == VariantType.missense)
+        self.assertTrue(SingleNucleotideVariant.interpret_variant_type_from_residues('M', 'M') == VariantType.synonymous)
+        self.assertTrue(SingleNucleotideVariant.interpret_variant_type_from_residues('M', '*') == VariantType.nonsense)
+
+    def test_interpret_variant_type_from_codon_basepair_representations(self):
+        self.assertTrue(SingleNucleotideVariant.interpret_variant_type_from_codon_basepair_representations('ATG', 'ATA') == VariantType.missense)
+        self.assertTrue(SingleNucleotideVariant.interpret_variant_type_from_codon_basepair_representations('ATA', 'ATC') == VariantType.synonymous)
+        self.assertTrue(SingleNucleotideVariant.interpret_variant_type_from_codon_basepair_representations('TAC', 'TAA') == VariantType.nonsense)
+
+    def test_interpret_alt_codon(self):
+        self.assertTrue(SingleNucleotideVariant.interpret_alt_codon('ATG', 0, 'C') == 'CTG')
+        self.assertTrue(SingleNucleotideVariant.interpret_alt_codon('ATG', 1, 'C') == 'ACG')
+        self.assertTrue(SingleNucleotideVariant.interpret_alt_codon('ATG', 2, 'C') == 'ATC')
+
     def test_initializations(self):
-        # init test variables
-        _transcript =  'test_transcript'
-        _protein_ac =  'test_test_protein_ac'
-        _codon_repr = 'CTT'
-        _residue = 'L'
-        _strand = '+'
-        _chromosome_position_base_pair_one = 231
-        _chromosome_position_base_pair_two = 232
-        _chromosome_position_base_pair_three = 233
-        _cDNA_position_one = 333
-        _cDNA_position_two = 334
-        _cDNA_position_three = 335
-        
-        # init mappings
-        _mappings = []
-        _mappings.append(mock_Mapping(id=1, base_pair='C', codon=_codon_repr, codon_base_pair_position=0, amino_acid_residue=_residue, cDNA_position=_cDNA_position_one, chromosome_position=_chromosome_position_base_pair_one))
-        _mappings.append(mock_Mapping(id=2, base_pair='T', codon=_codon_repr, codon_base_pair_position=1, amino_acid_residue=_residue, cDNA_position=_cDNA_position_two, chromosome_position=_chromosome_position_base_pair_two))
-        _mappings.append(mock_Mapping(id=3, base_pair='T', codon=_codon_repr, codon_base_pair_position=2, amino_acid_residue=_residue, cDNA_position=_cDNA_position_three, chromosome_position=_chromosome_position_base_pair_three))
-         
-        # Create the Codon from the mapping
-        _codon_from_mapping = Codon.initializeFromMapping(_mappings=_mappings, _gencode_transcription_id=_transcript, _uniprot_ac=_protein_ac)
-        _codon_from_init = Codon(_gencode_transcription_id=_transcript, _uniprot_ac=_protein_ac,
-                                 _strand=_strand, _base_pair_representation=_codon_repr,
-                                 _amino_acid_residue=_residue, _uniprot_position=mock_Mapping.uniprot_position,
-                                 _chr=mock_Mapping.chromosome, _chromosome_position_base_pair_one=_chromosome_position_base_pair_one,
-                                 _chromosome_position_base_pair_two=_chromosome_position_base_pair_two,
-                                 _chromosome_position_base_pair_three=_chromosome_position_base_pair_three,
-                                 _cDNA_position_one=_cDNA_position_one, _cDNA_position_two=_cDNA_position_two,
-                                 _cDNA_position_three=_cDNA_position_three)
-        
-        # Check if the conversion went okay and it is the same as init
-        self.assertTrue(_codon_from_init.three_letter_amino_acid_residue() == _codon_from_mapping.three_letter_amino_acid_residue() == 'Leu')
-        self.assertTrue(_codon_from_init.gencode_transcription_id == _codon_from_mapping.gencode_transcription_id == _transcript)
-        self.assertTrue(_codon_from_init.uniprot_ac == _codon_from_mapping.uniprot_ac == _protein_ac)
-        self.assertTrue(_codon_from_init.strand == _codon_from_mapping.strand == mock_Mapping.strand)
-        self.assertTrue(_codon_from_init.base_pair_representation == _codon_from_mapping.base_pair_representation == _codon_repr) 
-        self.assertTrue(_codon_from_init.amino_acid_residue == _codon_from_mapping.amino_acid_residue == _residue)
-        self.assertTrue(_codon_from_init.uniprot_position == _codon_from_mapping.uniprot_position == mock_Mapping.uniprot_position)
-        self.assertTrue(_codon_from_init.chr == _codon_from_mapping.chr == mock_Mapping.chromosome)
-        self.assertTrue(_codon_from_init.chromosome_position_base_pair_one == _codon_from_mapping.chromosome_position_base_pair_one == _chromosome_position_base_pair_one)
-        self.assertTrue(_codon_from_init.chromosome_position_base_pair_two == _codon_from_mapping.chromosome_position_base_pair_two == _chromosome_position_base_pair_two)
-        self.assertTrue(_codon_from_init.chromosome_position_base_pair_three == _codon_from_mapping.chromosome_position_base_pair_three == _chromosome_position_base_pair_three)
-        self.assertTrue(_codon_from_init.cDNA_position_one == _codon_from_mapping.cDNA_position_one == _cDNA_position_one)
-        self.assertTrue(_codon_from_init.cDNA_position_two == _codon_from_mapping.cDNA_position_two == _cDNA_position_two)
-        self.assertTrue(_codon_from_init.cDNA_position_three == _codon_from_mapping.cDNA_position_three == _cDNA_position_three)
-        
-        # Create a dictionary from the codon
-        _d = _codon_from_mapping.toDict()
-        _codon_from_dict = Codon.initializeFromDict(_d)
-        
-        # Check if the conversion went okay and it is the same as init
-        self.assertTrue(_codon_from_dict.three_letter_amino_acid_residue() == _codon_from_mapping.three_letter_amino_acid_residue())
-        self.assertTrue(_codon_from_dict.gencode_transcription_id == _codon_from_mapping.gencode_transcription_id)
-        self.assertTrue(_codon_from_dict.uniprot_ac == _codon_from_mapping.uniprot_ac)
-        self.assertTrue(_codon_from_dict.strand == _codon_from_mapping.strand)
-        self.assertTrue(_codon_from_dict.base_pair_representation == _codon_from_mapping.base_pair_representation) 
-        self.assertTrue(_codon_from_dict.amino_acid_residue == _codon_from_mapping.amino_acid_residue)
-        self.assertTrue(_codon_from_dict.uniprot_position == _codon_from_mapping.uniprot_position)
-        self.assertTrue(_codon_from_dict.chr == _codon_from_mapping.chr)
-        self.assertTrue(_codon_from_dict.chromosome_position_base_pair_one == _codon_from_mapping.chromosome_position_base_pair_one)
-        self.assertTrue(_codon_from_dict.chromosome_position_base_pair_two == _codon_from_mapping.chromosome_position_base_pair_two)
-        self.assertTrue(_codon_from_dict.chromosome_position_base_pair_three == _codon_from_mapping.chromosome_position_base_pair_three)
-        self.assertTrue(_codon_from_dict.cDNA_position_one == _codon_from_mapping.cDNA_position_one)
-        self.assertTrue(_codon_from_dict.cDNA_position_two == _codon_from_mapping.cDNA_position_two)
-        self.assertTrue(_codon_from_dict.cDNA_position_three == _codon_from_mapping.cDNA_position_three)        
-        
-    def test_three_letter_amino_acid_residue_selenocysteine(self):
-        _mappings = []
-        _mappings.append(mock_Mapping(id=1, base_pair='T', codon='TGA', codon_base_pair_position=0, amino_acid_residue='U', cDNA_position=1, chromosome_position=1))
-        _mappings.append(mock_Mapping(id=2, base_pair='G', codon='TGA', codon_base_pair_position=1, amino_acid_residue='U', cDNA_position=2, chromosome_position=2))
-        _mappings.append(mock_Mapping(id=3, base_pair='A', codon='TGA', codon_base_pair_position=2, amino_acid_residue='U', cDNA_position=3, chromosome_position=3))
-         
-        # Create the Codon
-        codon = Codon.initializeFromMapping(_mappings, 'test_transcript', 'test_protein_ac')
-         
-        self.assertTrue(codon.three_letter_amino_acid_residue() == 'Sec')
-        
-    def test_three_letter_amino_acid_residue_pyrrolysine(self):
+        _codon = mock_Codon.mock_Methionine()
+        _variant_type = 'missense'
+        _alt_amino_acid_residue = 'I'
+        _ref_nucleotide = 'G'
+        _alt_nucleotide = 'A'
+        _var_codon_position = 2
+        _chromosome_position = 3
+        _variant_source = 'test_data'
 
-        _mappings = []
-        _mappings.append(mock_Mapping(id=1, base_pair='T', codon='TAG', codon_base_pair_position=0, amino_acid_residue='U', cDNA_position=1, chromosome_position=1))
-        _mappings.append(mock_Mapping(id=2, base_pair='A', codon='TAG', codon_base_pair_position=1, amino_acid_residue='U', cDNA_position=2, chromosome_position=2))
-        _mappings.append(mock_Mapping(id=3, base_pair='G', codon='TAG', codon_base_pair_position=2, amino_acid_residue='U', cDNA_position=3, chromosome_position=3))
-         
-        # Create the Codon
-        codon = Codon.initializeFromMapping(_mappings, 'test_transcript', 'test_protein_ac')
-         
-        self.assertTrue(codon.three_letter_amino_acid_residue() == 'Sec')
+        _var_from_var = SingleNucleotideVariant.initializeFromVariant(_codon, _chromosome_position, _alt_nucleotide, _variant_source)
+        _var_from_init = SingleNucleotideVariant(
+            _gencode_transcription_id=_codon.gencode_transcription_id,
+            _uniprot_ac=_codon.uniprot_ac,
+            _strand=_codon.strand.value,
+            _base_pair_representation=_codon.base_pair_representation,
+            _amino_acid_residue=_codon.amino_acid_residue,
+            _uniprot_position=_codon.uniprot_position,
+            _chr=_codon.chr,
+            _exon_number_base_pair_one=_codon.exon_number_base_pair_one,
+            _exon_number_base_pair_two=_codon.exon_number_base_pair_two,
+            _exon_number_base_pair_three=_codon.exon_number_base_pair_three,
+            _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one,
+            _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two,
+            _chromosome_position_base_pair_three=_codon.chromosome_position_base_pair_three,
+            _cDNA_position_one=_codon.cDNA_position_one,
+            _cDNA_position_two=_codon.cDNA_position_two,
+            _cDNA_position_three=_codon.cDNA_position_three,
+            _variant_type=_variant_type,
+            _alt_amino_acid_residue=_alt_amino_acid_residue,
+            _ref_nucleotide=_ref_nucleotide,
+            _alt_nucleotide=_alt_nucleotide,
+            _var_codon_position=_var_codon_position,
+            _variant_source=_variant_source
+        )
+
+        self.assertTrue(_var_from_init.alt_amino_acid_residue == _var_from_var.alt_amino_acid_residue == _alt_amino_acid_residue)
+        self.assertTrue(_var_from_init.ref_nucleotide == _var_from_var.ref_nucleotide == _ref_nucleotide)
+        self.assertTrue(_var_from_init.alt_nucleotide == _var_from_var.alt_nucleotide == _alt_nucleotide)
+        self.assertTrue(_var_from_init.variant_type.value == _var_from_var.variant_type.value == _variant_type)
+        self.assertTrue(_var_from_init.var_codon_position == _var_from_var.var_codon_position == _var_codon_position)
+        self.assertTrue(_var_from_init.alt_base_pair_representation == _var_from_var.alt_base_pair_representation == 'ATA')
+        self.assertTrue(_var_from_init.variant_source == _var_from_var.variant_source == _variant_source)
+
+        _d = _var_from_init.toDict()
+        _var_from_dict = SingleNucleotideVariant.initializeFromDict(_d)
+
+        self.assertTrue(_var_from_dict.alt_amino_acid_residue == _alt_amino_acid_residue)
+        self.assertTrue(_var_from_dict.ref_nucleotide == _ref_nucleotide)
+        self.assertTrue(_var_from_dict.alt_nucleotide == _alt_nucleotide)
+        self.assertTrue(_var_from_dict.variant_type.value == _variant_type)
+        self.assertTrue(_var_from_dict.var_codon_position == _var_codon_position)
+        self.assertTrue(_var_from_dict.alt_base_pair_representation == 'ATA')
+        self.assertTrue(_var_from_dict.variant_source == _variant_source)
+
+    def test_initializeFromVariantFailures(self):
+        _codon = mock_Codon.mock_Methionine()
+        _alt_nucleotide = 'A'
+        _chromosome_position = 4
+        _variant_source = 'test_data'
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant.initializeFromVariant(_codon, _chromosome_position, _alt_nucleotide, _variant_source)
+
+    def test_initializeFromDictFailures(self):
+        _codon = mock_Codon.mock_Methionine()
+
+        with self.assertRaises(MalformedCodonException):
+            SingleNucleotideVariant.initializeFromDict({})
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant.initializeFromDict(_codon.toDict())
+
+    def test_initialization_fails(self):
+        _codon = mock_Codon.mock_Methionine()
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant(
+                _gencode_transcription_id=_codon.gencode_transcription_id,
+                _uniprot_ac=_codon.uniprot_ac,
+                _strand=_codon.strand.value,
+                _base_pair_representation=_codon.base_pair_representation,
+                _amino_acid_residue=_codon.amino_acid_residue,
+                _uniprot_position=_codon.uniprot_position,
+                _chr=_codon.chr,
+                _exon_number_base_pair_one=_codon.exon_number_base_pair_one,
+                _exon_number_base_pair_two=_codon.exon_number_base_pair_two,
+                _exon_number_base_pair_three=_codon.exon_number_base_pair_three,
+                _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one,
+                _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two,
+                _chromosome_position_base_pair_three=_codon.chromosome_position_base_pair_three,
+                _cDNA_position_one=_codon.cDNA_position_one,
+                _cDNA_position_two=_codon.cDNA_position_two,
+                _cDNA_position_three=_codon.cDNA_position_three,
+                _variant_type='missense',
+                _alt_amino_acid_residue='I',
+                _ref_nucleotide='G',
+                _alt_nucleotide='G',
+                _var_codon_position=2,
+                _variant_source='test_data'
+            )
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant(
+                _gencode_transcription_id=_codon.gencode_transcription_id,
+                _uniprot_ac=_codon.uniprot_ac,
+                _strand=_codon.strand.value,
+                _base_pair_representation=_codon.base_pair_representation,
+                _amino_acid_residue=_codon.amino_acid_residue,
+                _uniprot_position=_codon.uniprot_position,
+                _chr=_codon.chr,
+                _exon_number_base_pair_one=_codon.exon_number_base_pair_one,
+                _exon_number_base_pair_two=_codon.exon_number_base_pair_two,
+                _exon_number_base_pair_three=_codon.exon_number_base_pair_three,
+                _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one,
+                _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two,
+                _chromosome_position_base_pair_three=_codon.chromosome_position_base_pair_three,
+                _cDNA_position_one=_codon.cDNA_position_one,
+                _cDNA_position_two=_codon.cDNA_position_two,
+                _cDNA_position_three=_codon.cDNA_position_three,
+                _variant_type='missense',
+                _alt_amino_acid_residue='I',
+                _ref_nucleotide='TG',
+                _alt_nucleotide='A',
+                _var_codon_position=2,
+                _variant_source='test_data'
+            )
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant(
+                _gencode_transcription_id=_codon.gencode_transcription_id,
+                _uniprot_ac=_codon.uniprot_ac,
+                _strand=_codon.strand.value,
+                _base_pair_representation=_codon.base_pair_representation,
+                _amino_acid_residue=_codon.amino_acid_residue,
+                _uniprot_position=_codon.uniprot_position,
+                _chr=_codon.chr,
+                _exon_number_base_pair_one=_codon.exon_number_base_pair_one,
+                _exon_number_base_pair_two=_codon.exon_number_base_pair_two,
+                _exon_number_base_pair_three=_codon.exon_number_base_pair_three,
+                _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one,
+                _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two,
+                _chromosome_position_base_pair_three=_codon.chromosome_position_base_pair_three,
+                _cDNA_position_one=_codon.cDNA_position_one,
+                _cDNA_position_two=_codon.cDNA_position_two,
+                _cDNA_position_three=_codon.cDNA_position_three,
+                _variant_type='missense',
+                _alt_amino_acid_residue='I',
+                _ref_nucleotide='G',
+                _alt_nucleotide='TA',
+                _var_codon_position=2,
+                _variant_source='test_data'
+            )
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant(
+                _gencode_transcription_id=_codon.gencode_transcription_id,
+                _uniprot_ac=_codon.uniprot_ac,
+                _strand=_codon.strand.value,
+                _base_pair_representation=_codon.base_pair_representation,
+                _amino_acid_residue=_codon.amino_acid_residue,
+                _uniprot_position=_codon.uniprot_position,
+                _chr=_codon.chr,
+                _exon_number_base_pair_one=_codon.exon_number_base_pair_one,
+                _exon_number_base_pair_two=_codon.exon_number_base_pair_two,
+                _exon_number_base_pair_three=_codon.exon_number_base_pair_three,
+                _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one,
+                _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two,
+                _chromosome_position_base_pair_three=_codon.chromosome_position_base_pair_three,
+                _cDNA_position_one=_codon.cDNA_position_one,
+                _cDNA_position_two=_codon.cDNA_position_two,
+                _cDNA_position_three=_codon.cDNA_position_three,
+                _variant_type='missense',
+                _alt_amino_acid_residue='I',
+                _ref_nucleotide='G',
+                _alt_nucleotide='A',
+                _var_codon_position=4,
+                _variant_source='test_data'
+            )
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant(
+                _gencode_transcription_id=_codon.gencode_transcription_id,
+                _uniprot_ac=_codon.uniprot_ac,
+                _strand=_codon.strand.value,
+                _base_pair_representation=_codon.base_pair_representation,
+                _amino_acid_residue=_codon.amino_acid_residue,
+                _uniprot_position=_codon.uniprot_position,
+                _chr=_codon.chr,
+                _exon_number_base_pair_one=_codon.exon_number_base_pair_one,
+                _exon_number_base_pair_two=_codon.exon_number_base_pair_two,
+                _exon_number_base_pair_three=_codon.exon_number_base_pair_three,
+                _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one,
+                _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two,
+                _chromosome_position_base_pair_three=_codon.chromosome_position_base_pair_three,
+                _cDNA_position_one=_codon.cDNA_position_one,
+                _cDNA_position_two=_codon.cDNA_position_two,
+                _cDNA_position_three=_codon.cDNA_position_three,
+                _variant_type='missense',
+                _alt_amino_acid_residue='I',
+                _ref_nucleotide='T',
+                _alt_nucleotide='A',
+                _var_codon_position=2,
+                _variant_source='test_data'
+            )
+
+        with self.assertRaises(MalformedVariantException):
+            SingleNucleotideVariant(
+                _gencode_transcription_id=_codon.gencode_transcription_id,
+                _uniprot_ac=_codon.uniprot_ac,
+                _strand=_codon.strand.value,
+                _base_pair_representation=_codon.base_pair_representation,
+                _amino_acid_residue=_codon.amino_acid_residue,
+                _uniprot_position=_codon.uniprot_position,
+                _chr=_codon.chr,
+                _exon_number_base_pair_one=_codon.exon_number_base_pair_one,
+                _exon_number_base_pair_two=_codon.exon_number_base_pair_two,
+                _exon_number_base_pair_three=_codon.exon_number_base_pair_three,
+                _chromosome_position_base_pair_one=_codon.chromosome_position_base_pair_one,
+                _chromosome_position_base_pair_two=_codon.chromosome_position_base_pair_two,
+                _chromosome_position_base_pair_three=_codon.chromosome_position_base_pair_three,
+                _cDNA_position_one=_codon.cDNA_position_one,
+                _cDNA_position_two=_codon.cDNA_position_two,
+                _cDNA_position_three=_codon.cDNA_position_three,
+                _variant_type='not a variant type',
+                _alt_amino_acid_residue='I',
+                _ref_nucleotide='G',
+                _alt_nucleotide='A',
+                _var_codon_position=2,
+                _variant_source='test_data'
+            )
+
+    def test_initializeFromMappings(self):
+        with self.assertRaises(NotImplementedError):
+            SingleNucleotideVariant.initializeFromMapping(None, None, None)
+
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

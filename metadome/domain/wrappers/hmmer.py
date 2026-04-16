@@ -583,7 +583,7 @@ def map_sequence_to_aligned_sequence(original_sequence, original_sequence_aligne
 def convert_pfam_fasta_alignment_to_original_aligned_sequence(alignment_sequence):
     """Removes any '.', and converts lower case characters to upper case in the alignment
     sequence"""
-    return re.sub('[\.]', '-', alignment_sequence).upper()
+    return re.sub(r'[.]', '-', alignment_sequence).upper()
 
 
 def convert_pfam_fasta_alignment_to_strict_fasta(alignment_sequence):
@@ -592,14 +592,14 @@ def convert_pfam_fasta_alignment_to_strict_fasta(alignment_sequence):
     From the HMMER manual: a ’-’ character means a deletion relative to
     the consensus. In an insert column, residues are lower case, and a
     ’.’ is padding."""
-    return re.sub('[a-z,\.]', '-', alignment_sequence)
+    return re.sub(r'[a-z,.]', '-', alignment_sequence)
 
 def convert_pfam_fasta_alignment_to_strict_sequence(alignment_sequence):
     """Removes any '.', '-' or lower case characters in the alignment
     sequence in order to obtain the strict fasta sequence"""
-    return re.sub('[a-z,\.,-]', '', alignment_sequence)
+    return re.sub(r'[a-z,.-]', '', alignment_sequence)
 
 def convert_pfam_fasta_alignment_to_strict_consensus_sequence(alignment_sequence):
     """Removes any '.', '-' or lower case characters in the alignment
     sequence in order to obtain the strict fasta sequence"""
-    return re.sub('[a-z,\.]', '', alignment_sequence)
+    return re.sub(r'[a-z,.]', '', alignment_sequence)

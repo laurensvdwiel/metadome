@@ -14,9 +14,23 @@ DEBUG = False
 import os
 SQLALCHEMY_RECORD_QUERIES = DEBUG # should be false when not debug
 SQLALCHEMY_TRACK_MODIFICATIONS = False
-SQLALCHEMY_DATABASE_URI = "postgresql://"+os.environ["POSTGRES_USER"]+":"+os.environ["POSTGRES_PASSWORD"]+"@"+os.environ["POSTGRES_HOST"]+"/"+os.environ["POSTGRES_DB"]
+SQLALCHEMY_DATABASE_URI = "postgresql+psycopg://"+os.environ["POSTGRES_USER"]+":"+os.environ["POSTGRES_PASSWORD"]+"@"+os.environ["POSTGRES_HOST"]+"/"+os.environ["POSTGRES_DB"]
 SQLALCHEMY_ECHO = True
 SQLALCHEMY_POOL_TIMEOUT = 10
+SQLALCHEMY_ENGINE_OPTIONS = {
+    "pool_pre_ping": True,
+    "pool_recycle": 1800,
+    "pool_timeout": SQLALCHEMY_POOL_TIMEOUT,
+    "connect_args": {
+        "application_name": "metadome",
+        "connect_timeout": 10,
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+    },
+}
+
 
 # Flask-Celery settings
 CELERY_BROKER_URL='amqp://guest@metadome-dev-rabbitmq-1'

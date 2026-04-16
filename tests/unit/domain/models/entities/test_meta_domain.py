@@ -1,84 +1,173 @@
 import unittest
-from metadome.domain.models.entities.meta_domain import MetaDomain,\
-    UnsupportedMetaDomainIdentifier, ConsensusPositionOutOfBounds
+
 import pandas as pd
-import numpy as np
+
+from metadome.domain.models.entities.meta_domain import (
+    MetaDomain,
+    UnsupportedMetaDomainIdentifier,
+    ConsensusPositionOutOfBounds,
+)
+from metadome.domain.models.entities.gene_region import GenomeBuild
+
 
 class mock_MetaDomain(MetaDomain):
     @classmethod
     def mock_PF00907_metadomain_first_three_consensus_positions(cls):
-        r = {'cDNA_position_one': [334, 130, 343, 421, 334, 199, 313, 805, 616, 805, 229, 229, 415, 130, 229, 304, 205, 205, 319, 313, 229, 229, 334, 25, 337, 280, 280, 133, 346, 424, 337, 202, 316, 808, 619, 280, 808, 232, 232, 418, 133, 232, 307, 208, 208, 322, 316, 232, 232, 283, 283, 337, 28, 340, 283, 283, 136, 349, 427, 340, 205, 319, 172, 172, 811, 622, 283, 811, 22, 235, 235, 133, 421, 136, 235, 310, 211, 211, 172, 325, 319, 235, 235, 286, 286, 340, 31], 'strand': ['+', '-', '-', '-', '+', '-', '-', '-', '+', '-', '+', '+', '+', '-', '+', '-', '+', '+', '+', '-', '+', '+', '+', '-', '+', '-', '-', '-', '-', '-', '+', '-', '-', '-', '+', '-', '-', '+', '+', '+', '-', '+', '-', '+', '+', '+', '-', '+', '+', '+', '+', '+', '-', '+', '-', '-', '-', '-', '-', '+', '-', '-', '-', '-', '-', '+', '-', '-', '-', '+', '+', '+', '+', '-', '+', '-', '+', '+', '-', '+', '-', '+', '+', '+', '+', '+', '-'], 'chromosome_position_base_pair_three': [19748729, 166580948, 119474316, 85472336, 19748729, 67402541, 115120691, 27762979, 162273539, 27762979, 41961323, 41961323, 45811237, 166580948, 41961323, 35289637, 59534918, 59534918, 59477858, 115120691, 41961323, 41961323, 19748729, 119474316, 19748732, 30102150, 30102150, 166580945, 119474313, 85472333, 19748732, 67402538, 115120688, 27762976, 162273542, 30102150, 27762976, 41961326, 41961326, 45811240, 166580945, 41961326, 35289634, 59534921, 59534921, 59477861, 115120688, 41961326, 41961326, 79278668, 79278668, 19748732, 119474313, 19748735, 30102147, 30102147, 166580942, 119474310, 85472330, 19748735, 67402535, 115120685, 114839699, 114839699, 27762973, 162273545, 30102147, 27762973, 114839699, 41961329, 41961329, 168250463, 45811243, 166580942, 41961329, 35289631, 59534924, 59534924, 114839699, 59477864, 115120685, 41961329, 41961329, 79278671, 79278671, 19748735, 119474310], 'consensus_pos': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'chromosome_position_base_pair_one': [19748727, 166580950, 119474318, 85472338, 19748727, 67402543, 115120693, 27762981, 162273537, 27762981, 41961321, 41961321, 45811235, 166580950, 41961321, 35289639, 59534916, 59534916, 59477856, 115120693, 41961321, 41961321, 19748727, 119474318, 19748730, 30102152, 30102152, 166580947, 119474315, 85472335, 19748730, 67402540, 115120690, 27762978, 162273540, 30102152, 27762978, 41961324, 41961324, 45811238, 166580947, 41961324, 35289636, 59534919, 59534919, 59477859, 115120690, 41961324, 41961324, 79278666, 79278666, 19748730, 119474315, 19748733, 30102149, 30102149, 166580944, 119474312, 85472332, 19748733, 67402537, 115120687, 114839701, 114839701, 27762975, 162273543, 30102149, 27762975, 114839701, 41961327, 41961327, 168250461, 45811241, 166580944, 41961327, 35289633, 59534922, 59534922, 114839701, 59477862, 115120687, 41961327, 41961327, 79278669, 79278669, 19748733, 119474312], 'Unnamed: 0': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86], 'domain_id': ['PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907', 'PF00907'], 'uniprot_position': [111, 43, 114, 140, 111, 66, 104, 268, 205, 268, 76, 76, 138, 43, 76, 101, 68, 68, 106, 104, 76, 76, 111, 8, 112, 93, 93, 44, 115, 141, 112, 67, 105, 269, 206, 93, 269, 77, 77, 139, 44, 77, 102, 69, 69, 107, 105, 77, 77, 94, 94, 112, 9, 113, 94, 94, 45, 116, 142, 113, 68, 106, 57, 57, 270, 207, 94, 270, 7, 78, 78, 44, 140, 45, 78, 103, 70, 70, 57, 108, 106, 78, 78, 95, 95, 113, 10], 'amino_acid_residue': ['V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'C', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'Q', 'S', 'S', 'G', 'E', 'D', 'Q', 'Q', 'H', 'Y', 'Y', 'S', 'Y', 'T', 'T', 'A', 'G', 'T', 'S', 'G', 'G', 'T', 'H', 'T', 'T', 'E', 'E', 'Q', 'E', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L'], 'chromosome_position_base_pair_two': [19748728, 166580949, 119474317, 85472337, 19748728, 67402542, 115120692, 27762980, 162273538, 27762980, 41961322, 41961322, 45811236, 166580949, 41961322, 35289638, 59534917, 59534917, 59477857, 115120692, 41961322, 41961322, 19748728, 119474317, 19748731, 30102151, 30102151, 166580946, 119474314, 85472334, 19748731, 67402539, 115120689, 27762977, 162273541, 30102151, 27762977, 41961325, 41961325, 45811239, 166580946, 41961325, 35289635, 59534920, 59534920, 59477860, 115120689, 41961325, 41961325, 79278667, 79278667, 19748731, 119474314, 19748734, 30102148, 30102148, 166580943, 119474311, 85472331, 19748734, 67402536, 115120686, 114839700, 114839700, 27762974, 162273544, 30102148, 27762974, 114839700, 41961328, 41961328, 168250462, 45811242, 166580943, 41961328, 35289632, 59534923, 59534923, 114839700, 59477863, 115120686, 41961328, 41961328, 79278670, 79278670, 19748734, 119474311], 'uniprot_ac': ['O43435-3', 'O15178-2', 'Q96SF7', 'O95935', 'O43435-2', 'O75333', 'O15119-2', 'O95936-4', 'Q16650', 'O95936', 'Q8IWI9-4', 'Q8IWI9-4', 'Q9UL17', 'O15178', 'Q8IWI9', 'Q9UMR3', 'P57082-2', 'P57082', 'Q13207', 'O15119', 'Q8IWI9-3', 'Q8IWI9-3', 'O43435', 'Q96SF7-2', 'O43435-3', 'O95947', 'O95947', 'O15178-2', 'Q96SF7', 'O95935', 'O43435-2', 'O75333', 'O15119-2', 'O95936-4', 'Q16650', 'O95947-2', 'O95936', 'Q8IWI9-4', 'Q8IWI9-4', 'Q9UL17', 'O15178', 'Q8IWI9', 'Q9UMR3', 'P57082-2', 'P57082', 'Q13207', 'O15119', 'Q8IWI9-3', 'Q8IWI9-3', 'Q9Y458', 'Q9Y458', 'O43435', 'Q96SF7-2', 'O43435-3', 'O95947', 'O95947', 'O15178-2', 'Q96SF7', 'O95935', 'O43435-2', 'O75333', 'O15119-2', 'Q99593', 'Q99593', 'O95936-4', 'Q16650', 'O95947-2', 'O95936', 'Q99593-3', 'Q8IWI9-4', 'Q8IWI9-4', 'O60806', 'Q9UL17', 'O15178', 'Q8IWI9', 'Q9UMR3', 'P57082-2', 'P57082', 'Q99593-2', 'Q13207', 'O15119', 'Q8IWI9-3', 'Q8IWI9-3', 'Q9Y458', 'Q9Y458', 'O43435', 'Q96SF7-2'], 'base_pair_representation': ['GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'GTT', 'GTG', 'GTC', 'GTG', 'GTC', 'GTT', 'GTT', 'GTC', 'GTG', 'GTT', 'TGC', 'GTG', 'GTG', 'GTG', 'GTG', 'GTT', 'GTT', 'GTG', 'GTG', 'CAG', 'AGC', 'AGC', 'GGC', 'GAG', 'GAT', 'CAG', 'CAG', 'CAC', 'TAC', 'TAC', 'AGC', 'TAC', 'ACC', 'ACC', 'GCG', 'GGC', 'ACC', 'AGC', 'GGG', 'GGG', 'ACG', 'CAC', 'ACC', 'ACC', 'GAG', 'GAG', 'CAG', 'GAG', 'CTA', 'CTG', 'CTG', 'CTG', 'CTG', 'CTG', 'CTA', 'CTG', 'CTG', 'CTC', 'CTC', 'CTG', 'CTG', 'CTG', 'CTG', 'CTC', 'CTC', 'CTC', 'CTG', 'CTC', 'CTG', 'CTC', 'CTG', 'CTG', 'CTG', 'CTC', 'CTG', 'CTG', 'CTC', 'CTC', 'CTT', 'CTT', 'CTA', 'CTG'], 'cDNA_position_two': [335, 131, 344, 422, 335, 200, 314, 806, 617, 806, 230, 230, 416, 131, 230, 305, 206, 206, 320, 314, 230, 230, 335, 26, 338, 281, 281, 134, 347, 425, 338, 203, 317, 809, 620, 281, 809, 233, 233, 419, 134, 233, 308, 209, 209, 323, 317, 233, 233, 284, 284, 338, 29, 341, 284, 284, 137, 350, 428, 341, 206, 320, 173, 173, 812, 623, 284, 812, 23, 236, 236, 134, 422, 137, 236, 311, 212, 212, 173, 326, 320, 236, 236, 287, 287, 341, 32], 'gencode_transcription_id': ['ENST00000332710.4', 'ENST00000366871.3', 'ENST00000369429.3', 'ENST00000369663.5', 'ENST00000359500.3', 'ENST00000335385.3', 'ENST00000349155.2', 'ENST00000449599.1', 'ENST00000389554.3', 'ENST00000295743.4', 'ENST00000219905.7', 'ENST00000570161.1', 'ENST00000177694.1', 'ENST00000296946.2', 'ENST00000389936.4', 'ENST00000408931.3', 'ENST00000393853.4', 'ENST00000240335.1', 'ENST00000240328.3', 'ENST00000257566.3', 'ENST00000566586.1', 'ENST00000545763.1', 'ENST00000329705.7', 'ENST00000207157.3', 'ENST00000332710.4', 'ENST00000395224.2', 'ENST00000279386.2', 'ENST00000366871.3', 'ENST00000369429.3', 'ENST00000369663.5', 'ENST00000359500.3', 'ENST00000335385.3', 'ENST00000349155.2', 'ENST00000449599.1', 'ENST00000389554.3', 'ENST00000553607.1', 'ENST00000295743.4', 'ENST00000219905.7', 'ENST00000570161.1', 'ENST00000177694.1', 'ENST00000296946.2', 'ENST00000389936.4', 'ENST00000408931.3', 'ENST00000393853.4', 'ENST00000240335.1', 'ENST00000240328.3', 'ENST00000257566.3', 'ENST00000566586.1', 'ENST00000545763.1', 'ENST00000373296.3', 'ENST00000373294.5', 'ENST00000329705.7', 'ENST00000207157.3', 'ENST00000332710.4', 'ENST00000395224.2', 'ENST00000279386.2', 'ENST00000366871.3', 'ENST00000369429.3', 'ENST00000369663.5', 'ENST00000359500.3', 'ENST00000335385.3', 'ENST00000349155.2', 'ENST00000405440.2', 'ENST00000310346.4', 'ENST00000449599.1', 'ENST00000389554.3', 'ENST00000553607.1', 'ENST00000295743.4', 'ENST00000349716.5', 'ENST00000219905.7', 'ENST00000570161.1', 'ENST00000367821.3', 'ENST00000177694.1', 'ENST00000296946.2', 'ENST00000389936.4', 'ENST00000408931.3', 'ENST00000393853.4', 'ENST00000240335.1', 'ENST00000526441.1', 'ENST00000240328.3', 'ENST00000257566.3', 'ENST00000566586.1', 'ENST00000545763.1', 'ENST00000373296.3', 'ENST00000373294.5', 'ENST00000329705.7', 'ENST00000207157.3'], 'cDNA_position_three': [336, 132, 345, 423, 336, 201, 315, 807, 618, 807, 231, 231, 417, 132, 231, 306, 207, 207, 321, 315, 231, 231, 336, 27, 339, 282, 282, 135, 348, 426, 339, 204, 318, 810, 621, 282, 810, 234, 234, 420, 135, 234, 309, 210, 210, 324, 318, 234, 234, 285, 285, 339, 30, 342, 285, 285, 138, 351, 429, 342, 207, 321, 174, 174, 813, 624, 285, 813, 24, 237, 237, 135, 423, 138, 237, 312, 213, 213, 174, 327, 321, 237, 237, 288, 288, 342, 33], 'chr': ['chr22', 'chr6', 'chr1', 'chr6', 'chr22', 'chr11', 'chr12', 'chr3', 'chr2', 'chr3', 'chr15', 'chr15', 'chr17', 'chr6', 'chr15', 'chr7', 'chr17', 'chr17', 'chr17', 'chr12', 'chr15', 'chr15', 'chr22', 'chr1', 'chr22', 'chr16', 'chr16', 'chr6', 'chr1', 'chr6', 'chr22', 'chr11', 'chr12', 'chr3', 'chr2', 'chr16', 'chr3', 'chr15', 'chr15', 'chr17', 'chr6', 'chr15', 'chr7', 'chr17', 'chr17', 'chr17', 'chr12', 'chr15', 'chr15', 'chrX', 'chrX', 'chr22', 'chr1', 'chr22', 'chr16', 'chr16', 'chr6', 'chr1', 'chr6', 'chr22', 'chr11', 'chr12', 'chr12', 'chr12', 'chr3', 'chr2', 'chr16', 'chr3', 'chr12', 'chr15', 'chr15', 'chr1', 'chr17', 'chr6', 'chr15', 'chr7', 'chr17', 'chr17', 'chr12', 'chr17', 'chr12', 'chr15', 'chr15', 'chrX', 'chrX', 'chr22', 'chr1']}
-        a = {'Unnamed: 0': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57], 'chromosome_position_base_pair_one': [59534916, 59534916, 59534916, 59534916, 85472338, 45811235, 115120693, 115120693, 119474318, 119474318, 119474318, 119474318, 119474318, 119474318, 162273537, 162273537, 59477859, 41961324, 41961324, 41961324, 41961324, 41961324, 45811238, 45811238, 115120690, 115120690, 27762978, 27762978, 30102152, 30102152, 30102152, 19748730, 19748730, 19748730, 59534919, 59534919, 59534919, 59534919, 59534919, 59534919, 67402537, 115120687, 115120687, 41961327, 41961327, 41961327, 41961327, 41961327, 27762975, 27762975, 114839701, 114839701, 114839701, 114839701, 119474312, 119474312, 85472332, 162273543], 'chromosome_position_base_pair_three': [59534918, 59534918, 59534918, 59534918, 85472336, 45811237, 115120691, 115120691, 119474316, 119474316, 119474316, 119474316, 119474316, 119474316, 162273539, 162273539, 59477861, 41961326, 41961326, 41961326, 41961326, 41961326, 45811240, 45811240, 115120688, 115120688, 27762976, 27762976, 30102150, 30102150, 30102150, 19748732, 19748732, 19748732, 59534921, 59534921, 59534921, 59534921, 59534921, 59534921, 67402535, 115120685, 115120685, 41961329, 41961329, 41961329, 41961329, 41961329, 27762973, 27762973, 114839699, 114839699, 114839699, 114839699, 119474310, 119474310, 85472330, 162273545], 'alt_nucleotide': ['A', 'A', 'C', 'C', 'A', 'T', 'T', 'T', 'A', 'A', 'C', 'C', 'T', 'T', 'C', 'C', 'C', 'T', 'T', 'T', 'T', 'T', 'A', 'C', 'T', 'T', 'G', 'G', 'A', 'A', 'A', 'G', 'G', 'G', 'A', 'A', 'C', 'C', 'A', 'A', 'A', 'T', 'T', 'T', 'T', 'T', 'T', 'T', 'C', 'C', 'C', 'C', 'C', 'C', 'A', 'A', 'T', 'A'], 'cDNA_position_two': [206, 206, 206, 206, 422, 416, 314, 314, 344, 26, 344, 26, 344, 26, 617, 617, 323, 233, 233, 233, 233, 233, 419, 419, 317, 317, 809, 809, 281, 281, 281, 338, 338, 338, 209, 209, 209, 209, 209, 209, 206, 320, 320, 236, 236, 236, 236, 236, 812, 812, 173, 173, 23, 173, 350, 32, 428, 623], 'allele_count': [2.0, 2.0, 1.0, 1.0, 1.0, 3.0, 1.0, 1.0, 2.0, 2.0, 5.0, 5.0, 1.0, 1.0, 1.0, 1.0, 10.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 3.0, 3.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 4.0, 4.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 1.0], 'base_pair_representation': ['GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'GTC', 'GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'GTG', 'ACG', 'ACC', 'ACC', 'ACC', 'ACC', 'ACC', 'GCG', 'GCG', 'CAC', 'CAC', 'TAC', 'TAC', 'AGC', 'AGC', 'AGC', 'CAG', 'CAG', 'CAG', 'GGG', 'GGG', 'GGG', 'GGG', 'GGG', 'GGG', 'CTG', 'CTG', 'CTG', 'CTC', 'CTC', 'CTC', 'CTC', 'CTC', 'CTG', 'CTG', 'CTC', 'CTC', 'CTC', 'CTC', 'CTG', 'CTG', 'CTG', 'CTG'], 'gencode_transcription_id': ['ENST00000393853.4', 'ENST00000240335.1', 'ENST00000393853.4', 'ENST00000240335.1', 'ENST00000369663.5', 'ENST00000177694.1', 'ENST00000349155.2', 'ENST00000257566.3', 'ENST00000369429.3', 'ENST00000207157.3', 'ENST00000369429.3', 'ENST00000207157.3', 'ENST00000369429.3', 'ENST00000207157.3', 'ENST00000389554.3', 'ENST00000389554.3', 'ENST00000240328.3', 'ENST00000219905.7', 'ENST00000570161.1', 'ENST00000389936.4', 'ENST00000566586.1', 'ENST00000545763.1', 'ENST00000177694.1', 'ENST00000177694.1', 'ENST00000349155.2', 'ENST00000257566.3', 'ENST00000449599.1', 'ENST00000295743.4', 'ENST00000395224.2', 'ENST00000279386.2', 'ENST00000553607.1', 'ENST00000332710.4', 'ENST00000359500.3', 'ENST00000329705.7', 'ENST00000393853.4', 'ENST00000240335.1', 'ENST00000393853.4', 'ENST00000240335.1', 'ENST00000393853.4', 'ENST00000240335.1', 'ENST00000335385.3', 'ENST00000349155.2', 'ENST00000257566.3', 'ENST00000219905.7', 'ENST00000570161.1', 'ENST00000389936.4', 'ENST00000566586.1', 'ENST00000545763.1', 'ENST00000449599.1', 'ENST00000295743.4', 'ENST00000405440.2', 'ENST00000310346.4', 'ENST00000349716.5', 'ENST00000526441.1', 'ENST00000369429.3', 'ENST00000207157.3', 'ENST00000369663.5', 'ENST00000389554.3'], 'chr': ['chr17', 'chr17', 'chr17', 'chr17', 'chr6', 'chr17', 'chr12', 'chr12', 'chr1', 'chr1', 'chr1', 'chr1', 'chr1', 'chr1', 'chr2', 'chr2', 'chr17', 'chr15', 'chr15', 'chr15', 'chr15', 'chr15', 'chr17', 'chr17', 'chr12', 'chr12', 'chr3', 'chr3', 'chr16', 'chr16', 'chr16', 'chr22', 'chr22', 'chr22', 'chr17', 'chr17', 'chr17', 'chr17', 'chr17', 'chr17', 'chr11', 'chr12', 'chr12', 'chr15', 'chr15', 'chr15', 'chr15', 'chr15', 'chr3', 'chr3', 'chr12', 'chr12', 'chr12', 'chr12', 'chr1', 'chr1', 'chr6', 'chr2'], 'uniprot_position': [68, 68, 68, 68, 140, 138, 104, 104, 114, 8, 114, 8, 114, 8, 205, 205, 107, 77, 77, 77, 77, 77, 139, 139, 105, 105, 269, 269, 93, 93, 93, 112, 112, 112, 69, 69, 69, 69, 69, 69, 68, 106, 106, 78, 78, 78, 78, 78, 270, 270, 57, 57, 7, 57, 116, 10, 142, 207], 'allele_number': [246236.0, 246236.0, 246236.0, 246236.0, 242540.0, 243958.0, 246108.0, 246108.0, 245534.0, 245534.0, 245524.0, 245524.0, 245526.0, 245526.0, 244736.0, 244646.0, 220112.0, 246204.0, 246204.0, 246204.0, 246204.0, 246204.0, 244252.0, 244252.0, 246104.0, 246104.0, 242628.0, 242628.0, 236534.0, 236534.0, 236534.0, 218448.0, 218448.0, 218448.0, 246240.0, 246240.0, 246240.0, 246240.0, 246240.0, 246240.0, 246010.0, 246098.0, 246098.0, 246200.0, 246200.0, 246200.0, 246200.0, 246200.0, 242972.0, 242972.0, 246264.0, 246264.0, 246264.0, 246264.0, 245558.0, 245558.0, 242908.0, 244082.0], 'cDNA_position_one': [205, 205, 205, 205, 421, 415, 313, 313, 343, 25, 343, 25, 343, 25, 616, 616, 322, 232, 232, 232, 232, 232, 418, 418, 316, 316, 808, 808, 280, 280, 280, 337, 337, 337, 208, 208, 208, 208, 208, 208, 205, 319, 319, 235, 235, 235, 235, 235, 811, 811, 172, 172, 22, 172, 349, 31, 427, 622], 'variant_source': ['gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD', 'gnomAD'], 'clinvar_ID': [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan, np.nan], 'alt_amino_acid_residue': ['V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'A', 'A', 'L', 'L', 'L', 'V', 'T', 'T', 'T', 'T', 'T', 'T', 'A', 'A', 'Y', 'Y', 'C', 'C', 'N', 'N', 'N', 'E', 'E', 'E', 'E', 'E', 'A', 'A', 'R', 'R', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'P', 'P', 'P', 'P', 'L', 'L', 'L', 'L'], 'variant_type': ['synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'missense', 'missense', 'missense', 'missense', 'missense', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'missense', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'synonymous', 'missense', 'missense', 'missense', 'missense', 'synonymous', 'synonymous', 'synonymous', 'synonymous'], 'chromosome_position_base_pair_two': [59534917, 59534917, 59534917, 59534917, 85472337, 45811236, 115120692, 115120692, 119474317, 119474317, 119474317, 119474317, 119474317, 119474317, 162273538, 162273538, 59477860, 41961325, 41961325, 41961325, 41961325, 41961325, 45811239, 45811239, 115120689, 115120689, 27762977, 27762977, 30102151, 30102151, 30102151, 19748731, 19748731, 19748731, 59534920, 59534920, 59534920, 59534920, 59534920, 59534920, 67402536, 115120686, 115120686, 41961328, 41961328, 41961328, 41961328, 41961328, 27762974, 27762974, 114839700, 114839700, 114839700, 114839700, 119474311, 119474311, 85472331, 162273544], 'cDNA_position_three': [207, 207, 207, 207, 423, 417, 315, 315, 345, 27, 345, 27, 345, 27, 618, 618, 324, 234, 234, 234, 234, 234, 420, 420, 318, 318, 810, 810, 282, 282, 282, 339, 339, 339, 210, 210, 210, 210, 210, 210, 207, 321, 321, 237, 237, 237, 237, 237, 813, 813, 174, 174, 24, 174, 351, 33, 429, 624], 'strand': ['+', '+', '+', '+', '-', '+', '-', '-', '-', '-', '-', '-', '-', '-', '+', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-', '-', '-', '-', '-', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-', '+', '+', '+', '+', '+', '-', '-', '-', '-', '-', '-', '-', '-', '-', '+'], 'unique_snv_str_representation': ['gnomAD:chr17:[(59534916, 59534918)]::(Strand.plus);GTG>GTA;V>V', 'gnomAD:chr17:[(59534916, 59534918)]::(Strand.plus);GTG>GTA;V>V', 'gnomAD:chr17:[(59534916, 59534918)]::(Strand.plus);GTG>GTC;V>V', 'gnomAD:chr17:[(59534916, 59534918)]::(Strand.plus);GTG>GTC;V>V', 'gnomAD:chr6:[(85472336, 85472338)]::(Strand.minus);GTG>GTA;V>V', 'gnomAD:chr17:[(45811235, 45811237)]::(Strand.plus);GTC>GTT;V>V', 'gnomAD:chr12:[(115120691, 115120693)]::(Strand.minus);GTG>GTT;V>V', 'gnomAD:chr12:[(115120691, 115120693)]::(Strand.minus);GTG>GTT;V>V', 'gnomAD:chr1:[(119474316, 119474318)]::(Strand.minus);GTG>GTA;V>V', 'gnomAD:chr1:[(119474316, 119474318)]::(Strand.minus);GTG>GTA;V>V', 'gnomAD:chr1:[(119474316, 119474318)]::(Strand.minus);GTG>GCG;V>A', 'gnomAD:chr1:[(119474316, 119474318)]::(Strand.minus);GTG>GCG;V>A', 'gnomAD:chr1:[(119474316, 119474318)]::(Strand.minus);GTG>TTG;V>L', 'gnomAD:chr1:[(119474316, 119474318)]::(Strand.minus);GTG>TTG;V>L', 'gnomAD:chr2:[(162273537, 162273539)]::(Strand.plus);GTG>CTG;V>L', 'gnomAD:chr2:[(162273537, 162273539)]::(Strand.plus);GTG>GTC;V>V', 'gnomAD:chr17:[(59477859, 59477861)]::(Strand.plus);ACG>ACC;T>T', 'gnomAD:chr15:[(41961324, 41961326)]::(Strand.plus);ACC>ACT;T>T', 'gnomAD:chr15:[(41961324, 41961326)]::(Strand.plus);ACC>ACT;T>T', 'gnomAD:chr15:[(41961324, 41961326)]::(Strand.plus);ACC>ACT;T>T', 'gnomAD:chr15:[(41961324, 41961326)]::(Strand.plus);ACC>ACT;T>T', 'gnomAD:chr15:[(41961324, 41961326)]::(Strand.plus);ACC>ACT;T>T', 'gnomAD:chr17:[(45811238, 45811240)]::(Strand.plus);GCG>GCA;A>A', 'gnomAD:chr17:[(45811238, 45811240)]::(Strand.plus);GCG>GCC;A>A', 'gnomAD:chr12:[(115120688, 115120690)]::(Strand.minus);CAC>TAC;H>Y', 'gnomAD:chr12:[(115120688, 115120690)]::(Strand.minus);CAC>TAC;H>Y', 'gnomAD:chr3:[(27762976, 27762978)]::(Strand.minus);TAC>TGC;Y>C', 'gnomAD:chr3:[(27762976, 27762978)]::(Strand.minus);TAC>TGC;Y>C', 'gnomAD:chr16:[(30102150, 30102152)]::(Strand.minus);AGC>AAC;S>N', 'gnomAD:chr16:[(30102150, 30102152)]::(Strand.minus);AGC>AAC;S>N', 'gnomAD:chr16:[(30102150, 30102152)]::(Strand.minus);AGC>AAC;S>N', 'gnomAD:chr22:[(19748730, 19748732)]::(Strand.plus);CAG>GAG;Q>E', 'gnomAD:chr22:[(19748730, 19748732)]::(Strand.plus);CAG>GAG;Q>E', 'gnomAD:chr22:[(19748730, 19748732)]::(Strand.plus);CAG>GAG;Q>E', 'gnomAD:chr17:[(59534919, 59534921)]::(Strand.plus);GGG>GAG;G>E', 'gnomAD:chr17:[(59534919, 59534921)]::(Strand.plus);GGG>GAG;G>E', 'gnomAD:chr17:[(59534919, 59534921)]::(Strand.plus);GGG>GCG;G>A', 'gnomAD:chr17:[(59534919, 59534921)]::(Strand.plus);GGG>GCG;G>A', 'gnomAD:chr17:[(59534919, 59534921)]::(Strand.plus);GGG>AGG;G>R', 'gnomAD:chr17:[(59534919, 59534921)]::(Strand.plus);GGG>AGG;G>R', 'gnomAD:chr11:[(67402535, 67402537)]::(Strand.minus);CTG>CTA;L>L', 'gnomAD:chr12:[(115120685, 115120687)]::(Strand.minus);CTG>TTG;L>L', 'gnomAD:chr12:[(115120685, 115120687)]::(Strand.minus);CTG>TTG;L>L', 'gnomAD:chr15:[(41961327, 41961329)]::(Strand.plus);CTC>CTT;L>L', 'gnomAD:chr15:[(41961327, 41961329)]::(Strand.plus);CTC>CTT;L>L', 'gnomAD:chr15:[(41961327, 41961329)]::(Strand.plus);CTC>CTT;L>L', 'gnomAD:chr15:[(41961327, 41961329)]::(Strand.plus);CTC>CTT;L>L', 'gnomAD:chr15:[(41961327, 41961329)]::(Strand.plus);CTC>CTT;L>L', 'gnomAD:chr3:[(27762973, 27762975)]::(Strand.minus);CTG>CTC;L>L', 'gnomAD:chr3:[(27762973, 27762975)]::(Strand.minus);CTG>CTC;L>L', 'gnomAD:chr12:[(114839699, 114839701)]::(Strand.minus);CTC>CCC;L>P', 'gnomAD:chr12:[(114839699, 114839701)]::(Strand.minus);CTC>CCC;L>P', 'gnomAD:chr12:[(114839699, 114839701)]::(Strand.minus);CTC>CCC;L>P', 'gnomAD:chr12:[(114839699, 114839701)]::(Strand.minus);CTC>CCC;L>P', 'gnomAD:chr1:[(119474310, 119474312)]::(Strand.minus);CTG>CTA;L>L', 'gnomAD:chr1:[(119474310, 119474312)]::(Strand.minus);CTG>CTA;L>L', 'gnomAD:chr6:[(85472330, 85472332)]::(Strand.minus);CTG>CTT;L>L', 'gnomAD:chr2:[(162273543, 162273545)]::(Strand.plus);CTG>CTA;L>L'], 'consensus_pos': [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 'var_codon_position': [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2], 'ref_nucleotide': ['G', 'G', 'G', 'G', 'G', 'C', 'G', 'G', 'G', 'G', 'T', 'T', 'G', 'G', 'G', 'G', 'G', 'C', 'C', 'C', 'C', 'C', 'G', 'G', 'C', 'C', 'A', 'A', 'G', 'G', 'G', 'C', 'C', 'C', 'G', 'G', 'G', 'G', 'G', 'G', 'G', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'G', 'G', 'T', 'T', 'T', 'T', 'G', 'G', 'G', 'G'], 'amino_acid_residue': ['V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'V', 'T', 'T', 'T', 'T', 'T', 'T', 'A', 'A', 'H', 'H', 'Y', 'Y', 'S', 'S', 'S', 'Q', 'Q', 'Q', 'G', 'G', 'G', 'G', 'G', 'G', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L', 'L'], 'uniprot_ac': ['P57082-2', 'P57082', 'P57082-2', 'P57082', 'O95935', 'Q9UL17', 'O15119-2', 'O15119', 'Q96SF7', 'Q96SF7-2', 'Q96SF7', 'Q96SF7-2', 'Q96SF7', 'Q96SF7-2', 'Q16650', 'Q16650', 'Q13207', 'Q8IWI9-4', 'Q8IWI9-4', 'Q8IWI9', 'Q8IWI9-3', 'Q8IWI9-3', 'Q9UL17', 'Q9UL17', 'O15119-2', 'O15119', 'O95936-4', 'O95936', 'O95947', 'O95947', 'O95947-2', 'O43435-3', 'O43435-2', 'O43435', 'P57082-2', 'P57082', 'P57082-2', 'P57082', 'P57082-2', 'P57082', 'O75333', 'O15119-2', 'O15119', 'Q8IWI9-4', 'Q8IWI9-4', 'Q8IWI9', 'Q8IWI9-3', 'Q8IWI9-3', 'O95936-4', 'O95936', 'Q99593', 'Q99593', 'Q99593-3', 'Q99593-2', 'Q96SF7', 'Q96SF7-2', 'O95935', 'Q16650']}
-        _consensus_length = 3
-        _n_instances = 3
-        _domain_id = 'PF00907'
+        def codon_row(consensus_pos, idx, uniprot_ac, uniprot_position, transcript_id):
+            base_offset = consensus_pos * 100000 + idx * 10
+            return {
+                "gencode_transcription_id": transcript_id,
+                "uniprot_ac": uniprot_ac,
+                "strand": "+",
+                "base_pair_representation": "ACC",
+                "amino_acid_residue": "T",
+                "uniprot_position": uniprot_position,
+                "chr": "chr15",
+                "exon_number_base_pair_one": 1,
+                "exon_number_base_pair_two": 1,
+                "exon_number_base_pair_three": 1,
+                "chromosome_position_base_pair_one": base_offset + 1,
+                "chromosome_position_base_pair_two": base_offset + 2,
+                "chromosome_position_base_pair_three": base_offset + 3,
+                "cDNA_position_one": base_offset + 4,
+                "cDNA_position_two": base_offset + 5,
+                "cDNA_position_three": base_offset + 6,
+                "consensus_pos": consensus_pos,
+                "domain_id": "PF00907",
+            }
 
-        return cls(domain_id=_domain_id, consensus_length=_consensus_length, n_instances=_n_instances, meta_domain_mapping=pd.DataFrame(r), meta_domain_annotation=pd.DataFrame(a))
+        rows = []
+
+        rows.append(codon_row(1, 0, "O43435", 111, "ENST00000329705.7"))
+        rows.append(codon_row(2, 0, "O43435", 112, "ENST00000329705.7"))
+        rows.append(codon_row(3, 0, "O43435", 113, "ENST00000329705.7"))
+
+        rows.append(codon_row(1, 1, "Q8IWI9-4", 76, "ENST00000219905.7"))
+        rows.append(codon_row(2, 1, "Q8IWI9-4", 77, "ENST00000219905.7"))
+        rows.append(codon_row(3, 1, "Q8IWI9-4", 78, "ENST00000219905.7"))
+
+        for idx in range(2, 13):
+            rows.append(codon_row(1, idx, f"P00001-{idx}", 100 + idx, f"ENST00000{idx:05d}.1"))
+
+        for idx in range(2, 15):
+            rows.append(codon_row(2, idx, f"P00002-{idx}", 200 + idx, f"ENST00001{idx:05d}.1"))
+
+        for idx in range(2, 17):
+            rows.append(codon_row(3, idx, f"P00003-{idx}", 300 + idx, f"ENST00002{idx:05d}.1"))
+
+        meta_domain_mapping = pd.DataFrame(rows)
+        meta_domain_annotation = pd.DataFrame()
+
+        return cls(
+            domain_id="PF00907",
+            genome_build=GenomeBuild.GRCh37,
+            consensus_length=3,
+            consensus_positions={1, 2, 3},
+            n_instances=3,
+            meta_domain_mapping=meta_domain_mapping,
+            meta_domain_annotation=meta_domain_annotation,
+        )
+
 
 class Test_meta_domain(unittest.TestCase):
-    
     def test_get_alignment_depth_for_consensus_position(self):
-        # mock the metadomain
         mock_metadom = mock_MetaDomain.mock_PF00907_metadomain_first_three_consensus_positions()
-        
+
         with self.assertRaises(ConsensusPositionOutOfBounds):
-            mock_metadom.get_alignment_depth_for_consensus_position(3)
-        
+            mock_metadom.get_alignment_depth_for_consensus_position(4)
+
         with self.assertRaises(ConsensusPositionOutOfBounds):
-            mock_metadom.get_alignment_depth_for_consensus_position(-5)
-        
-        self.assertTrue(mock_metadom.get_alignment_depth_for_consensus_position(0) == 13)
-        self.assertTrue(mock_metadom.get_alignment_depth_for_consensus_position(1) == 15)
-        self.assertTrue(mock_metadom.get_alignment_depth_for_consensus_position(2) == 17)
-            
+            mock_metadom.get_alignment_depth_for_consensus_position(0)
+
+        self.assertEqual(mock_metadom.get_alignment_depth_for_consensus_position(1), 13)
+        self.assertEqual(mock_metadom.get_alignment_depth_for_consensus_position(2), 15)
+        self.assertEqual(mock_metadom.get_alignment_depth_for_consensus_position(3), 17)
+
     def test_get_max_alignment_depth(self):
-        # mock the metadomain
         mock_metadom = mock_MetaDomain.mock_PF00907_metadomain_first_three_consensus_positions()
-        
-        self.assertTrue(mock_metadom.get_max_alignment_depth() == 17)
-        
+        self.assertEqual(mock_metadom.get_max_alignment_depth(), 17)
+
     def test_invalid_domain_id(self):
         with self.assertRaises(UnsupportedMetaDomainIdentifier):
-            MetaDomain.initializeFromDomainID('PFTEST')
-            
+            MetaDomain.initializeFromDomainID("TEST", GenomeBuild.GRCh37)
+
     def test_get_codons_aligned_to_consensus_position(self):
-        # mock the metadomain
         mock_metadom = mock_MetaDomain.mock_PF00907_metadomain_first_three_consensus_positions()
-        
-        self.assertTrue(len(mock_metadom.get_codons_aligned_to_consensus_position(0)) == 13)
-        self.assertTrue(len(mock_metadom.get_codons_aligned_to_consensus_position(1)) == 15)
-        self.assertTrue(len(mock_metadom.get_codons_aligned_to_consensus_position(2)) == 17)
-        
+
+        self.assertEqual(len(mock_metadom.get_codons_aligned_to_consensus_position(1)), 13)
+        self.assertEqual(len(mock_metadom.get_codons_aligned_to_consensus_position(2)), 15)
+        self.assertEqual(len(mock_metadom.get_codons_aligned_to_consensus_position(3)), 17)
+
         with self.assertRaises(ConsensusPositionOutOfBounds):
-            len(mock_metadom.get_codons_aligned_to_consensus_position(3))
-        
+            mock_metadom.get_codons_aligned_to_consensus_position(4)
+
         with self.assertRaises(ConsensusPositionOutOfBounds):
-            len(mock_metadom.get_codons_aligned_to_consensus_position(-4))
-        
+            mock_metadom.get_codons_aligned_to_consensus_position(0)
+
     def test_get_consensus_position_for_uniprot_position(self):
-        # mock the metadomain
         mock_metadom = mock_MetaDomain.mock_PF00907_metadomain_first_three_consensus_positions()
-        
-        # check for a single occurrence of a uniprot
-        self.assertTrue(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='O43435', uniprot_position=111) == [0])
-        self.assertTrue(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='O43435', uniprot_position=112) == [1])
-        self.assertTrue(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='O43435', uniprot_position=113) == [2])
-        
-        # check of mutliple occurrences of the same uniprot
-        self.assertTrue(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='Q8IWI9-4', uniprot_position=76) == [0])
-        self.assertTrue(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='Q8IWI9-4', uniprot_position=77) == [1])
-        self.assertTrue(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='Q8IWI9-4', uniprot_position=78) == [2])
-        
-        # check for non-existing values
-        self.assertTrue(len(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='TESTFAIL', uniprot_position=9999)) == 0)
-        
-        # add a multiple of consensus pos to a position test again
-        malformed_row = {'amino_acid_residue': 'T', 'domain_id': 'PF00907', 'uniprot_position': 77, 'cDNA_position_two': 233, 'cDNA_position_three': 234, 'consensus_pos': 0, 'strand': '+', 'chromosome_position_base_pair_one': 41961324, 'chromosome_position_base_pair_three': 41961326, 'chr': 'chr15', 'chromosome_position_base_pair_two': 41961325, 'base_pair_representation': 'ACC', 'uniprot_ac': 'Q8IWI9-4', 'cDNA_position_one': 232, 'gencode_transcription_id': 'ENST00000219905.7'}
-        mock_metadom.meta_domain_mapping = mock_metadom.meta_domain_mapping.append(malformed_row, ignore_index=True)
-        
-        # check if
-        self.assertTrue(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac='Q8IWI9-4', uniprot_position=77) == [1, 0])
-        
+
+        self.assertEqual(
+            mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="O43435", uniprot_position=111),
+            [1],
+        )
+        self.assertEqual(
+            mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="O43435", uniprot_position=112),
+            [2],
+        )
+        self.assertEqual(
+            mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="O43435", uniprot_position=113),
+            [3],
+        )
+
+        self.assertEqual(
+            mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="Q8IWI9-4", uniprot_position=76),
+            [1],
+        )
+        self.assertEqual(
+            mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="Q8IWI9-4", uniprot_position=77),
+            [2],
+        )
+        self.assertEqual(
+            mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="Q8IWI9-4", uniprot_position=78),
+            [3],
+        )
+
+        self.assertEqual(
+            len(mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="TESTFAIL", uniprot_position=9999)),
+            0,
+        )
+
+        malformed_row = {
+            "gencode_transcription_id": "ENST00000219905.7",
+            "uniprot_ac": "Q8IWI9-4",
+            "strand": "+",
+            "base_pair_representation": "ACC",
+            "amino_acid_residue": "T",
+            "uniprot_position": 77,
+            "chr": "chr15",
+            "exon_number_base_pair_one": 1,
+            "exon_number_base_pair_two": 1,
+            "exon_number_base_pair_three": 1,
+            "chromosome_position_base_pair_one": 41961324,
+            "chromosome_position_base_pair_two": 41961325,
+            "chromosome_position_base_pair_three": 41961326,
+            "cDNA_position_one": 232,
+            "cDNA_position_two": 233,
+            "cDNA_position_three": 234,
+            "consensus_pos": 1,
+            "domain_id": "PF00907",
+        }
+        mock_metadom.meta_domain_mapping = pd.concat(
+            [mock_metadom.meta_domain_mapping, pd.DataFrame([malformed_row])],
+            ignore_index=True,
+        )
+
+        self.assertEqual(
+            mock_metadom.get_consensus_positions_for_uniprot_position(uniprot_ac="Q8IWI9-4", uniprot_position=77),
+            [2, 1],
+        )
+
+
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
