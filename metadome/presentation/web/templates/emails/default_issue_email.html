@@ -20,6 +20,14 @@
                     <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Error Time:</strong></td>
                     <td style="padding: 8px; border-bottom: 1px solid #ddd;">{{ error_time }}</td>
                 </tr>
+                {% if previous_url %}
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Previous URL:</strong></td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+                        <a href="{{ previous_url }}" style="color: #3498db; word-break: break-all;">{{ previous_url }}</a>
+                    </td>
+                </tr>
+                {% endif %}
             </table>
         </div>
 

@@ -400,14 +400,21 @@ def privacy():
 def visualization_error(genome_build, transcript_id):
     stacktrace, error_timestamp = retrieve_error(transcript_id, genome_build)
     error = "error during visualization generation"
+    previous_url = request.referrer
 
     # Handle sending error notification email if the error is recent
     if error_timestamp:
-        send_error_notification(transcript_id, genome_build, stacktrace, error_timestamp)
+        send_error_notification(
+            transcript_id,
+            genome_build,
+            stacktrace,
+            error_timestamp,
+            previous_url=previous_url
+        )
 
     return render_template('error.html', msg=error, stack_trace=stacktrace)
 
-def send_error_notification(transcript_id, genome_build, error_content, error_timestamp):
+def send_error_notification(transcript_id, genome_build, error_content, error_timestamp, previous_url=None):
     """Send email notification for recent error"""
     if ISSUES_EMAIL is None or MAIL_SERVER is None:
         _log.error("Mail server not configured, cannot send error notification")
@@ -450,6 +457,7 @@ def send_error_notification(transcript_id, genome_build, error_content, error_ti
             genome_build=genome_build,
             error_time=error_time,
             error_content=error_content,
+            previous_url=previous_url,
             logo_url=logo_url
         )
 
