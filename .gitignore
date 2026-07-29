@@ -12,3 +12,4 @@ env_metadome/*
 **/__pycache__/
 .externalToolBuilders/*
 celerybeat-schedule
+.codegraph/
