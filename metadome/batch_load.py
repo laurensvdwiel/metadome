@@ -275,6 +275,8 @@ def batch_load_data(csv_filepath, sqlalchemy_session, csv_report=None, batch_siz
                 current_mapping = None
 
                 try:
+                    # TODO(batch-integrity): a single bad row currently rolls back the whole uncommitted batch (up to batch_size good rows) and leaves counters + caches stale.
+                    #  Fix: wrap this row body in `with sqlalchemy_session.begin_nested()` (per-row SAVEPOINT) so only the failing row unwinds; move the batch-commit block below out of the savepoint; then in each except handler: (a) restore CREATION_KEYS counters from a per-row snapshot, (b) _clear_caches(), (c) DROP the full rollback() call. See handlers at Exception Catches ~600/604/612.
                     gencode_tr_id = get_cleaned_str(row, 'gencode_transcription_id')
                     gencode_tr_version = get_cleaned_str(row, 'GENCODE_version')
                     genome_build = get_cleaned_str(row, 'genome_build')
@@ -579,7 +581,7 @@ def batch_load_data(csv_filepath, sqlalchemy_session, csv_report=None, batch_siz
                                 sqlalchemy_session.add(current_meta_domain_mapping)
                                 load_report['meta_domain_mappings_created'] += 1
 
-                    current_batch_count += 1
+                    current_batch_count += 1 # TODO(batch-integrity): this bookkeeping must sit AFTER the begin_nested() block, not inside it.
                     if current_batch_count >= batch_size:
                         logging.info(
                             "Processed %s rows. Committing batch of %s.",
@@ -597,19 +599,19 @@ def batch_load_data(csv_filepath, sqlalchemy_session, csv_report=None, batch_siz
                     load_report['rows_skipped'] += 1
                     load_report['value_error_rows'] += 1
                     logging.error(f"L{line_num}: Data validation error: {ve}. Row: {row}. Skipping.")
-                    sqlalchemy_session.rollback()
+                    sqlalchemy_session.rollback() # TODO(batch-integrity): remove this full rollback (savepoint handles it); instead restore counters_before + _clear_caches() so this row's counts and cache refs don't leak.
                 except IntegrityError as ie:
                     load_report['rows_skipped'] += 1
                     load_report['integrity_error_rows'] += 1
                     logging.error(f"L{line_num}: Database integrity error: {ie}. Row: {row}. Rolling back.")
-                    sqlalchemy_session.rollback()
+                    sqlalchemy_session.rollback() # TODO(batch-integrity): remove this full rollback (savepoint handles it); instead restore counters_before + _clear_caches() so this row's counts and cache refs don't leak.
                 except Exception as e:
                     load_report['rows_skipped'] += 1
                     load_report['unexpected_error_rows'] += 1
                     logging.error(f"L{line_num}: Unexpected row error: {type(e).__name__}: {e}")
                     logging.error("Row: %s", row)
                     logging.error("Traceback: %s", traceback.format_exc())
-                    sqlalchemy_session.rollback()
+                    sqlalchemy_session.rollback() # TODO(batch-integrity): remove this full rollback (savepoint handles it); instead restore counters_before + _clear_caches() so this row's counts and cache refs don't leak.
 
             if current_batch_count > 0:
                 logging.info(
