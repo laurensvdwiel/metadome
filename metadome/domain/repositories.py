@@ -959,12 +959,17 @@ class MappingRepository:
 
     @staticmethod
     def get_mappings_for_gene(_gene):
-        """Retrieves all mappings for a Gene object"""
+        """Retrieves all mappings for a Gene object, restricted to the gene's selected protein if present"""
         # Open as session
         _session = db._make_scoped_session(options={})
 
         try:
-            return [x for x in _session.query(Mapping).filter(Mapping.gene_id == _gene.id).all()]
+            query = _session.query(Mapping).filter(Mapping.gene_id == _gene.id)
+
+            if _gene.protein_id is not None:
+                query = query.filter(Mapping.protein_id == _gene.protein_id)
+
+            return [x for x in query.all()]
         except (AlchemyResourceClosedError, AlchemyOperationalError) as e:
             _cleanup_failed_session(_session)
             raise RecoverableError(str(e))
