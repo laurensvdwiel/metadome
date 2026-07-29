@@ -8,6 +8,17 @@ COMPOSE_FILE="docker-compose-populate-database.yml"
 DATA_DIR=""
 FILE_PATH=""
 
+function cleanup {
+    echo "Cleaning up environment..."
+    docker compose -f "$COMPOSE_FILE" down \
+      --remove-orphans \
+      -v \
+      --rmi local || true
+    echo "Cleanup complete."
+}
+
+trap cleanup EXIT
+
 # Display usage information
 function show_usage {
     echo "Usage: $0 [options]"
@@ -81,23 +92,12 @@ CONTAINER_CMD="python -m metadome.batch_load --csv $CONTAINER_FILE_PATH"
 echo "Running: $CONTAINER_CMD"
 echo "Starting application... This may take a while."
 
-# Run the command
+set +e
 docker compose -f "$COMPOSE_FILE" run --rm \
   -v "$DATA_DIR:/prebuild_data" \
   app $CONTAINER_CMD
-
-# Exit code of the previous command
 EXIT_CODE=$?
+set -e
 
-# Always clean up, regardless of success or failure
 echo "Application finished with exit code: $EXIT_CODE"
-echo "Cleaning up environment..."
-docker compose -f "$COMPOSE_FILE" down \
-  --remove-orphans \
-  -v \
-  --rmi local
-
-echo "Cleanup complete."
-
-# Return the original exit code from the application
 exit $EXIT_CODE
