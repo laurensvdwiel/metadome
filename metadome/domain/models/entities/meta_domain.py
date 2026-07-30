@@ -56,7 +56,9 @@ class MetaDomain(object):
             raise ConsensusPositionOutOfBounds("The provided consensus position ('{}') is below zero, this position foes not exist".format(consensus_position))
         if consensus_position > self.consensus_length:
             raise ConsensusPositionOutOfBounds("The provided consensus position ('{}') is above the maximum consensus length ('{}'), this position foes not exist".format(consensus_position, self.consensus_length))
-        
+        if 'consensus_pos' not in self.meta_domain_annotation.columns:
+            return snvs # A domain with no annotated SNVs is a legitimately empty DataFrame (no columns) — return nothing.
+
         # Retrieve all codons aligned to the consensus position
         aligned_to_position = self.meta_domain_annotation[self.meta_domain_annotation.consensus_pos == consensus_position].to_dict('records')
         
