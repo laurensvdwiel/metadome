@@ -2,6 +2,7 @@ import os
 import logging
 import json
 
+import tempfile
 from lockfile import LockFile
 
 from celery.result import AsyncResult
@@ -133,8 +134,13 @@ def store_visualization(transcript_id, genome_build, result):
     visualization_path = get_visualization_path(transcript_id, genome_build)
 
     with _get_lock_for(transcript_id, genome_build):
-        with open(visualization_path, 'w') as f:
+        dir_name = os.path.dirname(visualization_path)
+        with tempfile.NamedTemporaryFile('w', dir=dir_name, delete=False) as f:
             json.dump(result, f)
+            f.flush()
+            os.fsync(f.fileno())
+            tmp_path = f.name
+        os.replace(tmp_path, visualization_path)  # atomic swap
 
 
 def retrieve_visualization(transcript_id, genome_build):

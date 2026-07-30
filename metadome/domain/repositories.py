@@ -373,6 +373,33 @@ class GeneRepository:
             _session.remove()
 
     @staticmethod
+    def retrieve_all_transcript_ids_with_mappings_for_genome_build(genome_build):
+        """Retrieves all transcripts with mappings for a single genome build.
+
+        genome_build is the full build string as stored in the database (e.g. 'GRCh38').
+        """
+        # Open as session
+        _session = db._make_scoped_session(options={})
+
+        try:
+            return [
+                transcript
+                for transcript in _session.query(Gene.gencode_transcription_id)
+                .filter(Gene.protein_id != None,
+                        func.lower(Gene.genome_build) == genome_build.lower())
+                .all()
+            ]
+        except (AlchemyResourceClosedError, AlchemyOperationalError) as e:
+            _cleanup_failed_session(_session)
+            raise RecoverableError(str(e))
+        except:
+            _log.error(traceback.format_exc())
+            raise
+        finally:
+            # Close this session, thus all items are cleared and memory usage is kept at a minimum
+            _session.remove()
+
+    @staticmethod
     def retrieve_all_gene_names_from_db():
         """Retrieves all gene names present in the database"""
         cache_key = "GeneRepository:gene_names:distinct"
