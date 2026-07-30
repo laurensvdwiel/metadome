@@ -35,4 +35,5 @@ class MetaDomainMapping(db.Model):
     # Constraints
     __table_args__ = (
         db.UniqueConstraint('mapping_id', 'meta_domain_position_id', 'interpro_id', name='_unique_meta_domain_mapping_association'),
+        db.Index('idx_mdm_position_id', 'meta_domain_position_id'),
     )

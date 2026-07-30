@@ -31,6 +31,7 @@ class Mapping(db.Model):
 
     __table_args__ = (
         db.Index('idx_mappings_chr_pos', 'chromosome', 'chromosome_position'),
+        db.Index('idx_mappings_gene_id_protein_id', 'gene_id', 'protein_id'),
     )
     
     # Fields

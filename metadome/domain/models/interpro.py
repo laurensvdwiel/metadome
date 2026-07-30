@@ -40,7 +40,8 @@ class Interpro(db.Model):
     
     # Constraints
     __table_args__ = (db.UniqueConstraint('protein_id', 'ext_db_id', 'ext_db_version', 'uniprot_start', 'uniprot_stop', name='_unique_protein_region'),
-                     )
+                      db.Index('idx_interpro_ext_db_id', 'ext_db_id'),
+                      )
     
     def __init__(self, _interpro_id, _ext_db_id, _ext_db_version, _region_name, _start_pos, _end_pos):
         self.interpro_id = _interpro_id
