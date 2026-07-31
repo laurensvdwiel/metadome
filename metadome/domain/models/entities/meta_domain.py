@@ -193,8 +193,10 @@ class MetaDomain(object):
             meta_domain_annotation = pd.DataFrame(meta_domain_annotation)
             
             # save meta_domain_mapping to disk
-            meta_domain_annotation.to_csv(meta_domain_snv_annotation_file)
-            
+            _tmp = meta_domain_snv_annotation_file + '.tmp.' + str(os.getpid())
+            meta_domain_annotation.to_csv(_tmp)
+            os.replace(_tmp, meta_domain_snv_annotation_file)
+
             # set to variable
             self.meta_domain_annotation = meta_domain_annotation
             
@@ -234,8 +236,7 @@ class MetaDomain(object):
             meta_domain_mapping_file = meta_domain_dir+'/'+METADOMAIN_MAPPING_FILE_NAME
             
             # first check if the metadomain dir exist
-            if not os.path.isdir(meta_domain_dir):
-                os.makedirs(meta_domain_dir)
+            os.makedirs(meta_domain_dir, exist_ok=True)
             
             # Check if the mapping has previously been build already
             if os.path.exists(meta_domain_mapping_file) and os.path.exists(meta_domain_details_file) and not recreate:
@@ -279,11 +280,15 @@ class MetaDomain(object):
                 
                 ## Save the results to disk
                 # save meta_domain_details
-                with open(meta_domain_details_file, 'w') as f:
+                _tmp = meta_domain_details_file + '.tmp.' + str(os.getpid())
+                with open(_tmp, 'w') as f:
                     json.dump(meta_domain_details, f)
-                
+                os.replace(_tmp, meta_domain_details_file)
+
                 # save meta_domain_mapping to disk
-                meta_domain_mapping.to_csv(meta_domain_mapping_file, index=False)
+                _tmp = meta_domain_mapping_file + '.tmp.' + str(os.getpid())
+                meta_domain_mapping.to_csv(_tmp, index=False)
+                os.replace(_tmp, meta_domain_mapping_file)
         else:
             raise UnsupportedMetaDomainIdentifier("Expected a Pfam domain, instead the identifier '"+str(domain_id)+"' was received")
         

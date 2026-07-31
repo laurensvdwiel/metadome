@@ -4,6 +4,7 @@ import os
 import resource
 import time
 import traceback
+import glob
 from datetime import datetime, timezone
 from multiprocessing import Pool
 
@@ -60,6 +61,19 @@ def _transcript_ids(genome_build):
         for t in GeneRepository.retrieve_all_transcript_ids_with_mappings_for_genome_build(genome_build)
     })
 
+
+def _sweep_stale_temp_files():
+    """Remove stray atomic-write temp files (*.tmp.<pid>) left by an interrupted prior run."""
+    pattern = os.path.join(app.config['METADOMAIN_DIR'], '*', '*', '*.tmp.*')
+    removed = 0
+    for stale in glob.glob(pattern):
+        try:
+            os.remove(stale)
+            removed += 1
+        except OSError:
+            pass
+    if removed:
+        _log.info("swept %d stale metadomain temp file(s)", removed)
 
 def _state(transcript_id, genome_build):
     """Read-only classification: ('built', mtime) | ('error', mtime) | ('missing', None)."""
@@ -213,6 +227,7 @@ def main():
     stale_seconds = args.stale_days * 86400 if args.stale_days is not None else None
 
     with app.app_context():
+        _sweep_stale_temp_files()
         genome_builds = args.genome_build or GeneRepository.retrieve_all_genome_builds_from_db()
         _log.info("genome builds: %s", genome_builds)
 

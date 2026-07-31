@@ -34,8 +34,7 @@ def get_visualization_error_path(transcript_id, genome_build):
 def _get_lock_for(transcript_id, genome_build):
     lock_dir_path = _get_visualization_dir_path(transcript_id, genome_build)
 
-    if not os.path.isdir(lock_dir_path):
-        os.makedirs(lock_dir_path)
+    os.makedirs(lock_dir_path, exist_ok=True)
 
     return LockFile(lock_dir_path)
 
