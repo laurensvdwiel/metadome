@@ -6,7 +6,7 @@ from metadome.domain.models.entities.single_nucleotide_variant import SingleNucl
 from metadome.domain.models.entities.codon import Codon
 from metadome.default_settings import METADOMAIN_DIR,\
     METADOMAIN_MAPPING_FILE_NAME, METADOMAIN_DETAILS_FILE_NAME,\
-    METADOMAIN_SNV_ANNOTATION_FILE_NAME
+    METADOMAIN_SNV_ANNOTATION_FILE_NAME, METADOMAIN_CACHE_MAXSIZE
 
 import pandas as pd
 import numpy as np
@@ -16,6 +16,12 @@ import os
 import logging
 
 _log = logging.getLogger(__name__)
+
+from collections import OrderedDict
+
+# Per-process LRU cache of built MetaDomain objects, keyed by (domain_id, genome_build.value).
+# MetaDomain is read-only after construction, so reuse across transcripts is safe.
+_METADOMAIN_CACHE = OrderedDict()
 
 class MetaDomainException(Exception):
     pass
@@ -228,6 +234,11 @@ class MetaDomain(object):
         if not (genome_build is GenomeBuild.GRCh37 or genome_build is GenomeBuild.GRCh38):
             raise MetaDomainException("Expected genome_build to be of type GenomeBuild, instead received '"+str(type(genome_build))+"'")
 
+        cache_key = (domain_id, genome_build.value)
+        if not recreate and cache_key in _METADOMAIN_CACHE:
+            _METADOMAIN_CACHE.move_to_end(cache_key)
+            return _METADOMAIN_CACHE[cache_key]
+
         # Double check this conserns a Pfam domain
         if domain_id.startswith('PF'):
             # check if a Meta Domain is already mapped
@@ -297,6 +308,12 @@ class MetaDomain(object):
         
         # Annotate this meta domain
         meta_domain.annotate_metadomain()
+
+        # Cache for reuse across transcripts in this process (LRU-bounded).
+        _METADOMAIN_CACHE[cache_key] = meta_domain
+        _METADOMAIN_CACHE.move_to_end(cache_key)
+        while len(_METADOMAIN_CACHE) > METADOMAIN_CACHE_MAXSIZE:
+            _METADOMAIN_CACHE.popitem(last=False)
         
         # return the object
         return meta_domain

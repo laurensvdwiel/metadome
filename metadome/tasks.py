@@ -10,6 +10,7 @@ from metadome.domain.services.annotation.annotation import annotateSNVs,\
     convertNucleotide
 from metadome.controllers.job import store_error, store_visualization
 from metadome.domain.error import RecoverableError
+from metadome.default_settings import CELERY_TASK_MAX_RETRIES
 import numpy as np
 
 from celery import current_app as celery_app
@@ -79,13 +80,13 @@ def get_celery_worker_status():
 
 @celery_app.task(bind=True,
                  autoretry_for=(RecoverableError,),
-                 retry_kwargs={'max_retries': 50})
+                 retry_kwargs={'max_retries': CELERY_TASK_MAX_RETRIES})
 def initialize_metadomain(self, domain_id):
     return MetaDomain.initializeFromDomainID(domain_id)
 
 @celery_app.task(bind=True,
                  autoretry_for=(RecoverableError,),
-                 retry_kwargs={'max_retries': 50})
+                 retry_kwargs={'max_retries': CELERY_TASK_MAX_RETRIES})
 def retrieve_prebuild_visualization(self, transcript_id):
     _log.info("Getting prebuild visualization for '{}'".format(transcript_id))
 
@@ -102,7 +103,7 @@ def retrieve_prebuild_visualization(self, transcript_id):
 
 @celery_app.task(bind=True,
                  autoretry_for=(RecoverableError,),
-                 retry_kwargs={'max_retries': 50})
+                 retry_kwargs={'max_retries': CELERY_TASK_MAX_RETRIES})
 def create_prebuild_visualization(self, transcript_id, genome_build):
     try:
         _log.info("Attempting to create visualization for '{}'".format(transcript_id))

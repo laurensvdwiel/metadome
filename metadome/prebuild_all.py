@@ -16,13 +16,11 @@ from metadome.controllers.job import (
     get_visualization_path, get_visualization_error_path,
 )
 from metadome.domain.repositories import GeneRepository
+from metadome.default_settings import METADOMAIN_DIR, PREBUILD_PRINT_LIST_EXAMPLES_CAP
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)  # SQLALCHEMY_ECHO=True is very noisy
 _log = logging.getLogger(__name__)
-
-_LIST_CAP = 25  # how many example ids to print per category
-
 
 def _fmt_ts(epoch):
     if epoch is None:
@@ -74,6 +72,10 @@ def _sweep_stale_temp_files():
             pass
     if removed:
         _log.info("swept %d stale metadomain temp file(s)", removed)
+
+def _count_metadomains():
+    """Count built metadomains on disk (completed alignments, across all builds)."""
+    return len(glob.glob(os.path.join(METADOMAIN_DIR, '*', '*', 'metadomain_mappings')))
 
 def _state(transcript_id, genome_build):
     """Read-only classification: ('built', mtime) | ('error', mtime) | ('missing', None)."""
@@ -130,8 +132,8 @@ def print_report(per_build):
             _log.info("  stale (older cutoff) : %d", len(s['stale']))
         for label, ids in (('missing', s['missing']), ('errored', s['error_ids']), ('stale', s['stale'])):
             if ids:
-                shown = ', '.join(ids[:_LIST_CAP])
-                more = '' if len(ids) <= _LIST_CAP else f" (+{len(ids) - _LIST_CAP} more)"
+                shown = ', '.join(ids[:PREBUILD_PRINT_LIST_EXAMPLES_CAP])
+                more = '' if len(ids) <= PREBUILD_PRINT_LIST_EXAMPLES_CAP else f" (+{len(ids) - PREBUILD_PRINT_LIST_EXAMPLES_CAP} more)"
                 _log.info("  %s ids: %s%s", label, shown, more)
     _log.info("====================================")
 
@@ -187,7 +189,7 @@ def _run(work, workers):
             failed += 1
             _log.error("%s/%s: %s %s", gb, tid, status, msg)
         if i % 100 == 0:
-            _log.info("progress: %d/%d (ok=%d failed=%d)", i, total, ok, failed)
+            _log.info("progress: %d/%d (ok=%d failed=%d) | metadomains built: %d", i, total, ok, failed, _count_metadomains())
 
     t0 = time.monotonic()
     cpu0, _ = _rusage_snapshot()

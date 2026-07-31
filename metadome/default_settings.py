@@ -31,7 +31,6 @@ SQLALCHEMY_ENGINE_OPTIONS = {
     },
 }
 
-
 # Flask-Celery settings
 CELERY_BROKER_URL='amqp://guest@metadome-dev-rabbitmq-1'
 CELERY_RESULT_BACKEND='redis://metadome-dev-redis-1/0'
@@ -39,6 +38,7 @@ CELERY_TRACK_STARTED = True
 CELERY_TASK_SERIALIZER = 'pickle'
 CELERY_RESULT_SERIALIZER='pickle'
 CELERY_ACCEPT_CONTENT = ['pickle']
+CELERY_TASK_MAX_RETRIES = 50
 
 # Flask-Caching Settings
 CACHE_TYPE = 'RedisCache'
@@ -111,11 +111,13 @@ METADOMAIN_MAPPING_FILE_NAME = 'metadomain_mappings' # Mappings are saved as: ME
 METADOMAIN_DETAILS_FILE_NAME = 'metadomain_details.json' # Details are saved as: METADOMAIN_DIR+<Pfam_id>+'/'+METADOMAIN_DETAILS_FILE_NAME
 METADOMAIN_SNV_ANNOTATION_FILE_NAME = 'metadomain_snv_annotation' # Annotations are saved as: METADOMAIN_DIR+<Pfam_id>+'/'+METADOMAIN_SNV_ANNOTATION_FILE_NAME
 
-# Pre-build visualization files
+# Pre-building visualization settings
 PRE_BUILD_VISUALIZATION_DIR = DATA_DIR+"metadome_visualization/"
 PRE_BUILD_VISUALIZATION_FILE_NAME = 'metadome_visualization.json' # Visualizations are saved as: PRE_BUILD_VISUALIZATION_DIR+<Transcript_id>+'/'+PRE_BUILD_VISUALIZATION_FILE_NAME
 PRE_BUILD_VISUALIZATION_TASK_FILE_NAME = 'visualization_task'
 PRE_BUILD_VISUALIZATION_ERROR_FILE_NAME = 'visualization_error'
+METADOMAIN_CACHE_MAXSIZE = 128 # set at 128 as in 2027 build the meta-domains with more than 100 occurrences is 84+
+PREBUILD_PRINT_LIST_EXAMPLES_CAP = 25  # how many example ids to print per category
 
 # PFAM specific files
 PFAM_DIR = DATA_DIR+"PFAM/Pfam30.0"
