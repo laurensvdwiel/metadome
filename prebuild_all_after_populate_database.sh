@@ -8,7 +8,7 @@
   fi
 
   # Reuse the (possibly live) stack: ensure only db is up. Never `down`, never `-v`.
-  docker compose -f "$COMPOSE_FILE" up -d db
+docker compose -f "$COMPOSE_FILE" up -d --wait db
 
   ( while true; do
       docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.BlockIO}}' >> prebuild_stats.log 2>/dev/null
