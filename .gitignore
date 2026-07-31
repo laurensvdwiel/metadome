@@ -13,3 +13,4 @@ env_metadome/*
 .externalToolBuilders/*
 celerybeat-schedule
 .codegraph/
+.mcp.json
