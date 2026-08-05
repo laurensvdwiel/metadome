@@ -1,6 +1,20 @@
 from metadome.default_settings import GNOMAD_GRCH37_VCF_FILE, GNOMAD_GRCH38_VCF_FILE, GNOMAD_ACCEPTED_FILTERS,\
  CLINVAR_CONSIDERED_CLINSIG, CLINVAR_GRCH37_VCF_FILE, CLINVAR_GRCH38_VCF_FILE
+from metadome.domain.models.entities.clinical_significance import CLINVAR_CLINSIG_TO_SIGNIFICANCE
 from metadome.domain.parsers.tabix import tabix_query, variant_coordinate_system
+
+def interpret_clinvar_clinsig(variant_annotation):
+    """The MetaDome clinical significance class for an annotated ClinVar variant.
+    Returns None only for a CLNSIG shape or term the annotator filter should
+    already have excluded."""
+    clnsig = variant_annotation.get('CLNSIG')
+    if clnsig is None:
+        return None
+    if isinstance(clnsig, (list, tuple)):
+        if len(clnsig) != 1:
+            return None
+        clnsig = clnsig[0]
+    return CLINVAR_CLINSIG_TO_SIGNIFICANCE.get(str(clnsig))
 
 def GRCh37_annotateTranscriptWithClinvarData(chromosome, regions):
     """

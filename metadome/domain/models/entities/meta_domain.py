@@ -2,11 +2,11 @@ from metadome.domain.data_generation.mapping.meta_domain_mapping import retrieve
 from metadome.domain.models.entities.gene_region import GenomeBuild
 from metadome.domain.services.annotation.codon_annotation import annotate_ClinVar_SNVs_for_codons,\
     annotate_gnomAD_SNVs_for_codons
-from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant
+from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant, VariantSource
 from metadome.domain.models.entities.codon import Codon
 from metadome.default_settings import METADOMAIN_DIR,\
     METADOMAIN_MAPPING_FILE_NAME, METADOMAIN_DETAILS_FILE_NAME,\
-    METADOMAIN_SNV_ANNOTATION_FILE_NAME, METADOMAIN_CACHE_MAXSIZE
+    METADOMAIN_CACHE_MAXSIZE, METADOMAIN_SNV_ANNOTATION_FILE_NAME_PER_SOURCE
 
 import pandas as pd
 import numpy as np
@@ -41,19 +41,40 @@ class MetaDomain(object):
     Used for representation of meta domains
     
     Variables
-    name                       description
-    domain_id                  str the id / accession code of this domain
-    genome_build               GenomeBuild the genome build for which this metadomain is constructed
-    consensus_length           int length of the domain consensus
-    consensus_positions        set(int) of all consensus positions for this domain
-    n_proteins                 int number of unique proteins containing this domain
-    n_instances                int number of unique instances containing this domain
-    n_transcripts              int number of unique transcripts containing this domain
-    meta_domain_mapping        pandas.DataFrame containing all codons annotated with corresponding consensus position
-    meta_domain_annotation     pandas.DataFrame containing all SNVs with corresponding consensus position
+    name                                    description
+    domain_id                               str the id / accession code of this domain
+    genome_build                            GenomeBuild the genome build for which this metadomain is constructed
+    consensus_length                        int length of the domain consensus
+    consensus_positions                     set(int) of all consensus positions for this domain
+    n_proteins                              int number of unique proteins containing this domain
+    n_instances                             int number of unique instances containing this domain
+    n_transcripts                           int number of unique transcripts containing this domain
+    meta_domain_mapping                     pandas.DataFrame containing all codons annotated with corresponding consensus position
+    meta_domain_annotation_per_source       pandas.DataFrame containing all SNVs with corresponding consensus position split by source
     """
-        
-    def get_annotated_SNVs_for_consensus_position(self, consensus_position):
+
+    def get_annotation(self, variant_source):
+        """The SNV annotation DataFrame for one variant source, read from disk on first use."""
+        if variant_source in self._annotation_per_source:
+            return self._annotation_per_source[variant_source]
+
+        annotation_file = METADOMAIN_DIR + self.genome_build.value + '/' + self.domain_id + '/' + \
+                          METADOMAIN_SNV_ANNOTATION_FILE_NAME_PER_SOURCE[variant_source.value]
+
+        if not os.path.exists(annotation_file):
+            raise MetaDomainException("No '{}' SNV annotation for domain '{}', expected it at '{}'".format(
+                variant_source, self.domain_id, annotation_file))
+
+        _log.info("Reading '{}'".format(annotation_file))
+        try:
+            self._annotation_per_source[variant_source] = pd.read_csv(annotation_file)
+        except pd.errors.EmptyDataError:
+            # A source with no SNVs for this domain is written as an empty file
+            self._annotation_per_source[variant_source] = pd.DataFrame()
+
+        return self._annotation_per_source[variant_source]
+
+    def get_annotated_SNVs_for_consensus_position(self, consensus_position, variant_sources=None):
         """Retrieves SNVs for this consensus position as:
         {SingleNucleotideVariant.unique_var_str_representation():  dict()}"""
         snvs = dict()
@@ -62,14 +83,17 @@ class MetaDomain(object):
             raise ConsensusPositionOutOfBounds("The provided consensus position ('{}') is below zero, this position foes not exist".format(consensus_position))
         if consensus_position > self.consensus_length:
             raise ConsensusPositionOutOfBounds("The provided consensus position ('{}') is above the maximum consensus length ('{}'), this position foes not exist".format(consensus_position, self.consensus_length))
-        if 'consensus_pos' not in self.meta_domain_annotation.columns:
-            return snvs # A domain with no annotated SNVs is a legitimately empty DataFrame (no columns) — return nothing.
+        if variant_sources is None:
+            variant_sources = list(VariantSource)
 
-        # Retrieve all codons aligned to the consensus position
-        aligned_to_position = self.meta_domain_annotation[self.meta_domain_annotation.consensus_pos == consensus_position].to_dict('records')
-        
-        # first check if the consensus position is present in the mappings_per_consensus_pos
-        if len(aligned_to_position) >0:
+        for variant_source in variant_sources:
+            annotation = self.get_annotation(variant_source)
+            if 'consensus_pos' not in annotation.columns:
+                continue  # A source with no annotated SNVs is a legitimately empty DataFrame (no columns) — skip it.
+
+            # Retrieve all codons aligned to the consensus position
+            aligned_to_position = annotation[annotation.consensus_pos == consensus_position].to_dict('records')
+
             for snv in aligned_to_position:
                 # aggregate duplicate chromosomal regions
                 if not snv['unique_snv_str_representation'] in snvs.keys():
@@ -163,59 +187,50 @@ class MetaDomain(object):
         return int(np.max(alignment_depths))
     
     def annotate_metadomain(self, reannotate=False):
-        """Annotate this meta domain with gnomAD and ClinVar variants"""
-        # check if a Meta Domain is already mapped
+        """Ensure the per-source SNV annotations for this meta domain exist on disk;
+        reading them back is deferred until get_annotation()"""
         meta_domain_dir = METADOMAIN_DIR + self.genome_build.value + '/' + self.domain_id
-        meta_domain_snv_annotation_file = meta_domain_dir+'/'+METADOMAIN_SNV_ANNOTATION_FILE_NAME
+        annotation_files = {VariantSource(source): meta_domain_dir + '/' + file_name
+                              for source, file_name in METADOMAIN_SNV_ANNOTATION_FILE_NAME_PER_SOURCE.items()}
 
-        # initialize the meta_domain_annotation as a list
-        meta_domain_annotation = []
-        
-        # Check if the mapping has previously been annotated already
-        if os.path.exists(meta_domain_snv_annotation_file) and not reannotate:
-            # The mapping exists, load it
-            _log.info('Loading previously annotated MetaDomain for domain id: '+str(self.domain_id))
-            # Read the files
-            _log.info("Reading '{}'".format(meta_domain_snv_annotation_file))
-            self.meta_domain_annotation = pd.read_csv(meta_domain_snv_annotation_file)
-        else:
-            # The annotation does not exists yet, or needs be recreated/reannotated
-            _log.info('Start annotation of MetaDomain for domain id: '+str(self.domain_id))
-           
-            # Retrieve all codons
-            for consensus_position in self.consensus_positions:
-                meta_codons = self.get_codons_aligned_to_consensus_position(consensus_position)
-                
-                # Annotate ClinVar and gnomAD SNVs
-                for unique_str_repr in meta_codons.keys():
-                    for snv in annotate_ClinVar_SNVs_for_codons(meta_codons[unique_str_repr], self.genome_build):
-                        snv['consensus_pos'] = consensus_position
-                        meta_domain_annotation.append(snv)
-                    for snv in annotate_gnomAD_SNVs_for_codons(meta_codons[unique_str_repr], self.genome_build):
-                        snv['consensus_pos'] = consensus_position
-                        meta_domain_annotation.append(snv)
-                        
-            # convert meta_domain_mapping to a pandas Dataframe
-            meta_domain_annotation = pd.DataFrame(meta_domain_annotation)
-            
-            # save meta_domain_mapping to disk
-            _tmp = meta_domain_snv_annotation_file + '.tmp.' + str(os.getpid())
-            meta_domain_annotation.to_csv(_tmp)
-            os.replace(_tmp, meta_domain_snv_annotation_file)
+        if not reannotate:
+            if all(os.path.exists(f) for f in annotation_files.values()):
+                _log.info('Previously annotated MetaDomain available for domain id: '+str(self.domain_id))
+                return
 
-            # set to variable
-            self.meta_domain_annotation = meta_domain_annotation
-            
-            _log.info('Finished annotation of MetaDomain for domain id: '+str(self.domain_id))
+        _log.info('Start annotation of MetaDomain for domain id: '+str(self.domain_id))
+
+        annotation_per_source = {source: [] for source in annotation_files.keys()}
+        for consensus_position in self.consensus_positions:
+            meta_codons = self.get_codons_aligned_to_consensus_position(consensus_position)
+
+            # Annotate ClinVar and gnomAD SNVs
+            for unique_str_repr in meta_codons.keys():
+                for snv in annotate_ClinVar_SNVs_for_codons(meta_codons[unique_str_repr], self.genome_build):
+                    snv['consensus_pos'] = consensus_position
+                    annotation_per_source[VariantSource.clinvar].append(snv)
+                for snv in annotate_gnomAD_SNVs_for_codons(meta_codons[unique_str_repr], self.genome_build):
+                    snv['consensus_pos'] = consensus_position
+                    annotation_per_source[VariantSource.gnomad].append(snv)
+
+        # save each annotation to disk
+        for source, annotation in annotation_per_source.items():
+            annotation = pd.DataFrame(annotation)
+            _tmp = annotation_files[source] + '.tmp.' + str(os.getpid())
+            annotation.to_csv(_tmp)
+            os.replace(_tmp, annotation_files[source])
+            self._annotation_per_source[source] = annotation
+
+        _log.info('Finished annotation of MetaDomain for domain id: '+str(self.domain_id))
     
-    def __init__(self, domain_id, genome_build, consensus_length, consensus_positions, n_instances, meta_domain_mapping, meta_domain_annotation):
+    def __init__(self, domain_id, genome_build, consensus_length, consensus_positions, n_instances, meta_domain_mapping, meta_domain_annotation_per_source=None):
         self.domain_id = domain_id
         self.genome_build = genome_build
         self.consensus_length = consensus_length
         self.consensus_positions = consensus_positions
         self.n_instances = n_instances
         self.meta_domain_mapping = meta_domain_mapping
-        self.meta_domain_annotation = meta_domain_annotation
+        self._annotation_per_source = dict(meta_domain_annotation_per_source or {})
         
         # derive from meta_domain_mapping
         self.n_proteins = len(pd.unique(self.meta_domain_mapping.uniprot_ac))
@@ -285,9 +300,14 @@ class MetaDomain(object):
                         _meta_codon['domain_id'] = domain_id
                         
                         meta_domain_mapping.append(_meta_codon)
-                    
+
                 # convert meta_domain_mapping to a pandas Dataframe
                 meta_domain_mapping = pd.DataFrame(meta_domain_mapping)
+
+                # A domain without aligned codons cannot become a metadomain; bail out before writing
+                # an empty mapping file that would break every later read of this domain
+                if meta_domain_mapping.empty:
+                    raise UnsupportedMetaDomainIdentifier("No aligned codons found for domain '" + str(domain_id) + "' for genome build '" + str(genome_build.value) + "'")
                 
                 ## Save the results to disk
                 # save meta_domain_details
@@ -304,7 +324,7 @@ class MetaDomain(object):
             raise UnsupportedMetaDomainIdentifier("Expected a Pfam domain, instead the identifier '"+str(domain_id)+"' was received")
         
         # Attempt to create the object
-        meta_domain = cls(domain_id, genome_build, consensus_length, consensus_positions, n_instances, meta_domain_mapping, pd.DataFrame())
+        meta_domain = cls(domain_id, genome_build, consensus_length, consensus_positions, n_instances, meta_domain_mapping)
         
         # Annotate this meta domain
         meta_domain.annotate_metadomain()

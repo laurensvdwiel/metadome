@@ -8,6 +8,7 @@ from metadome.domain.models.entities.meta_domain import (
     ConsensusPositionOutOfBounds,
 )
 from metadome.domain.models.entities.gene_region import GenomeBuild
+from metadome.domain.models.entities.single_nucleotide_variant import VariantSource
 
 
 class mock_MetaDomain(MetaDomain):
@@ -56,7 +57,7 @@ class mock_MetaDomain(MetaDomain):
             rows.append(codon_row(3, idx, f"P00003-{idx}", 300 + idx, f"ENST00002{idx:05d}.1"))
 
         meta_domain_mapping = pd.DataFrame(rows)
-        meta_domain_annotation = pd.DataFrame()
+        meta_domain_annotation_per_source = {VariantSource.clinvar: pd.DataFrame(), VariantSource.gnomad: pd.DataFrame()}
 
         return cls(
             domain_id="PF00907",
@@ -65,7 +66,7 @@ class mock_MetaDomain(MetaDomain):
             consensus_positions={1, 2, 3},
             n_instances=3,
             meta_domain_mapping=meta_domain_mapping,
-            meta_domain_annotation=meta_domain_annotation,
+            meta_domain_annotation_per_source=meta_domain_annotation_per_source,
         )
 
 

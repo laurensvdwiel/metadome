@@ -109,14 +109,17 @@ RECONSTRUCT_METADOMAINS = False
 METADOMAIN_ALIGNMENT_FILE_NAME = 'metadomain_alignments' # Alignments are saved as: METADOMAIN_DIR+<Pfam_id>+'/'+METADOMAIN_ALIGNMENT_FILE_NAME
 METADOMAIN_MAPPING_FILE_NAME = 'metadomain_mappings' # Mappings are saved as: METADOMAIN_DIR+<Pfam_id>+'/'+METADOMAIN_MAPPING_FILE_NAME
 METADOMAIN_DETAILS_FILE_NAME = 'metadomain_details.json' # Details are saved as: METADOMAIN_DIR+<Pfam_id>+'/'+METADOMAIN_DETAILS_FILE_NAME
-METADOMAIN_SNV_ANNOTATION_FILE_NAME = 'metadomain_snv_annotation' # Annotations are saved as: METADOMAIN_DIR+<Pfam_id>+'/'+METADOMAIN_SNV_ANNOTATION_FILE_NAME
+METADOMAIN_SNV_ANNOTATION_FILE_NAME_PER_SOURCE = { # Annotations are saved per variant source as: METADOMAIN_DIR+<Pfam_id>+'/'+<file name>
+    'ClinVar': 'metadomain_snv_annotation_clinvar',
+    'gnomAD': 'metadomain_snv_annotation_gnomad',
+}
 
 # Pre-building visualization settings
 PRE_BUILD_VISUALIZATION_DIR = DATA_DIR+"metadome_visualization/"
 PRE_BUILD_VISUALIZATION_FILE_NAME = 'metadome_visualization.json' # Visualizations are saved as: PRE_BUILD_VISUALIZATION_DIR+<Transcript_id>+'/'+PRE_BUILD_VISUALIZATION_FILE_NAME
 PRE_BUILD_VISUALIZATION_TASK_FILE_NAME = 'visualization_task'
 PRE_BUILD_VISUALIZATION_ERROR_FILE_NAME = 'visualization_error'
-METADOMAIN_CACHE_MAXSIZE = 128 # set at 128 as in 2027 build the meta-domains with more than 100 occurrences is 84+
+METADOMAIN_CACHE_MAXSIZE = 100 # set at 100 as in 2027 build the meta-domains with more than 100 occurrences is 84+
 PREBUILD_PRINT_LIST_EXAMPLES_CAP = 25  # how many example ids to print per category
 
 # PFAM specific files
@@ -135,4 +138,4 @@ GNOMAD_ACCEPTED_FILTERS = ['PASS']
 CLINVAR_DIR = DATA_DIR + 'ClinVar/'
 CLINVAR_GRCH37_VCF_FILE = CLINVAR_DIR + "GRCh37" + "/" + 'clinvar_20251006.vcf.gz'
 CLINVAR_GRCH38_VCF_FILE = CLINVAR_DIR + "GRCh38" + "/" + 'clinvar_20251006.vcf.gz'
-CLINVAR_CONSIDERED_CLINSIG = ['Pathogenic']
+CLINVAR_CONSIDERED_CLINSIG = ['Likely_pathogenic', 'Pathogenic']

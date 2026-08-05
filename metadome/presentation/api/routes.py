@@ -1,4 +1,5 @@
 from metadome.domain.models.entities.gene_region import GenomeBuild
+from metadome.domain.models.entities.single_nucleotide_variant import VariantSource
 from metadome.domain.repositories import GeneRepository
 from metadome.domain.services.helper_functions import is_transcript_id
 from metadome.controllers.job import retrieve_error
@@ -69,6 +70,13 @@ def get_metadomain_annotation():
     elif not 'genome_build' in data:
         return jsonify({"error: no genome build"}), 400
 
+    variant_sources = data.get('variant_sources')
+    if variant_sources is not None:
+        try:
+            variant_sources = [VariantSource(source) for source in variant_sources]
+        except (TypeError, ValueError):
+            return jsonify({'error': "invalid variant sources: {}".format(data.get('variant_sources'))}), 400
+
     transcript_id = data['transcript_id']
     protein_pos = data['protein_position']
     requested_domains = data['requested_domains']
@@ -87,7 +95,7 @@ def get_metadomain_annotation():
 
     # attempt to retrieve the response for a metadomain position
     from metadome.tasks import retrieve_metadomain_annotation as rma
-    response = rma(transcript_id, protein_pos, requested_domains, genome_build)
+    response = rma(transcript_id, protein_pos, requested_domains, genome_build, variant_sources=variant_sources)
 
     return jsonify(response)
 

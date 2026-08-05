@@ -1,3 +1,4 @@
+from metadome.domain.models.entities.clinical_significance import ClinicalSignificance
 from metadome.domain.models.entities.codon import Codon, MalformedCodonException
 from Bio.Seq import translate
 import enum
@@ -9,6 +10,14 @@ class VariantType(enum.Enum):
     missense = 'missense'
     nonsense = 'nonsense'
     synonymous = 'synonymous'
+
+
+class VariantSource(enum.Enum):
+    """The variant databases MetaDome annotates against. The values are also the
+    keys of METADOMAIN_SNV_ANNOTATION_FILE_NAME_PER_SOURCE and the contents of
+    the variant_source column in the metadomain SNV annotations."""
+    clinvar = 'ClinVar'
+    gnomad = 'gnomAD'
 
 class SingleNucleotideVariant(Codon):
     """
@@ -80,7 +89,7 @@ class SingleNucleotideVariant(Codon):
             return Codon.one_to_three_letter_amino_acid_residue(self.alt_amino_acid_residue)
     
     def unique_snv_str_representation(self):
-        return str(self.variant_source)+":"+self.unique_str_representation()+\
+        return str(self.variant_source.value)+":"+self.unique_str_representation()+\
             ";"+str(self.base_pair_representation)+">"+str(self.alt_base_pair_representation)+\
             ";"+str(self.amino_acid_residue)+">"+str(self.alt_amino_acid_residue)
 
@@ -124,7 +133,7 @@ class SingleNucleotideVariant(Codon):
         self.variant_type = str()
         self.alt_amino_acid_residue = _alt_amino_acid_residue
         self.alt_base_pair_representation = str()
-        self.variant_source = _variant_source
+        self.variant_source = VariantSource(_variant_source)
         # start the type and rule checks
         if _ref_nucleotide == _alt_nucleotide:
             raise MalformedVariantException("No SNV could be made: found identical ref and alt nucleotides")
@@ -167,7 +176,7 @@ class SingleNucleotideVariant(Codon):
         _d['var_codon_position'] = self.var_codon_position
         _d['variant_type'] = self.variant_type.value
         _d['alt_amino_acid_residue'] = self.alt_amino_acid_residue
-        _d['variant_source'] = self.variant_source
+        _d['variant_source'] = self.variant_source.value
 
         return _d
     
@@ -269,13 +278,14 @@ class SingleNucleotideVariant(Codon):
         json_entry["ref"] = self.ref_nucleotide
         json_entry["type"] = self.variant_type.value
         return json_entry
-    
-    def toClinVarJson(self, ClinVar_id):
+
+    def toClinVarJson(self, ClinVar_id, clinvar_clinsig: ClinicalSignificance):
         json_entry = self.toJson()
         # append ClinVar specific information
         json_entry["clinvar_ID"] = ClinVar_id
+        json_entry["clinvar_clinsig"] = clinvar_clinsig.value
         return json_entry
-    
+
     def toGnommADJson(self, allele_count, allele_number):
         json_entry = self.toJson()
         # append gnomAD specific information
