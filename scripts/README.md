@@ -1,80 +1,37 @@
 # Scripts
 
-This directory contains internal utility scripts for MetaDome operations and data processing.
+Side-scripts for MetaDome operations, data processing and releases.
 
-## `annotate_metadomain_tsv.py`
+Scripts are grouped by what they need in order to run, since that determines
+where they can be run.
 
-Annotates a TSV file with MetaDomain information using the MetaDome application context directly.
+| Directory                                    | Needs                          | Runs in                            |
+| -------------------------------------------- | ------------------------------ | ---------------------------------- |
+| [`variant_annotation/`](variant_annotation/) | Flask app context + PostgreSQL | the `app` service (`linux/amd64`)  |
+| [`data_release/`](data_release/)             | prebuild output on disk only   | host or container, no database     |
 
-### What it does
+## Why the split
 
-The script expects an input TSV that contains at least these columns:
+`Dockerfile` pins the app image to `--platform=linux/amd64`, because it installs
+x86-only BLAST+ and HMMER binaries. On Apple Silicon that image is emulated,
+which costs time on anything CPU-bound. The database, redis and rabbitmq
+services are `linux/arm64` and run natively.
 
-- `variant`
-- `gene_id`
+Scripts under `data_release/` use neither BLAST nor HMMER nor the database, and
+import nothing from `metadome`, so they need no Flask, SQLAlchemy or pysam and
+run natively on the host.
 
-The `variant` column must use this format:
-`chr1:123456_A_G`
+## Paths
 
-From this, the script extracts:
+Scripts resolve the data directory from `METADOME_DIR` in the repo-root `.env`,
+the same variable `docker-compose.yml` substitutes into the `data` volume, so
+one invocation works on the host and inside a container alike. `--data-dir`
+overrides it; the fallback is `/usr/data`, the in-container mount point.
 
-- chromosome
-- position
-- reference allele
+`.env` is not committed. Copy `.env.example` and fill it in.
 
-It then annotates each row with these output columns:
+## Adding a script
 
-- `MetaDomainPositions`
-- `MetaDomainStatus`
-- `RefMatchStatus`
-
-### Output columns
-
-#### `MetaDomainPositions`
-
-A semicolon-separated list of metadomain positions:
-`PF00001:42` or `PF00002:15;PF00002:18`
-
-
-#### `MetaDomainStatus`
-
-One of:
-
-- `metadomain_found`
-- `mapping_no_metadomain`
-- `no_mapping`
-- `invalid_input`
-
-#### `RefMatchStatus`
-
-One of:
-
-- `direct_match`
-- `reverse_complement_match`
-- `mismatch`
-- `not_checked`
-
-### Example command
-
-Run the script through Docker Compose so it reuses the configured app environment and service network:
-``` 
-docker compose run --rm
--v "<HOST_DATA_DIR>":/data
-app
-python -m scripts.annotate_metadomain_tsv
-/data/input_variants.tsv
-/data/output_annotated.tsv
---genome-build GRCh38.p14
---batch-size 500
---verbose
---stop-on-error
-```
-
-### Arguments
-
-### Notes
-
-- This script is intended for internal/batch use.
-- It does not rely on the public MetaDome API.
-- It runs inside the Flask application context and uses the repository/service layer directly.
-- The external data directory must be mounted explicitly, for example with: `-v "<HOST_DATA_DIR>":/data`
+Place it in the directory matching what it needs and add a `README.md` section
+describing its inputs, outputs and invocation. If it needs an environment the
+others do not, add it to the table above.
