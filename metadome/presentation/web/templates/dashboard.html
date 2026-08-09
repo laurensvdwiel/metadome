@@ -138,28 +138,42 @@
                         </div>
                     </div>
 
-                    <div class="field is-grouped">
-                        <div class="control"
-                        <label class="text">
-                            <input type="checkbox" id="exon_checkbox" onchange="toggleExonVisualization(this)">
-                            Show Exons
-                        </label>
-                    </div>
-                    <div class="control">
-                        <label class="text">
-                            Display ClinVar variants:
-                        </label>
-                        <label class="checkbox"> <input id="clinvar_checkbox"
-                                                        type="checkbox" onclick="toggleClinvarVariantsInProtein(this)">
-                            in this protein
-                        </label>
-                        <label class="checkbox"> <input id="clinvar_homologues_checkbox"
-                                                        type="checkbox"
-                                                        onclick="toggleHomologousClinvarVariantsInProtein(this)">
-                            in homologue protein domains
-                        </label>
-                    </div>
-                </div>
+                   <div class="field">
+                      <label class="text">
+                          Display Pathogenic (<span style="color:#d62728;font-weight:bold">P</span>) and
+                          Likely Pathogenic (<span style="color:#ff7f0e;font-weight:bold">LP</span>) ClinVar variants
+                      </label>
+                      <div class="control">
+                          <label class="radio">
+                              <input checked value="none" name="clinvar_source" type="radio"
+                                     onclick="setClinvarSource('none')"
+                                     id="clinvar_source_none">
+                              do not show
+                          </label>
+                          <label class="radio">
+                              <input value="in_protein" name="clinvar_source" type="radio"
+                                     onclick="setClinvarSource('in_protein')"
+                                     id="clinvar_source_protein">
+                              show in this protein
+                          </label>
+                          <label class="radio">
+                              <input value="in_homologues" name="clinvar_source" type="radio"
+                                     onclick="setClinvarSource('in_homologues')"
+                                     id="clinvar_source_homologues">
+                              show missense in homologue protein domains
+                          </label>
+                      </div>
+                  </div>
+
+                  <div class="field">
+                      <div class="control">
+                          <label class="checkbox">
+                              <input type="checkbox" id="exon_checkbox"
+                                     onchange="toggleExonVisualization(this)">
+                              Hide Exons
+                          </label>
+                      </div>
+                  </div>
 
                 <div class="field is-grouped" id="graph_control_field_buttons">
                     <div class="control">

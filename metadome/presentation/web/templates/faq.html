@@ -16,7 +16,7 @@
                     <div class="box">
                         <div class="label">What is MetaDome?</div>
                         <div class="box">
-                            MetaDome is a fast and easy-to-use web server that offers an easily
+                            MetaDome is a fast and easy-to-use platform that offers an easily
                             accessible and unique perspective for researchers and
                             clinicians to interpret variants of unknown significance via
                             'meta-domains', a concept that we have previously validated
@@ -56,7 +56,7 @@
                         <div class="label">Which desktop browsers are compatible with MetaDome?</div>
                         <div class="box">
                             <p>
-                                The MetaDome web server is developed and extensively tested using
+                                The MetaDome platform is developed and extensively tested using
                                 <a data-external-link-group="External.resources"
                                    data-external-link-key="chrome"
                                    href="#"
@@ -122,32 +122,66 @@
 
                         <div class="label">What data are the results in MetaDome based on?</div>
                         <div class="box">
-                            MetaDome combines data from various public resources. The underlying data
-                            in MetaDome currently contains information from 56,319 human transcripts
-                            (<a data-external-link-group="External.resources"
-                                data-external-link-key="gencode"
-                                href="#"
-                                target="_blank">GENCODE</a>),
-                            71,419 <a data-external-link-group="External.resources"
-                                      data-external-link-key="pfam"
-                                      href="#"
-                                      target="_blank">Pfam</a>
-                            protein domain instances, 12,164,292 population-based genetic variants from
+                            MetaDome combines five public resources:
+                            <a data-external-link-group="External.resources"
+                               data-external-link-key="gencode"
+                               href="#"
+                               target="_blank">GENCODE</a>
+                            for gene structure and translations,
+                            <a data-external-link-group="External.resources"
+                               data-external-link-key="uniprot"
+                               href="#"
+                               target="_blank">UniProtKB/Swiss-Prot</a>
+                            for protein sequences,
+                            <a data-external-link-group="External.resources"
+                               data-external-link-key="pfam"
+                               href="#"
+                               target="_blank">Pfam</a>
+                            for protein domain models,
                             <a data-external-link-group="External.resources"
                                data-external-link-key="gnomad"
                                href="#"
-                               target="_blank">gnomAD</a>, and 34,076 pathogenic mutations from
+                               target="_blank">gnomAD</a>
+                            for population variation, and
                             <a data-external-link-group="External.resources"
                                data-external-link-key="clinvar"
                                href="#"
-                               target="_blank">ClinVar</a>.
+                               target="_blank">ClinVar</a>
+                            for clinically classified variation.
+                            <br/><br/>
+                            Results are provided for two reference assemblies. GRCh37 is based on
+                            GENCODE v19 and gnomAD r2.0.2; GRCh38 on GENCODE v45 and gnomAD v4.1.
+                            Both use the same UniProtKB/Swiss-Prot, Pfam and ClinVar releases.
+                            gnomAD differs between them because releases from v3.0 onward are
+                            GRCh38 only, so GRCh37 remains on gnomAD v2.
+                            <br/><br/>
+                            Exact versions and record counts are stated with the downloadable
+                            dataset.
                         </div>
 
-                        <div class="label">How often is the underlying data updated?</div>
+                        <div class="label">How often is the underlying data updated, and can I download it?</div>
                         <div class="box">
-                            Currently, MetaDome requires manual reannotation of the underlying data.
-                            In a future version, MetaDome is expected to support automatic downloading
-                            of new data releases and automatic reannotation.
+                            MetaDome is reannotated manually rather than on a fixed schedule.
+                            Each release is deposited with a version and a DOI, so the data behind
+                            any analysis can be identified and downloaded.
+                            <br/><br/>
+                            <a data-external-link-group="MetaDome"
+                               data-external-link-key="zenodoV2"
+                               href="#"
+                               target="_blank">MetaDome v2.0 (2026)</a>
+                            covers both the GRCh37 and GRCh38 reference assemblies. It contains the
+                            full annotated dataset &mdash; one row per codon with tolerance scores,
+                            Pfam domain and consensus position, and pathogenic ClinVar variation at
+                            evolutionarily equivalent positions &mdash; together with genome-browser
+                            tracks and the underlying mapping database. Data are released under
+                            CC&nbsp;BY&nbsp;4.0.
+                            <br/><br/>
+                            The previous release,
+                            <a data-external-link-group="MetaDome"
+                               data-external-link-key="zenodoV1"
+                               href="#"
+                               target="_blank">MetaDome v1.0.1 (2019)</a>,
+                            remains available for GRCh37.
                         </div>
 
                         <div class="label">Is MetaDome still under construction?</div>

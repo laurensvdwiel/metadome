@@ -206,13 +206,36 @@ var maxTolerance = 1.8;
 var metadomain_graph_visible = true;
 
 // indicates if the exons are visible
-var exons_visible = false;
+var exons_visible = true;
 
 // indicates if clinvar variants are annotated in the schematic protein representation
 var clinvar_variants_visible = false;
 
 //indicates if homologous clinvar variants are annotated in the schematic protein representation
 var homologous_clinvar_variants_visible = false;
+
+// Pfam domain spans for the current transcript, populated in createGraph
+var current_domain_data = [];
+
+// Homologous ClinVar counts for a meta-domain entry, split on clinical significance.
+// Untagged variants predate LP/P tagging and count as pathogenic.
+function pathogenicCountFor(domain_entry, missense_only){
+	var count_key = missense_only ? 'pathogenic_missense_variant_count' : 'pathogenic_variant_count';
+	return domain_entry[count_key] - likelyPathogenicCountFor(domain_entry, missense_only);
+}
+
+function likelyPathogenicCountFor(domain_entry, missense_only){
+	var count_key = missense_only ? 'pathogenic_missense_variant_count' : 'pathogenic_variant_count';
+	var per_clinsig = domain_entry[count_key + '_per_clinsig'];
+	return (per_clinsig && per_clinsig['Likely_pathogenic']) || 0;
+}
+
+// Counts ClinVar variants at a position, split the same way
+function countClinVarVariants(variants, likely_pathogenic){
+	return (variants || []).filter(function(variant){
+		return (variant.clinvar_clinsig === 'Likely_pathogenic') === likely_pathogenic;
+	}).length;
+}
 
 // indicates the various colors to indicate the tolerance
 var toleranceColorGradient = [ {
@@ -361,6 +384,57 @@ var exonTip = d3.tip()
         return "<span>Exon " + d.exon + "<br/>Positions: p." + d.start + "-" + d.end + ", c." + d.cdna_start + "-" + d.cdna_end + "</span>";
     });
 
+// "Exon 4" or "Exon 3,4" for a codon spanning a boundary
+function exonDisplayFor(position){
+	const exonNumbers = position.exon_numbers.split(', ').map(function(num) {
+		return parseInt(num.trim(), 10);
+	});
+	const uniqueExons = [...new Set(exonNumbers)].sort(function(a, b) {
+		return a - b;
+	});
+	return uniqueExons.length === 1 ? "Exon " + uniqueExons[0]	: "Exon " + uniqueExons.join(',');
+}
+
+// Define tooltip for meta-domain positions
+var domain_details_position_tip = d3.tip()
+	.attr('class', 'd3-tip')
+	.offset([ -10, 0 ])
+	.html(function(event, d) {
+		var v = d.values[0];
+
+		// Parse and simplify exon numbers
+		const exonDisplay = exonDisplayFor(v);
+
+		var str = "<span>";
+		str += "Position: p." + v.protein_pos + " " + v.cdna_pos + " " + exonDisplay + "</br>";
+		str += "Codon: " + v.ref_codon + "</br>";
+		str += "Residue: " + v.ref_aa_triplet + "</br>";
+
+		var covering = current_domain_data.filter(function(dom){
+			return dom.start <= v.protein_pos && v.protein_pos < dom.stop;
+		});
+
+		var first = true;
+		covering.forEach(function(dom){
+			var entry = v.domains != null ? v.domains[dom.ID] : null;
+			if (!first) str += "</br>";
+			first = false;
+			str += "</br>Position located in domain: \"" + dom.Name + "\" (" + dom.ID + ")";
+			if (entry != null && entry.consensus_pos != null){
+				str += "</br>Aligned to consensus position " + entry.consensus_pos.join(", ");
+				str += "</br>Missense in other homologues:";
+				str += "</br>ClinVar Pathogenic " + (entry.pathogenic_missense_variant_count || 0)
+					+ ", gnomAD " + (entry.normal_missense_variant_count || 0);
+			} else {
+				str += "</br>Residue is not aligned to homologues";
+			}
+		});
+
+		str += "</br></br>Click to view more information on this position";
+
+		return str + "</span>";
+	});
+
 // Define tooltip for positions
 var positionTip = d3.tip()
 	.attr('class', 'd3-tip')
@@ -369,31 +443,16 @@ var positionTip = d3.tip()
 	    var positionTip_str = "<span>";
 
         // Parse and simplify exon numbers
-	    const exonNumbers = d.values[0].exon_numbers.split(', ').map(function(num) {
-            return parseInt(num.trim(), 10);
-        });
-	    const uniqueExons = [...new Set(exonNumbers)].sort(function(a, b) {
-            return a - b;
-        });
-	    const exonDisplay = uniqueExons.length === 1
-            ? "Exon " + uniqueExons[0]
-            : "Exon " + uniqueExons.join(',');
+	    const exonDisplay = exonDisplayFor(d.values[0]);
 
 	    positionTip_str += "Position: p." + d.values[0].protein_pos + " " + d.values[0].cdna_pos + " " + exonDisplay + "</br>";
 	    positionTip_str += "Codon: " + d.values[0].ref_codon + "</br>";
 	    positionTip_str += "Residue: " + d.values[0].ref_aa_triplet + "</br>";
 	    positionTip_str += "Tolerance score (dn/ds): " + (Math.round((d.values[0].sw_dn_ds) * 100) / 100) + ' (' + tolerance_rating(d.values[0].sw_dn_ds) + ')';
-	    if (d.values[0].domains.length > 0){
-		    positionTip_str += "</br> In domain(s): ";
-		    var n_domains_at_position = d.values[0].domains.length;
-		    for (var i = 0; i < n_domains_at_position; i++){
-		        if (i + 1 == n_domains_at_position){
-			        positionTip_str += d.values[0].domains[i].ID;
-		        } else {
-			        positionTip_str += d.values[0].domains[i].ID + ", ";
-		        }
-		    }
-	    }
+		var domain_ids = d.values[0].domains != null ? Object.keys(d.values[0].domains) : [];
+		if (domain_ids.length > 0){
+				positionTip_str += "</br> In domain(s): " + domain_ids.join(", ");
+		}
 	    positionTip_str += "</br> Click to select this position</span>";
 	    return positionTip_str;
 	});
@@ -506,6 +565,7 @@ function createGraph(obj) {
 		.style("font-weight", "bold");
 
 	var domain_data = obj.domains;
+	current_domain_data = domain_data;
 
 	// setting x/y domain according to data
 	main_x.domain(d3.extent(positional_annotation, function(d) {
@@ -681,7 +741,8 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
             meta_domain_ids.forEach(domain_id => {
                 if (d.values[0].hasOwnProperty('domains') && d.values[0].domains[domain_id] != null) {
                     normal_count = Math.max(d.values[0].domains[domain_id].normal_missense_variant_count, normal_count);
-                    pathogenic_count = Math.max(d.values[0].domains[domain_id].pathogenic_missense_variant_count, pathogenic_count);
+					// the landscape only ever plots pathogenic variants, never likely pathogenic ones
+                    pathogenic_count = Math.max(pathogenicCountFor(d.values[0].domains[domain_id], true), pathogenic_count);
                 }
             });
 
@@ -745,7 +806,7 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .on("pointerenter", function(event, d) {
         if (metadomain_graph_visible){
             event.stopPropagation();
-            domain_details_position_tip.show(event, "Homologous gnomAD missense count: " + d._preCalc.normal);
+            domain_details_position_tip.show(event, d);
             d3.select(this).style("fill", "orange").raise();
         }
     })
@@ -781,7 +842,7 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .on("pointerenter", function(event, d) {
         if (metadomain_graph_visible){
             event.stopPropagation();
-            domain_details_position_tip.show(event, "Homologous pathogenic missense count: " + d._preCalc.pathogenic);
+            domain_details_position_tip.show(event, d);
             d3.select(this).style("fill", "orange").raise();
         }
     })
@@ -812,7 +873,7 @@ function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, 
     .on("pointerenter", function(event, d) {
         if (metadomain_graph_visible){
             event.stopPropagation();
-            domain_details_position_tip.show(event, "Residue is not aligned to homologues");
+            domain_details_position_tip.show(event, d);
             d3.select(this).style("fill", "orange").raise();
         }
     })
@@ -1476,23 +1537,26 @@ function toggleToleranceLandscapeOrMetadomainLandscape() {
 
 function draw_position_schematic_protein(d, element){
 	var pathogenic_missense_variant_count = 0;
-	if (clinvar_variants_visible){
-		// count any pathogenic variants at this position
-		if (d.values[0].ClinVar != null) {
-			pathogenic_missense_variant_count += d.values[0].ClinVar.length;
+	var likely_pathogenic_missense_variant_count = 0;
+
+	// count any variants at this position
+	if (d.values[0].ClinVar != null){
+		if (clinvar_variants_visible){
+			pathogenic_missense_variant_count += countClinVarVariants(d.values[0].ClinVar, false);
+			likely_pathogenic_missense_variant_count += countClinVarVariants(d.values[0].ClinVar, true);
 		}
 	}
 
-	var homologous_pathogenic_missense_variant_count = 0;
-	if (homologous_clinvar_variants_visible){
-		// count pathogenic variants linked via meta-domain relationships
-		if (d.values[0].domains != null){
-			meta_domain_ids.forEach(domain_id => {
-				if (d.values[0].hasOwnProperty('domains') && d.values[0].domains[domain_id] != null){
-					homologous_pathogenic_missense_variant_count = d.values[0].domains[domain_id].pathogenic_missense_variant_count;
+	// count variants linked via meta-domain relationships
+	if (d.values[0].domains != null){
+		meta_domain_ids.forEach(domain_id => {
+			if (d.values[0].hasOwnProperty('domains') && d.values[0].domains[domain_id] != null){
+				if (homologous_clinvar_variants_visible){
+					pathogenic_missense_variant_count += pathogenicCountFor(d.values[0].domains[domain_id], true);
+					likely_pathogenic_missense_variant_count += likelyPathogenicCountFor(d.values[0].domains[domain_id], true);
 				}
-			});
-		}
+			}
+		});
 	}
 
 	// priortize if selected
@@ -1507,51 +1571,39 @@ function draw_position_schematic_protein(d, element){
 		return 'red';
 	}
 	
-	// if containing pathogenic variants, display it as red
-	if (homologous_pathogenic_missense_variant_count > 0){
+	// if containing likely pathogenic variants, display it as orange
+	if (likely_pathogenic_missense_variant_count > 0){
 		d3.select(element).style("fill-opacity", 0.7);
-		return 'red';
+		return 'orange';
 	}
 	
-	
-	else{
-		d3.select(element).style("fill-opacity", 0.2);
-		return "grey";
-	}
+	d3.select(element).style("fill-opacity", 0.2);
+	return "grey";
 }
 
 function toggleExonVisualization(exon_checkbox) {
-    const exonViz = d3.select("#exon_blocks");
-    const exonLabel = d3.select("#exon_section_label"); // Use the ID for more reliable selection
+	const exonViz = d3.select("#exon_blocks");
+	const exonLabel = d3.select("#exon_section_label");
 
-    exons_visible = exon_checkbox.checked;
+	exons_visible = !exon_checkbox.checked;
 
-    if (exons_visible) {
-        exonViz.style("opacity", 1);
-        exonLabel.style("opacity", 1);
-    } else {
-        exonViz.style("opacity", 0);
-        exonLabel.style("opacity", 0);
-    }
+	if (exons_visible) {
+		exonViz.style("opacity", 1);
+		exonLabel.style("opacity", 1);
+	} else {
+		exonViz.style("opacity", 0);
+		exonLabel.style("opacity", 0);
+	}
 }
 
-function toggleClinvarVariantsInProtein(clinvar_checkbox){
+function setClinvarSource(source){
 	var focusAxis = d3.select("#tolerance_axis");
 
-	clinvar_variants_visible = clinvar_checkbox.checked;
-	
-	focusAxis.selectAll(".toleranceAxisTick").style("fill", function(d, i) {
-		return draw_position_schematic_protein(d, this);
-	});
-}
+	clinvar_variants_visible = (source === 'in_protein');
+	homologous_clinvar_variants_visible = (source === 'in_homologues');
 
-function toggleHomologousClinvarVariantsInProtein(clinvar_checkbox){
-	var focusAxis = d3.select("#tolerance_axis");
-
-	homologous_clinvar_variants_visible = clinvar_checkbox.checked;
-	
 	focusAxis.selectAll(".toleranceAxisTick").style("fill", function(d, i) {
-		return draw_position_schematic_protein(d, this);
+			return draw_position_schematic_protein(d, this);
 	});
 }
 
