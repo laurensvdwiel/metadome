@@ -28,8 +28,19 @@ DATASET_COLUMNS = [
     "pathogenic_variant_count", "pathogenic_missense_variant_count",
     "pathogenic_P_count", "pathogenic_LP_count",
     "pathogenic_missense_P_count", "pathogenic_missense_LP_count",
+    "clinvar_P_at_position", "clinvar_LP_at_position",
     "meta_domain_clinvar_P_records", "meta_domain_clinvar_LP_records",
+    "meta_domain_clinvar_P_missense_records", "meta_domain_clinvar_LP_missense_records",
 ]
+
+SOURCE_LABELS = {
+    "GENCODE": "GENCODE",
+    "UniProt": "UniProtKB/Swiss-Prot",
+    "Pfam": "Pfam",
+    "gnomAD": "gnomAD",
+    "ClinVar": "ClinVar",
+}
+SOURCE_ORDER = ["GENCODE", "UniProt", "Pfam", "gnomAD", "ClinVar"]
 
 # The pathogenic and likely-pathogenic colours used in the MetaDome web interface.
 COLOUR_PATHOGENIC = "214,39,40"        # #d62728
@@ -89,22 +100,35 @@ def run_sort(source, destination, keys=SORT_BED):
     subprocess.check_call(command, env=dict(os.environ, LC_ALL="C"))
 
 
-def header_block(prefix, genome_build, role, notes=()):
-    """Commented provenance block for a release file.
-
-    The release stem is embedded verbatim rather than reconstructed, so the
-    header cannot drift from the filename.
-    """
-    lines = ["MetaDome data release - " + role,
+def header_block(prefix, filename, genome_build, role, sources, notes=()):
+    versions = release_versions(prefix)
+    lines = ["MetaDome " + versions.get("MetaDome", "") + " data release - " + role,
              "assembly: " + genome_build,
-             "release: " + prefix]
-    lines.extend(notes)
-    lines.append("coordinates: 1-based inclusive")
+             "MetaDome version: " + versions.get("MetaDome", "")]
+    for key in SOURCE_ORDER:
+        if key in sources and key in versions:
+            lines.append(SOURCE_LABELS[key] + ": " + versions[key])
+    lines.append("filename: " + filename)
     lines.append("release record: " + ZENODO_CURRENT)
     lines.append("previous release: " + ZENODO_PREVIOUS)
-    lines.append("https://www.metadome.app/metadome")
-    return "".join("# " + line + "\n" for line in lines)
+    lines.append(BASE_URL)
+    lines.append("")
+    lines.extend(notes)
+    lines.append("Genomic positions are 1-based inclusive.")
+    lines.append("")
+    return "".join(("# " + line).rstrip() + "\n" for line in lines)
 
+def release_versions(prefix):
+    """Version tokens parsed from the release stem, which is the authority."""
+    versions = {}
+    tokens = prefix.split("_")
+    if len(tokens) > 1 and tokens[0] == "MetaDome":
+        versions["MetaDome"] = tokens[1]
+    for token in tokens:
+        name, sep, value = token.partition("-")
+        if sep and name in SOURCE_LABELS:
+            versions[name] = value
+    return versions
 
 def prepend_header(path, header):
     """Add the header after sorting; sorting would scatter the comment lines."""
@@ -223,8 +247,8 @@ def build_domain_tracks(final_dataset, genome_build, clinvar_path, coverage_path
             ])
             coverage_rows += 1
 
-            pathogenic = int(row["pathogenic_P_count"] or 0)
-            likely = int(row["pathogenic_LP_count"] or 0)
+            pathogenic = int(row["pathogenic_missense_P_count"] or 0)
+            likely = int(row["pathogenic_missense_LP_count"] or 0)
             if pathogenic + likely == 0:
                 continue
 
@@ -235,10 +259,8 @@ def build_domain_tracks(final_dataset, genome_build, clinvar_path, coverage_path
                 COLOUR_PATHOGENIC if pathogenic >= likely else COLOUR_LIKELY_PATHOGENIC,
                 accession, protein_pos, domain, consensus,
                 pathogenic, likely,
-                row["pathogenic_missense_P_count"] or 0,
-                row["pathogenic_missense_LP_count"] or 0,
-                row["meta_domain_clinvar_P_records"],
-                row["meta_domain_clinvar_LP_records"],
+                row["meta_domain_clinvar_P_missense_records"],
+                row["meta_domain_clinvar_LP_missense_records"],
                 url,
             ])
             clinvar_rows += 1
@@ -269,10 +291,13 @@ def main():
     if not args.skip_tolerance:
         destination = stem + "_derived-track-tolerance-landscape-sw10.bed"
         header = header_block(
-            args.prefix, args.genome_build,
-            "tolerance landscape, dn/ds over a 21-codon sliding window",
-            ["one row per genomic codon",
-             "median taken across transcripts that disagree"])
+            args.prefix, os.path.basename(destination), args.genome_build,
+            "tolerance landscape",
+            ["GENCODE", "UniProt", "Pfam", "gnomAD"],
+            ["Missense over synonymous ratio computed over a sliding window of 21 codons",
+            "centred on each position, corrected for codon composition. One row per",
+            "genomic codon. Where several transcripts report different values at the",
+            "same codon, the median is used."])
         print("building tolerance BED -> {}".format(destination), flush=True)
         stats = build_tolerance_bed(args.final_dataset, destination, header)
         total = stats["groups"] or 1
@@ -295,25 +320,34 @@ def main():
         coverage_path = stem + "_derived-track-pfam-domain-coverage.bed"
         print("building domain tracks -> {} , {}".format(clinvar_path, coverage_path), flush=True)
         clinvar_header = header_block(
-            args.prefix, args.genome_build, "meta-domain ClinVar track, bed9+11",
-            ["codons in a Pfam domain with at least one homologous pathogenic",
-             "or likely pathogenic ClinVar variant at an equivalent position",
-             "counts are of distinct variants; accession lists can be shorter",
-             "field definitions in metadomain_clinvar.as"])
+            args.prefix, os.path.basename(clinvar_path), args.genome_build,
+            "meta-domain ClinVar track",
+            ["GENCODE", "UniProt", "Pfam", "ClinVar"],
+            ["Codons within a Pfam domain that have at least one pathogenic or likely",
+            "pathogenic ClinVar missense variant at an evolutionarily equivalent",
+            "position in a homologous protein domain at another genomic location."])
+        clinvar_header += "#" + "\t".join([
+            "chrom", "chromStart", "chromEnd", "name", "score", "strand",
+            "thickStart", "thickEnd", "itemRgb", "uniprot_ac", "uniprot_pos",
+            "pfam_id", "consensus_pos", "homolog_missense_P_count", "homolog_missense_LP_count",
+            "clinvar_P_accessions", "clinvar_LP_accessions", "metadome_url"]) + "\n"
         coverage_header = header_block(
-            args.prefix, args.genome_build, "Pfam domain coverage track, bed6+5",
-            ["every codon aligning to a Pfam domain consensus position",
-             "field definitions in pfam_coverage.as"])
+            args.prefix, os.path.basename(coverage_path), args.genome_build,
+            "Pfam domain coverage track",
+            ["GENCODE", "UniProt", "Pfam"],
+            ["Codons sharing a Pfam accession and consensus position."])
+        coverage_header += "#" + "\t".join([
+            "chrom", "chromStart", "chromEnd", "name", "score", "strand",
+            "uniprot_ac", "uniprot_pos", "pfam_id", "consensus_pos",
+            "metadome_url"]) + "\n"
         clinvar_rows, coverage_rows = build_domain_tracks(
             args.final_dataset, args.genome_build, clinvar_path, coverage_path,
             clinvar_header, coverage_header)
         print("  metadomain ClinVar rows : {}".format(clinvar_rows))
         print("  Pfam coverage rows      : {}".format(coverage_rows))
-        # bed9 + 11 extras: uniprot_ac, uniprot_pos, pfam_id, consensus_pos,
-        # four homologue counts, two accession lists, metadome_url.
         print("\nConvert with bedToBigBed (the comment header must be stripped):")
         print("  grep -v '^#' {} \\".format(clinvar_path))
-        print("    | bedToBigBed -type=bed9+11 -as=metadomain_clinvar.as -tab \\")
+        print("    | bedToBigBed -type=bed9+9 -as=metadomain_clinvar.as -tab \\")
         print("        stdin <chrom.sizes> {}".format(clinvar_path.replace(".bed", ".bb")))
         print("  grep -v '^#' {} \\".format(coverage_path))
         print("    | bedToBigBed -type=bed6+5 -as=pfam_coverage.as -tab \\")

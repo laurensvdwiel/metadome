@@ -73,9 +73,10 @@ COLUMNS = [
     "pathogenic_missense_P_count", "pathogenic_missense_LP_count",
     "clinvar_P_at_position", "clinvar_LP_at_position",
     "meta_domain_clinvar_P_records", "meta_domain_clinvar_LP_records",
+    "meta_domain_clinvar_P_missense_records", "meta_domain_clinvar_LP_missense_records",
 ]
 
-BLANK_PLACEMENT = [""] * 14  # domain_id .. LP records, for codons outside any domain
+BLANK_PLACEMENT = [""] * 16  # domain_id .. LP records, for codons outside any domain
 
 VISUALIZATION_FILE = "metadome_visualization.json"
 CLINVAR_FILE = "metadomain_snv_annotation_clinvar"
@@ -177,6 +178,7 @@ def homologues(domain_id, consensus, own_codon):
     """
     pathogenic, likely = {}, {}
     pathogenic_ids, likely_ids = {}, {}
+    pathogenic_missense_ids, likely_missense_ids = {}, {}
     at_position_p, at_position_lp = set(), set()
     for identifier, is_pathogenic, is_missense, representation in _CLINVAR.get((domain_id, consensus), ()):
         if own_codon in representation:
@@ -185,14 +187,20 @@ def homologues(domain_id, consensus, own_codon):
         if is_pathogenic:
             pathogenic[representation] = is_missense
             pathogenic_ids[identifier] = None
+            if is_missense:
+                pathogenic_missense_ids[identifier] = None
         else:
             likely[representation] = is_missense
             likely_ids[identifier] = None
+            if is_missense:
+                likely_missense_ids[identifier] = None
     return {
         "p": len(pathogenic),
         "lp": len(likely),
         "p_missense": sum(1 for missense in pathogenic.values() if missense),
         "lp_missense": sum(1 for missense in likely.values() if missense),
+        "p_missense_ids": list(pathogenic_missense_ids),
+        "lp_missense_ids": list(likely_missense_ids),
         "at_p": len(at_position_p),
         "at_lp": len(at_position_lp),
         "p_ids": list(pathogenic_ids),
@@ -305,6 +313,7 @@ def flatten(path):
                         found["p"], found["lp"], found["p_missense"], found["lp_missense"],
                         found["at_p"], found["at_lp"],
                         ",".join(found["p_ids"]), ",".join(found["lp_ids"]),
+                        ",".join(found["p_missense_ids"]), ",".join(found["lp_missense_ids"]),
                     ])
 
         if not placements:

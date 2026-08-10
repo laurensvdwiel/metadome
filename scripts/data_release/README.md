@@ -36,7 +36,7 @@ Joins two on-disk sources per genome build:
 - `metadomains/<build>/<PFxxxxx>/metadomain_snv_annotation_clinvar` — ClinVar
   accessions, keyed by domain consensus position
 
-Output is 30 columns, one row per transcript, codon fragment and domain
+Output is 32 columns, one row per transcript, codon fragment and domain
 placement. A codon outside every Pfam domain gets a row with the domain columns
 empty, and a codon split across an exon boundary yields one row per fragment.
 
@@ -45,7 +45,7 @@ initiator methionine. The two sources are joined on
 `(domain_id, consensus_pos)`.
 
 Homologous counts and accessions describe the evolutionarily equivalent
-positions in other genes; ClinVar records on the annotated codon itself are
+positions in homologous protein domains at other genomic locations; ClinVar records on the annotated codon itself are
 reported separately in `clinvar_P_at_position` and `clinvar_LP_at_position`.
 Counts are of distinct single nucleotide variants, so an accession list can be
 shorter than its count when one ClinVar record appears in more than one reading
@@ -103,14 +103,14 @@ report how often that happens.
 ## `metadomain_clinvar.as` and `pfam_coverage.as`
 
 autoSql schemas describing the extra columns of the two domain tracks,
-`bed9+11` and `bed6+5`. BED defines names only for its first twelve columns, so
+`bed9+9` and `bed6+5`. BED defines names only for its first twelve columns, so
 these files document the rest: each extra field's name, type and meaning.
 
 They also validate the tracks. The commented header is stripped first:
 
 ```bash
 grep -v '^#' <prefix>_derived-track-metadomain-clinvar.bed \
-  | bedToBigBed -type=bed9+11 -as=metadomain_clinvar.as -tab \
+  | bedToBigBed -type=bed9+9 -as=metadomain_clinvar.as -tab \
       stdin <chrom.sizes> <prefix>_derived-track-metadomain-clinvar.bb
 
 grep -v '^#' <prefix>_derived-track-pfam-domain-coverage.bed \
