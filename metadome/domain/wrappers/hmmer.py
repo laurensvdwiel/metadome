@@ -1,3 +1,8 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  The Pfam HMM binaries are used only by generate_pfam_alignments,
+#  called from meta_domain_creation and so from install.py, which no
+#  longer exists. The live meta-domain path is retrieve_pfam_aligned_codons,
+#  which reads the database.
 import logging
 from metadome.default_settings import PFAM_HMM_DAT, HMMFETCH_EXECUTABLE, PFAM_HMM,\
     HMMALIGN_EXECUTABLE, HMMEMIT_EXECUTABLE, HMMSTAT_EXECUTABLE,\

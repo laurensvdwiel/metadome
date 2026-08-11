@@ -27,13 +27,7 @@ services:
             - ${PWD}:/usr/src/app
             - data:/usr/data
             - clinvar:/usr/data/ClinVar
-            - gencode:/usr/data/Gencode
             - gnomad:/usr/data/gnomAD
-            - pfam:/usr/data/PFAM
-            - uniprot:/usr/data/UniProt
-            - /usr/bin/docker:/usr/bin/docker               # Point the local file to where your docker executable is located
-            - /var/run/docker.sock:/var/run/docker.sock     # Point the local file to where your docker.sock is located
-            - interpro_temp:/usr/interpro_temp
     celery:
         restart: always
         build:
@@ -57,13 +51,7 @@ services:
             - ${PWD}:/usr/src/app
             - data:/usr/data
             - clinvar:/usr/data/ClinVar
-            - gencode:/usr/data/Gencode
             - gnomad:/usr/data/gnomAD
-            - pfam:/usr/data/PFAM
-            - uniprot:/usr/data/UniProt
-            - /usr/bin/docker:/usr/bin/docker               # Point the local file to where your docker executable is located
-            - /var/run/docker.sock:/var/run/docker.sock     # Point the local file to where your docker.sock is located
-            - interpro_temp:/usr/interpro_temp
     db:
         restart: always
         image: postgres:18.0
@@ -124,28 +112,10 @@ volumes:
         device: ${CLINVAR_DIR}
         o: bind
       driver: local
-   gencode:
-      driver_opts:
-        type: none
-        device: ${GENCODE_DIR}
-        o: bind
-      driver: local
    gnomad:
       driver_opts:
         type: none
         device: ${GNOMAD_DIR}
-        o: bind
-      driver: local
-   pfam:
-      driver_opts:
-        type: none
-        device: ${PFAM_DIR}
-        o: bind
-      driver: local
-   uniprot:
-      driver_opts:
-        type: none
-        device: ${UNIPROT_DIR}
         o: bind
       driver: local
    metadome_postgres_db:
@@ -154,4 +124,3 @@ volumes:
         device: ${METADOME_POSTGRES_DB_DIR}
         o: bind
       driver: local
-   interpro_temp: # Do not change this, this should be the last line with nothing behind it.

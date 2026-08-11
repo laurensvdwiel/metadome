@@ -73,35 +73,35 @@ GENOME_BUILDS_FILE = DATA_DIR+'genome_builds.txt'
 # local executables
 BLASTP_EXECUTABLE = "/usr/externals/blast/bin/blastp" # TODO(dead-data-generation): BLAST+ has no live callers since install.py was removed.
 CLUSTALW_EXECUTABLE = "/usr/externals/clustalw/clustalw2" # TODO(dead-data-generation): ClustalW has no live callers since install.py was removed.
-HMMFETCH_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmfetch"
-HMMLOGO_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmlogo"
-HMMALIGN_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmalign"
-HMMEMIT_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmemit"
-HMMSTAT_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmstat"
+HMMFETCH_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmfetch" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+HMMLOGO_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmlogo" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+HMMALIGN_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmalign" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+HMMEMIT_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmemit" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+HMMSTAT_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmstat" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
 
 # Genome specific files
-GENCODE_HG_ANNOTATION_FILE_GTF = DATA_DIR+"Gencode/gencode.v19.annotation.gtf"
-GENCODE_HG_ANNOTATION_FILE_GFF3 = DATA_DIR+"Gencode/gencode.v19.annotation.gff3"
-GENCODE_HG_TRANSCRIPTION_FILE = DATA_DIR+"Gencode/gencode.v19.pc_transcripts.fa"
-GENCODE_HG_TRANSLATION_FILE = DATA_DIR+"Gencode/gencode.v19.pc_translations.fa"
-GENCODE_REFSEQ_FILE = DATA_DIR+"Gencode/gencode.v19.metadata.RefSeq"
-GENCODE_SWISSPROT_FILE = DATA_DIR+"Gencode/gencode.v19.metadata.SwissProt"
-GENCODE_BASIC_FILE = DATA_DIR+"Gencode/ucsc.gencode.v19.wgEncodeGencodeBasic.txt"
+GENCODE_HG_ANNOTATION_FILE_GTF = DATA_DIR+"Gencode/gencode.v19.annotation.gtf" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+GENCODE_HG_ANNOTATION_FILE_GFF3 = DATA_DIR+"Gencode/gencode.v19.annotation.gff3" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+GENCODE_HG_TRANSCRIPTION_FILE = DATA_DIR+"Gencode/gencode.v19.pc_transcripts.fa" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+GENCODE_HG_TRANSLATION_FILE = DATA_DIR+"Gencode/gencode.v19.pc_translations.fa" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+GENCODE_REFSEQ_FILE = DATA_DIR+"Gencode/gencode.v19.metadata.RefSeq" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+GENCODE_SWISSPROT_FILE = DATA_DIR+"Gencode/gencode.v19.metadata.SwissProt" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+GENCODE_BASIC_FILE = DATA_DIR+"Gencode/ucsc.gencode.v19.wgEncodeGencodeBasic.txt" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
 
 # InterPro Files
-INTERPROSCAN_DOCKER_IMAGE = "blaxterlab/interproscan:5.22-61.0"
-INTERPROSCAN_DOCKER_VOLUME = 'metadom_interpro_temp'
-INTERPROSCAN_EXECUTABLE = "interproscan.sh"
-INTERPROSCAN_TEMP_DIR = '/usr/interpro_temp'
-INTERPROSCAN_DOMAIN_DATABASES = 'Pfam'
+INTERPROSCAN_DOCKER_IMAGE = "blaxterlab/interproscan:5.22-61.0" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+INTERPROSCAN_DOCKER_VOLUME = 'metadom_interpro_temp' # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+INTERPROSCAN_EXECUTABLE = "interproscan.sh" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+INTERPROSCAN_TEMP_DIR = '/usr/interpro_temp' # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+INTERPROSCAN_DOMAIN_DATABASES = 'Pfam' # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
 
 # UNIPROT
-UNIPROT_MAX_BLAST_RESULTS = 10
-UNIPROT_DIR = DATA_DIR+"UniProt/"
-UNIPROT_SPROT_CANONICAL_AND_ISOFORM = UNIPROT_DIR+"uniprot_sprot_canonical_and_varsplic.fasta"
-UNIPROT_SPROT_ISOFORM = UNIPROT_DIR+"uniprot_sprot_varsplic.fasta"
-UNIPROT_SPROT_CANONICAL = UNIPROT_DIR+"uniprot_sprot.fasta"
-UNIPROT_SPROT_SPECIES_FILTER = "HUMAN"
+UNIPROT_MAX_BLAST_RESULTS = 10 # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+UNIPROT_DIR = DATA_DIR+"UniProt/" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+UNIPROT_SPROT_CANONICAL_AND_ISOFORM = UNIPROT_DIR+"uniprot_sprot_canonical_and_varsplic.fasta" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+UNIPROT_SPROT_ISOFORM = UNIPROT_DIR+"uniprot_sprot_varsplic.fasta" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+UNIPROT_SPROT_CANONICAL = UNIPROT_DIR+"uniprot_sprot.fasta" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+UNIPROT_SPROT_SPECIES_FILTER = "HUMAN" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
 
 # Meta-domain files
 METADOMAIN_DIR = DATA_DIR+"metadomains/"
@@ -123,10 +123,10 @@ METADOMAIN_CACHE_MAXSIZE = 100 # set at 100 as in 2027 build the meta-domains wi
 PREBUILD_PRINT_LIST_EXAMPLES_CAP = 25  # how many example ids to print per category
 
 # PFAM specific files
-PFAM_DIR = DATA_DIR+"PFAM/Pfam30.0"
-PFAM_ALIGNMENT_DIR = PFAM_DIR+"/alignment/"
-PFAM_HMM_DAT = PFAM_DIR+"/Pfam-A.hmm.dat.gz"
-PFAM_HMM = PFAM_DIR+"/Pfam-A.hmm"
+PFAM_DIR = DATA_DIR+"PFAM/Pfam30.0" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+PFAM_ALIGNMENT_DIR = PFAM_DIR+"/alignment/" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+PFAM_HMM_DAT = PFAM_DIR+"/Pfam-A.hmm.dat.gz" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
+PFAM_HMM = PFAM_DIR+"/Pfam-A.hmm" # TODO(dead-data-generation): no live readers. These paths were used by the mapping generation that install.py drove; the corresponding volumes are no longer mounted in docker-compose.yml.
 
 # gnomAD specific files
 GNOMAD_DIR = DATA_DIR + "gnomAD/"

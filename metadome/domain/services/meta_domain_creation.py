@@ -1,3 +1,5 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  Reached only through database_creation and install.py, which no longer exists.
 from metadome.domain.repositories import InterproRepository
 from metadome.domain.data_generation.mapping.meta_domain_mapping import generate_pfam_alignments
 

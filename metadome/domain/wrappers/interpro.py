@@ -1,3 +1,5 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  Reached only through database_creation and install.py, which no longer exists.
 import logging
 from metadome.default_settings import INTERPROSCAN_EXECUTABLE,\
     INTERPROSCAN_DOCKER_IMAGE, INTERPROSCAN_TEMP_DIR,\
