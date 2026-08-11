@@ -1,3 +1,6 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  The only entry point into this module was install.py, which no longer exists.
+#  Mappings now arrive prebuilt through populate_database.sh.
 from metadome.database import db
 from metadome.domain.models.protein import Protein
 from metadome.domain.models.interpro import Interpro

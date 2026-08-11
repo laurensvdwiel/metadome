@@ -71,8 +71,8 @@ GENE_NAMES_FILE = DATA_DIR+'gene_names.txt'
 GENOME_BUILDS_FILE = DATA_DIR+'genome_builds.txt'
 
 # local executables
-BLASTP_EXECUTABLE = "/usr/externals/blast/bin/blastp"
-CLUSTALW_EXECUTABLE = "/usr/externals/clustalw/clustalw2"
+BLASTP_EXECUTABLE = "/usr/externals/blast/bin/blastp" # TODO(dead-data-generation): BLAST+ has no live callers since install.py was removed.
+CLUSTALW_EXECUTABLE = "/usr/externals/clustalw/clustalw2" # TODO(dead-data-generation): ClustalW has no live callers since install.py was removed.
 HMMFETCH_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmfetch"
 HMMLOGO_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmlogo"
 HMMALIGN_EXECUTABLE = "/usr/externals/hmmer/binaries/hmmalign"

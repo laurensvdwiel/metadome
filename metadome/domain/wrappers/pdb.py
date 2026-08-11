@@ -1,3 +1,5 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  Reached only via mapping_generator -> database_creation -> install.py, which no longer exists.
 import logging
 from metadome.domain.wrappers.blast import run_blast, interpretation_to_string,\
     interpret_blast_as_pdb

@@ -1,3 +1,5 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  Reached only via mapping_generator -> database_creation -> install.py, which no longer exists.
 import logging
 from metadome.domain.wrappers.blast import run_blast, interpret_blast_as_uniprot
 from metadome.domain.wrappers.gencode import retrieveSwissProtIDs,\
