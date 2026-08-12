@@ -68,3 +68,37 @@ its homologous counts when the release is built, so a variant must never appear
 among its own accessions. The reported `self-contamination` count must be zero;
 anything else means the coordinate conversion is wrong and the output should be
 discarded.
+
+## `plot_clinvar_analysis.py`
+  
+Draws a plotted figure from the output of `clinvar_analysis.sh` for one genome build. 
+
+### Running
+  
+`pandas`, `seaborn` and `matplotlib` are not application dependencies and are
+not in `requirements.txt`. `Dockerfile_plots` provides them:
+  
+```bash
+docker build -f Dockerfile_plots -t metadome-plots .
+  
+docker run --rm -u "$(id -u):$(id -g)" \
+    -v /path/to/output:/work -v "$PWD:/scripts:ro" metadome-plots \
+    python /scripts/plot_clinvar_analysis.py \
+        --table vus_metadomain_GRCh38.p14.tsv \
+        --summary vus_metadomain_GRCh38.p14_summary.tsv \
+        --genome-build GRCh38.p14 \
+        --counts
+```
+
+`-u` keeps the output owned by the invoking user rather than root. `/work` is
+the directory holding the tables, so `--table` and `--summary` are relative to
+it and the figures are written beside them.
+  
+### Output
+  
+`vus_metadomain_<build>.pdf` and `.png` at 300 dpi. `--counts` additionally
+writes `vus_metadomain_<build>_panelB_counts.tsv`, the raw counts behind panel
+B, which partition the candidate set.
+  
+The thresholds printed on completion are the check: they are computed by pandas
+and must match the counts `clinvar_analysis.sh` reports.
