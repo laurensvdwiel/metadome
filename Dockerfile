@@ -1,7 +1,7 @@
 FROM python:3.13.3-bullseye
 
 # Running apt update to ensure the package list is up to date
-RUN apt-get update
+RUN apt-get update && apt-get install -y --no-install-recommends graphviz
 
 # Create directory for app
 RUN mkdir -p /usr/src/app
