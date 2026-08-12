@@ -5,22 +5,21 @@ Side-scripts for MetaDome operations, data processing and releases.
 Scripts are grouped by what they need in order to run, since that determines
 where they can be run.
 
-| Directory                                    | Needs                          | Runs in                            |
-| -------------------------------------------- | ------------------------------ | ---------------------------------- |
-| [`variant_annotation/`](variant_annotation/) | Flask app context + PostgreSQL | the `app` service (`linux/amd64`)  |
-| [`data_release/`](data_release/)             | prebuild output on disk only   | host or container, no database     |
+| Directory                                    | Needs                          | Runs in                          |
+| -------------------------------------------- | ------------------------------ | -------------------------------- |
+| [`variant_annotation/`](variant_annotation/) | Flask app context + PostgreSQL | the `app` service |
+| [`data_release/`](data_release/)             | prebuild output on disk only   | host or container, no database   |
+| [`variant_analysis/`](variant_analysis/)     | a published release + bcftools/bedtools | host, no database      |
 
 ## Why the split
 
-`Dockerfile` pins the app image to `--platform=linux/amd64`, because it installs
-x86-only BLAST+ and HMMER binaries. On Apple Silicon that image is emulated,
-which costs time on anything CPU-bound. The database, redis and rabbitmq
-services are `linux/arm64` and run natively.
-
-Scripts under `data_release/` use neither BLAST nor HMMER nor the database, and
-import nothing from `metadome`, so they need no Flask, SQLAlchemy or pysam and
-run natively on the host.
-
+`variant_annotation/` runs inside the `app` service because it uses the Flask
+application context and the repository layer, so it needs the database.
+  
+`data_release/` and `variant_analysis/` import nothing from `metadome` and read
+only files from disk, so they run natively on the host. `data_release/` needs
+Python; `variant_analysis/` needs `bcftools` and `bedtools`.
+  
 ## Paths
 
 Scripts resolve the data directory from `METADOME_DIR` in the repo-root `.env`,
@@ -28,7 +27,8 @@ the same variable `docker-compose.yml` substitutes into the `data` volume, so
 one invocation works on the host and inside a container alike. `--data-dir`
 overrides it; the fallback is `/usr/data`, the in-container mount point.
 
-`.env` is not committed. Copy `.env.example` and fill it in.
+`.env` is committed with the key names. The values are machine-specific, so
+keep your edits out of commits.
 
 ## Adding a script
 
