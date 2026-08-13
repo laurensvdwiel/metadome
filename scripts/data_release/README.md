@@ -40,8 +40,9 @@ Output is 32 columns, one row per transcript, codon fragment and domain
 placement. A codon outside every Pfam domain gets a row with the domain columns
 empty, and a codon split across an exon boundary yields one row per fragment.
 
-Genomic positions are 1-based inclusive. Protein positions are 1-based from the
-initiator methionine. The two sources are joined on
+The final dataset uses 1-based inclusive genomic positions. The derived tracks
+are 0-based half-open, as the BED format requires. Protein positions are 1-based
+from the initiator methionine in both. The two sources are joined on
 `(domain_id, consensus_pos)`.
 
 Homologous counts and accessions describe the evolutionarily equivalent
@@ -94,21 +95,27 @@ Emits three BED files and prints the aggregation statistics. Each file opens
 with a commented header carrying the release stem, the assembly and the Zenodo
 record.
 
-The tolerance track holds one row per genomic codon. Where transcripts overlap
-a codon and their scores disagree, the median is used; the printed statistics
-report how often that happens.
+The tolerance track holds one row per genomic codon, with `sw_dn_ds` and
+`sw_coverage` as separate columns and `score` carrying intolerance scaled to
+0–1000 so genome browsers shade intolerant positions darkest. Where transcripts
+overlap a codon and their scores disagree, the median is used; the printed
+statistics report how often that happens. 
 
 `--skip-tolerance` and `--skip-domains` build a subset.
 
-## `metadomain_clinvar.as` and `pfam_coverage.as`
+## `tolerance_landscape.as`, `metadomain_clinvar.as` and `pfam_coverage.as`
 
-autoSql schemas describing the extra columns of the two domain tracks,
-`bed9+9` and `bed6+5`. BED defines names only for its first twelve columns, so
+autoSql schemas describing the extra columns of the three tracks,
+`bed6+2`, `bed9+9` and `bed6+5`. BED defines names only for its first twelve columns, so
 these files document the rest: each extra field's name, type and meaning.
 
 They also validate the tracks. The commented header is stripped first:
 
 ```bash
+grep -v '^#' <prefix>_derived-track-tolerance-landscape-sw10.bed \
+  | bedToBigBed -type=bed6+2 -as=tolerance_landscape.as -tab \
+      stdin <chrom.sizes> <prefix>_derived-track-tolerance-landscape-sw10.bb
+        
 grep -v '^#' <prefix>_derived-track-metadomain-clinvar.bed \
   | bedToBigBed -type=bed9+9 -as=metadomain_clinvar.as -tab \
       stdin <chrom.sizes> <prefix>_derived-track-metadomain-clinvar.bb
