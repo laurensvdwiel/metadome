@@ -1,0 +1,1770 @@
+/*******************************************************************************
+ * Global variables for landscape
+ ******************************************************************************/
+var selected_positions = 0;
+var meta_domain_ids = new Set();
+
+function getDashboardUrlState() {
+    const url = new URL(window.location.href);
+    const rawSelectedPositions = url.searchParams.get("selected_positions");
+    const rawPositionalInformation = url.searchParams.get("positional_information");
+
+    const parsedSelectedPositions = rawSelectedPositions
+        ? rawSelectedPositions.split(",")
+            .map(value => parseInt(value, 10))
+            .filter(value => Number.isInteger(value))
+        : [];
+
+    const parsedPositionalInformation = rawPositionalInformation !== null
+        ? parseInt(rawPositionalInformation, 10)
+        : null;
+
+    return {
+        selected_positions: parsedSelectedPositions,
+        positional_information: Number.isInteger(parsedPositionalInformation) ? parsedPositionalInformation : null
+    };
+}
+
+function setDashboardUrlState(selectedPositionList, positionalInformation) {
+    try {
+        const url = new URL(window.location.href);
+
+        if (selectedPositionList && selectedPositionList.length > 0) {
+            const orderedUniquePositions = Array.from(new Set(
+                selectedPositionList
+                    .map(value => parseInt(value, 10))
+                    .filter(value => Number.isInteger(value))
+            )).sort((a, b) => a - b);
+
+            url.searchParams.set("selected_positions", orderedUniquePositions.join(","));
+        } else {
+            url.searchParams.delete("selected_positions");
+        }
+
+        if (Number.isInteger(positionalInformation)) {
+            url.searchParams.set("positional_information", String(positionalInformation));
+        } else {
+            url.searchParams.delete("positional_information");
+        }
+
+        window.history.replaceState({}, "", url.toString());
+    } catch (e) {
+        // no-op
+    }
+}
+
+function getCurrentlySelectedPositionsFromTable() {
+    const positions = [];
+
+    d3.selectAll('#position_information_tbody tr').each(function() {
+        const headerCell = d3.select(this).select('th');
+        const position = parseInt(headerCell.text(), 10);
+        if (Number.isInteger(position)) {
+            positions.push(position);
+        }
+    });
+
+    return positions.sort((a, b) => a - b);
+}
+
+function syncDashboardUrlState() {
+    const currentState = getDashboardUrlState();
+    const selectedPositionList = getCurrentlySelectedPositionsFromTable();
+
+    let positionalInformation = currentState.positional_information;
+    if (Number.isInteger(positionalInformation) && !selectedPositionList.includes(positionalInformation)) {
+        positionalInformation = null;
+    }
+
+    setDashboardUrlState(selectedPositionList, positionalInformation);
+}
+
+function clearPositionalInformationFromUrl() {
+    try {
+        setDashboardUrlState(getCurrentlySelectedPositionsFromTable(), null);
+    } catch (e) {
+        // no-op
+    }
+}
+
+function closePositionalInformationOverlay() {
+    $("#positional_information_overlay").removeClass("is-active");
+    d3.selectAll(".tr").classed("is-selected", false);
+    clearPositionalInformationFromUrl();
+}
+
+// Defer DOM-dependent initialization
+var main_outerWidth = 1300;
+var main_outerHeight = 500;
+var main_svg = null;
+
+function initVisualizationGlobals() {
+    var container = document.getElementById('toleranceGraphContainer');
+    if (container && container.offsetWidth > 0) {
+        main_outerWidth = container.offsetWidth;
+    }
+    main_svg = d3.select("#landscape_svg")
+        .attr("width", main_outerWidth)
+        .attr("height", main_outerHeight);
+}
+
+// Declare margins
+var main_marginLandscape = {
+	top : 20,
+	right : 20,
+	bottom : 210,
+	left : 80
+};
+var main_marginLegend = {
+	top : 20,
+	right : 1240,
+	bottom : 210,
+	left : 20
+};
+var main_marginPositionInfo = {
+	top : 325,
+	right : 20,
+	bottom : 135,
+	left : 80
+};
+var main_marginAnnotations = {
+	top : 310,
+	right : 20,
+	bottom : 120,
+	left : 80
+};
+var main_marginExons = {
+    top: 390,
+    right: 20,
+    bottom: 80,
+    left: 80
+};
+var main_marginContext = {
+	top : 410,
+	right : 20,
+	bottom : 30,
+	left : 80
+};
+
+// Declare various UI widths and heights
+var main_width = main_outerWidth - main_marginLandscape.left - main_marginLandscape.right;
+var main_widthLegend = main_outerWidth - main_marginLegend.left - main_marginLegend.right;
+var main_heightLandscape = main_outerHeight - main_marginLandscape.top
+		- main_marginLandscape.bottom;
+var main_heightMarginPositionInfo = main_outerHeight - main_marginPositionInfo.top
+		- main_marginPositionInfo.bottom;
+var main_heightContext = main_outerHeight - main_marginContext.top - main_marginContext.bottom;
+var main_heightAnnotations = main_outerHeight - main_marginAnnotations.top
+		- main_marginAnnotations.bottom;
+var main_heightExons = main_outerHeight - main_marginExons.top - main_marginExons.bottom;
+
+// Scale the axis
+var main_x = d3.scaleLinear().range([ 40, main_width -60 ]).nice();
+var main_x2 = d3.scaleLinear().range([ 40, main_width -90 ]).nice();
+var main_y = d3.scaleLinear().range([ main_heightLandscape, 0 ]);
+var main_y_metadomain = d3.scaleLinear().range([ main_heightLandscape, 0 ]);
+
+// Set axis
+var main_xAxis = d3.axisBottom(main_x2).ticks(0);
+var main_yAxis = d3.axisLeft(main_y).ticks(0);
+
+
+// add the debounced brush element
+const debouncedBrushed = debounce(function(event) {
+    // Remove any pending indicator
+    d3.select("#landscape_svg").classed("updating", false);
+
+    var s = event.selection || main_x2.range();
+    main_x.domain(s.map(main_x2.invert, main_x2));
+    rescaleLandscape();
+}, 16); // 16ms = ~60fps
+
+// add the brush element
+var brush = d3.brushX()
+    .extent([[30, 0], [main_width-50, main_heightContext]])
+    .on("brush", function(event) { // Use debounced version during brushing
+        // Add visual indicator that update is pending
+        d3.select("#landscape_svg").classed("updating", true);
+        debouncedBrushed(event);
+    })
+    .on("end", brushed);  // Keep immediate response on brush end
+
+// Define the brushed function
+function brushed(event) {
+    var s = event.selection || main_x2.range();
+    main_x.domain(s.map(main_x2.invert, main_x2));
+    rescaleLandscape();
+}
+/*******************************************************************************
+ * Config variables for visuals
+ ******************************************************************************/
+
+// indicates the maximum tolerance score
+var maxTolerance = 1.8;
+
+// indicates if the metadomain landscape is visible
+var metadomain_graph_visible = true;
+
+// indicates if the exons are visible
+var exons_visible = true;
+
+// indicates if clinvar variants are annotated in the schematic protein representation
+var clinvar_variants_visible = false;
+
+//indicates if homologous clinvar variants are annotated in the schematic protein representation
+var homologous_clinvar_variants_visible = false;
+
+// Pfam domain spans for the current transcript, populated in createGraph
+var current_domain_data = [];
+
+// Homologous ClinVar counts for a meta-domain entry, split on clinical significance.
+// Untagged variants predate LP/P tagging and count as pathogenic.
+function pathogenicCountFor(domain_entry, missense_only){
+	var count_key = missense_only ? 'pathogenic_missense_variant_count' : 'pathogenic_variant_count';
+	return domain_entry[count_key] - likelyPathogenicCountFor(domain_entry, missense_only);
+}
+
+function likelyPathogenicCountFor(domain_entry, missense_only){
+	var count_key = missense_only ? 'pathogenic_missense_variant_count' : 'pathogenic_variant_count';
+	var per_clinsig = domain_entry[count_key + '_per_clinsig'];
+	return (per_clinsig && per_clinsig['Likely_pathogenic']) || 0;
+}
+
+// Counts ClinVar variants at a position, split the same way
+function countClinVarVariants(variants, likely_pathogenic){
+	return (variants || []).filter(function(variant){
+		return (variant.clinvar_clinsig === 'Likely_pathogenic') === likely_pathogenic;
+	}).length;
+}
+
+// indicates the various colors to indicate the tolerance
+var toleranceColorGradient = [ {
+	offset : "0%",
+	color : "#d7191c"
+}, {
+	offset : "12.5%",
+	color : "#e76818"
+}, {
+	offset : "25%",
+	color : "#f29e2e"
+}, {
+	offset : "37.5%",
+	color : "#f9d057"
+}, {
+	offset : "50%",
+	color : "#ffff8c"
+}, {
+	offset : "62.5%",
+	color : "#90eb9d"
+}, {
+	offset : "75%",
+	color : "#00ccbc"
+}, {
+	offset : "87.5%",
+	color : "#00a6ca"
+}, {
+	offset : "100%",
+	color : "#2c7bb6"
+} ]
+
+// Define a color scale for domains (can be placed at the top with other global variables)
+const domainColorScale = d3.scaleOrdinal()
+    .range([
+        '#9467bd', // purple
+        '#1f77b4', // blue
+        '#17becf', // cyan
+        '#7f7f7f', // gray
+        '#aec7e8', // light blue
+        '#c5b0d5', // light purple
+        '#c7c7c7', // light gray
+        '#9edae5', // light cyan
+        '#393b79', // dark blue
+        '#6b6ecf', // medium purple
+        '#9c9ede', // light purple-blue
+        '#637939', // dark olive-gray
+        '#8ca252', // muted olive
+        '#b5cf6b', // light olive
+        '#cedb9c', // very light olive
+        '#1b9e77', // teal
+        '#7570b3', // slate purple
+        '#d95f02', // burnt orange
+        '#666666', // medium gray
+        '#5254a3'  // dark slate blue
+    ]);
+
+const exonColorScale = d3.scaleOrdinal()
+    .range([
+        '#ff7f0e', // orange
+        '#8c564b', // brown
+        '#e377c2', // pink
+        '#bcbd22', // olive
+        '#98df8a', // light green
+        '#ff9896', // light red
+        '#d62728', // red
+        '#2ca02c', // green
+        '#ffbb78', // light orange
+        '#c49c94', // light brown
+        '#f7b6d3', // light pink
+        '#dbdb8d', // light olive
+        '#843c39', // dark brown
+        '#8c6d31', // dark brown-orange
+        '#a55194'  // dark pink-purple
+    ]);
+
+/*******************************************************************************
+ * Basic user interface elements
+ ******************************************************************************/
+
+// Define Area of Tolerance landscape graph
+var toleranceArea = d3.area().x(function(d) {
+	return main_x (d.protein_pos);
+}).y0(main_heightLandscape).y1(function(d) {
+	return main_y(d.sw_dn_ds);
+});
+
+// Define Line of Tolerance landscape line plot
+var toleranceLine = d3.line().x(function(d) {
+	return main_x (d.values[0].protein_pos);
+}).y(function(d) {
+	return main_y(d.values[0].sw_dn_ds);
+});
+
+/*******************************************************************************
+ * Helper functions and elements
+ ******************************************************************************/
+
+function calculatePositionWidth(d, startOffset = 0, endOffset = 0) {
+    const startPos = d.values[0].protein_pos;
+    const endPos = d.values[1].protein_pos;
+
+    if (endPos !== startPos) {
+        return main_x(endPos + endOffset) - main_x(startPos + startOffset);
+    } else {
+        return main_x(endPos + 1 + endOffset) - main_x(startPos + startOffset);
+    }
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+/*******************************************************************************
+ * Additional user interface elements
+ ******************************************************************************/
+
+// Define tooltip for pfamdomains
+var domainTip = d3.tip()
+	.attr('class', 'd3-tip')
+	.offset([ -10, 0 ])
+	.html(function(event, d) {
+	    return "<span><div style='text-align: center;'> Domain " + d.Name + " ("+d.ID+") </br> click for more information </div></span>";
+	});
+
+//Define tooltip for pfamdomains
+var domain_details_position_tip = d3.tip()
+	.attr('class', 'd3-tip')
+	.offset([ -10, 0 ])
+	.html(function(event, d) {
+	    return "<span> "+ d +"</span>";
+	});
+
+// Define tooltip for exons
+var exonTip = d3.tip()
+    .attr('class', 'd3-tip')
+    .offset([-10, 0])
+    .html(function(event, d) {
+        return "<span>Exon " + d.exon + "<br/>Positions: p." + d.start + "-" + d.end + ", c." + d.cdna_start + "-" + d.cdna_end + "</span>";
+    });
+
+// "Exon 4" or "Exon 3,4" for a codon spanning a boundary
+function exonDisplayFor(position){
+	const exonNumbers = position.exon_numbers.split(', ').map(function(num) {
+		return parseInt(num.trim(), 10);
+	});
+	const uniqueExons = [...new Set(exonNumbers)].sort(function(a, b) {
+		return a - b;
+	});
+	return uniqueExons.length === 1 ? "Exon " + uniqueExons[0]	: "Exon " + uniqueExons.join(',');
+}
+
+// Define tooltip for meta-domain positions
+var domain_details_position_tip = d3.tip()
+	.attr('class', 'd3-tip')
+	.offset([ -10, 0 ])
+	.html(function(event, d) {
+		var v = d.values[0];
+
+		// Parse and simplify exon numbers
+		const exonDisplay = exonDisplayFor(v);
+
+		var str = "<span>";
+		str += "Position: p." + v.protein_pos + " " + v.cdna_pos + " " + exonDisplay + "</br>";
+		str += "Codon: " + v.ref_codon + "</br>";
+		str += "Residue: " + v.ref_aa_triplet + "</br>";
+
+		var covering = current_domain_data.filter(function(dom){
+			return dom.start <= v.protein_pos && v.protein_pos < dom.stop;
+		});
+
+		var first = true;
+		covering.forEach(function(dom){
+			var entry = v.domains != null ? v.domains[dom.ID] : null;
+			if (!first) str += "</br>";
+			first = false;
+			str += "</br>Position located in domain: \"" + dom.Name + "\" (" + dom.ID + ")";
+			if (entry != null && entry.consensus_pos != null){
+				str += "</br>Aligned to consensus position " + entry.consensus_pos.join(", ");
+				str += "</br>Missense in other homologues:";
+				str += "</br>ClinVar Pathogenic " + (entry.pathogenic_missense_variant_count || 0)
+					+ ", gnomAD " + (entry.normal_missense_variant_count || 0);
+			} else {
+				str += "</br>Residue is not aligned to homologues";
+			}
+		});
+
+		str += "</br></br>Click to view more information on this position";
+
+		return str + "</span>";
+	});
+
+// Define tooltip for positions
+var positionTip = d3.tip()
+	.attr('class', 'd3-tip')
+	.offset([ -10, 0 ])
+	.html(function(event, d) {
+	    var positionTip_str = "<span>";
+
+        // Parse and simplify exon numbers
+	    const exonDisplay = exonDisplayFor(d.values[0]);
+
+	    positionTip_str += "Position: p." + d.values[0].protein_pos + " " + d.values[0].cdna_pos + " " + exonDisplay + "</br>";
+	    positionTip_str += "Codon: " + d.values[0].ref_codon + "</br>";
+	    positionTip_str += "Residue: " + d.values[0].ref_aa_triplet + "</br>";
+	    positionTip_str += "Tolerance score (dn/ds): " + (Math.round((d.values[0].sw_dn_ds) * 100) / 100) + ' (' + tolerance_rating(d.values[0].sw_dn_ds) + ')';
+		var domain_ids = d.values[0].domains != null ? Object.keys(d.values[0].domains) : [];
+		if (domain_ids.length > 0){
+				positionTip_str += "</br> In domain(s): " + domain_ids.join(", ");
+		}
+	    positionTip_str += "</br> Click to select this position</span>";
+	    return positionTip_str;
+	});
+
+/*******************************************************************************
+ * Main draw function
+ ******************************************************************************/
+
+//Reset all graph elements based on the obj
+function resetGraph(){
+    // reset the variables
+    selected_positions = 0;
+    meta_domain_ids.clear();
+
+    // Clean up existing tooltips
+    d3.selectAll('.d3-tip').remove();
+
+    // Hide tooltips
+    if (typeof domainTip !== 'undefined' && domainTip.hide) {
+        domainTip.hide();
+    }
+    if (typeof positionTip !== 'undefined' && positionTip.hide) {
+        positionTip.hide();
+    }
+    if (typeof domain_details_position_tip !== 'undefined' && domain_details_position_tip.hide) {
+        domain_details_position_tip.hide();
+    }
+
+    $("#selected_positions_information").addClass('is-hidden');
+    document.getElementById("selected_positions_explanation").innerHTML = 'Click on one of positions in the schematic protein to obtain more information';
+    $("#position_information_table").addClass('is-hidden');
+    d3.selectAll('.tr').remove();
+
+    // Initialize if not yet done
+    if (!main_svg) {
+        initVisualizationGlobals();
+    }
+
+    if (main_svg) {
+        main_svg.selectAll("*").remove();
+        main_svg = d3.select("#landscape_svg")
+            .attr("width", main_outerWidth)
+            .attr("height", main_outerHeight);
+    }
+}
+
+// Creates all graph elements based on the obj
+function createGraph(obj) {
+	$("#geneName").html(obj.geneName);
+
+	// Ensure globals are initialized
+    if (!main_svg) {
+        initVisualizationGlobals();
+    }
+
+	// Dynamically set width based on container (now visible)
+	var container = document.getElementById('toleranceGraphContainer');
+	if (container && container.offsetWidth > 0) {
+		main_outerWidth = container.offsetWidth;
+		main_svg.attr("width", main_outerWidth);
+		// Recalculate dependent widths
+		main_width = main_outerWidth - main_marginLandscape.left - main_marginLandscape.right;
+	}
+	
+	// reset the Graph
+	resetGraph();
+	
+	// Make the Selected positions visible
+	$("#selected_positions_information").removeClass('is-hidden');
+	
+	// Add defs to the svg
+	var defs = main_svg.append("defs")
+		.attr('class', 'defs');
+
+	// Add clipping to defs
+	main_svg.select('.defs').append("clipPath")
+		.attr("id", "clip")
+		.append("rect")
+		.attr("width", main_width)
+		.attr("height", main_heightLandscape);
+
+	// Extract the various data
+	var positional_annotation = obj.positional_annotation;
+
+    // Calculate position range
+	const minPos = Math.min(...positional_annotation.map(d => d.protein_pos));
+	const maxPos = Math.max(...positional_annotation.map(d => d.protein_pos));
+
+	// Add position range display at top of graph
+	main_svg.append("text")
+		.attr("id", "position_range_left")
+		.attr("text-anchor", "start")
+		.attr("x", main_marginLandscape.left)
+		.attr("y", 15)
+		.attr("class", "label")
+		.text("p." + minPos)
+		.style("pointer-events", "none")
+		.style("user-select", "none")
+		.style("font-weight", "bold");
+
+	main_svg.append("text")
+		.attr("id", "position_range_right")
+		.attr("text-anchor", "end")
+		.attr("x", main_outerWidth - main_marginLandscape.right)
+		.attr("y", 15)
+		.attr("class", "label")
+		.text("p." + maxPos)
+		.style("pointer-events", "none")
+		.style("user-select", "none")
+		.style("font-weight", "bold");
+
+	var domain_data = obj.domains;
+	current_domain_data = domain_data;
+
+	// setting x/y domain according to data
+	main_x.domain(d3.extent(positional_annotation, function(d) {
+	    return d.protein_pos;
+	}));
+	main_y.domain([ 0, maxTolerance ]);
+	main_x2.domain(main_x .domain());
+
+	// create a group from the tolerance data
+	var dataGroup = d3.groups(positional_annotation, d => d.protein_pos)
+    .map(([key, values]) => ({key: key, values: values}));
+
+	// add two consecutive data values per group, so these can be used in
+	// drawing rectangles
+	dataGroup.forEach(function(group, i) {
+	    	group.values.push([]);
+		if (i + 1 < dataGroup.length) {
+		    group.values[1].protein_pos = dataGroup[i + 1].values[0].protein_pos;
+		    group.values[1].sw_dn_ds = dataGroup[i + 1].values[0].sw_dn_ds;
+		} else if (i < dataGroup.length) {
+		    group.values[1].protein_pos = dataGroup[i].values[0].protein_pos;
+		    group.values[1].sw_dn_ds = dataGroup[i].values[0].sw_dn_ds;
+		}
+		group.values[0].selected = false;
+	})
+	
+	// create an overview of coverage per domain ID
+	var domain_metadomain_coverage = {}
+	for (var i = 0; i < domain_data.length; i++) { 
+		if (!(domain_data[i].ID in domain_metadomain_coverage)){
+			domain_metadomain_coverage[domain_data[i].ID] = domain_data[i].meta_domain_alignment_depth;
+		}
+	}
+	
+	// Draw all individual user interface elements based on the data
+	annotateDomains(domain_data, positional_annotation, domain_metadomain_coverage);
+	createToleranceGraph(dataGroup);
+	createToleranceGraphLegend();
+	drawMetaDomainLandscape(domain_data, dataGroup, domain_metadomain_coverage, obj.transcript_id);
+	createMetaDomainLegend();
+
+	// Add schematic protein overview as a custom Axis
+	createSchematicProtein(domain_metadomain_coverage, dataGroup, obj.transcript_id);
+
+    // Create exon visualization
+    createExonVisualization(dataGroup);
+
+	// Finally draw the context zoom
+	addContextZoomView(domain_data, dataGroup.length);
+	
+	// Add behaviour according to the settings
+	toggleToleranceLandscapeOrMetadomainLandscape();
+
+    // Safety net: reset bar colors and hide tooltips when pointer moves over non-interactive elements
+	main_svg.on("pointermove", function(event) {
+		const target = event.target;
+		const isInteractive = target.classList.contains('pfamDomains') ||
+		                      target.classList.contains('toleranceAxisTick') ||
+		                      target.classList.contains('normal_missense_variant_count') ||
+		                      target.classList.contains('pathogenic_missense_variant_count') ||
+		                      target.classList.contains('not_aligned_position_plot') ||
+		                      target.classList.contains('exon-block') ||
+		                      target.closest('.exon-group');
+
+		if (!isInteractive) {
+			// Hide all tooltips
+			if (domainTip) domainTip.hide();
+			if (positionTip) positionTip.hide();
+			if (domain_details_position_tip) domain_details_position_tip.hide();
+			if (exonTip) exonTip.hide();
+
+			// Reset all bar colors to original
+			d3.selectAll('.normal_missense_variant_count').style("fill", "green");
+			d3.selectAll('.pathogenic_missense_variant_count').style("fill", "red");
+			d3.selectAll('.not_aligned_position_plot').style("fill", "black");
+
+			// Reset domain colors to original
+			d3.selectAll('.pfamDomains').each(function(d) {
+				d3.select(this)
+					.style("fill", d._color)
+					.style("opacity", 0.7);
+			});
+		}
+	});
+
+	main_svg.on("pointerleave", function() {
+		// Always hide tooltips and reset colors when leaving the SVG
+		if (domainTip) domainTip.hide();
+		if (positionTip) positionTip.hide();
+		if (domain_details_position_tip) domain_details_position_tip.hide();
+		if (exonTip) exonTip.hide();
+
+		// Reset all bar colors
+		d3.selectAll('.normal_missense_variant_count').style("fill", "green");
+		d3.selectAll('.pathogenic_missense_variant_count').style("fill", "red");
+		d3.selectAll('.not_aligned_position_plot').style("fill", "black");
+
+		// Reset domain colors to original
+		d3.selectAll('.pfamDomains').each(function(d) {
+			d3.select(this)
+				.style("fill", d._color)
+				.style("opacity", 0.7);
+		});
+	});
+
+    // Scroll-to-zoom: zoom in/out with mousewheel over the graph
+	main_svg.on("wheel", function(event) {
+		event.preventDefault(); // Prevent page scroll
+
+		// Get current brush selection (or full range if no selection)
+		const brushSelection = d3.brushSelection(d3.select("#brush_for_zooming").node());
+		let currentStart, currentEnd;
+
+		if (brushSelection) {
+			currentStart = main_x2.invert(brushSelection[0]);
+			currentEnd = main_x2.invert(brushSelection[1]);
+		} else {
+			currentStart = main_x2.domain()[0];
+			currentEnd = main_x2.domain()[1];
+		}
+
+		const currentRange = currentEnd - currentStart;
+		const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9; // Zoom out or in
+		const newRange = currentRange * zoomFactor;
+
+		// Calculate center point (where the mouse is hovering)
+		const mouseX = event.offsetX - main_marginContext.left;
+		const mousePosition = main_x2.invert(mouseX);
+
+		// Calculate how much the mouse position represents in the current view
+		const mouseRatio = (mousePosition - currentStart) / currentRange;
+
+		// Calculate new start/end centered on mouse position
+		let newStart = mousePosition - (newRange * mouseRatio);
+		let newEnd = mousePosition + (newRange * (1 - mouseRatio));
+
+		// Clamp to data bounds
+		const dataBounds = main_x2.domain();
+		if (newStart < dataBounds[0]) {
+			newEnd += dataBounds[0] - newStart;
+			newStart = dataBounds[0];
+		}
+		if (newEnd > dataBounds[1]) {
+			newStart -= newEnd - dataBounds[1];
+			newEnd = dataBounds[1];
+		}
+
+		// Clamp again to ensure we don't go out of bounds
+		newStart = Math.max(newStart, dataBounds[0]);
+		newEnd = Math.min(newEnd, dataBounds[1]);
+
+		// Apply the new selection to the brush
+		const newSelection = [main_x2(newStart), main_x2(newEnd)];
+		d3.select("#brush_for_zooming").call(brush.move, newSelection);
+	});
+}
+
+function drawMetaDomainLandscape(domain_data, data, domain_metadomain_coverage, transcript_id){
+    // get all possible domain ids
+    for (var i = 0; i < domain_data.length; i++){
+        if (domain_data[i].metadomain){
+            meta_domain_ids.add(domain_data[i].ID);
+        }
+    }
+
+    // Pre-calculate variant counts and attach to data objects
+    data.forEach((d, index) => {
+        let normal_count = 0;
+        let pathogenic_count = 0;
+        let not_aligned = 0;
+
+        if (d.values[0].domains != null) {
+            meta_domain_ids.forEach(domain_id => {
+                if (d.values[0].hasOwnProperty('domains') && d.values[0].domains[domain_id] != null) {
+                    normal_count = Math.max(d.values[0].domains[domain_id].normal_missense_variant_count, normal_count);
+					// the landscape only ever plots pathogenic variants, never likely pathogenic ones
+                    pathogenic_count = Math.max(pathogenicCountFor(d.values[0].domains[domain_id], true), pathogenic_count);
+                }
+            });
+
+            // Calculate not aligned positions
+            for (var i = 0; i < domain_data.length; i++){
+                if (domain_data[i].start <= d.values[0].protein_pos &&
+                    d.values[0].protein_pos < domain_data[i].stop &&
+                    d.values[0].domains[domain_data[i].ID] == null){
+                    not_aligned = 1;
+                }
+            }
+        }
+
+        // Attach pre-calculated values to the data object
+        d._preCalc = {
+            normal: normal_count,
+            pathogenic: pathogenic_count,
+            notAligned: not_aligned
+        };
+    });
+
+    // Calculate global maximums
+    var global_max_normal = Math.max(...data.map(d => d._preCalc.normal));
+    var global_max_pathogenic = Math.max(...data.map(d => d._preCalc.pathogenic));
+    var global_max_value = global_max_pathogenic || global_max_normal;
+
+    // Add barplot for the metadomain variation landscape
+    var meta_domain_landscape_canvas = main_svg.append("g")
+        .attr("id", "metadomain_graph")
+        .attr("transform", "translate(" + main_marginLandscape.left + "," + main_marginLandscape.top + ")");
+
+    // Call the tooltips
+    meta_domain_landscape_canvas.call(domain_details_position_tip);
+
+    // Define the axes based on the data
+    main_y_metadomain.domain([0, global_max_value]);
+
+    // Draw the meta-domain normal missense variation barplot
+    meta_domain_landscape_canvas.selectAll(".bar")
+    .data(data)
+    .enter()
+    .append("rect")
+    .attr("class", "normal_missense_variant_count")
+    .attr("x", function(d) { return main_x(d.values[0].protein_pos - 0.5); })
+    .attr("y", function(d) {
+        const count = d._preCalc.normal;
+        return count ? main_y_metadomain((global_max_value/global_max_normal)*count) : main_heightLandscape;
+    })
+    .attr("width", function(d) {
+        return calculatePositionWidth(d, 0, -0.6);
+    })
+    .attr("height", function(d) {
+        const count = d._preCalc.normal;
+        return count ? main_heightLandscape - main_y_metadomain((global_max_value/global_max_normal)*count) : 0;
+    })
+    .style("clip-path", "url(#clip)")
+    .style("fill", "green")
+    .on("click", function(event, d) {
+        createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
+    })
+    .on("pointerenter", function(event, d) {
+        if (metadomain_graph_visible){
+            event.stopPropagation();
+            domain_details_position_tip.show(event, d);
+            d3.select(this).style("fill", "orange").raise();
+        }
+    })
+    .on("pointerleave", function(event, d) {
+        event.stopPropagation();
+        domain_details_position_tip.hide();
+        d3.select(this).style("fill", "green").lower();
+    });
+
+    // Draw the meta-domain pathogenic missense variation barplot
+    meta_domain_landscape_canvas.selectAll(".bar2")  // Note: changed to .bar2 to avoid selection conflict
+    .data(data)
+    .enter()
+    .append("rect")
+    .attr("class", "pathogenic_missense_variant_count")
+    .attr("x", function(d) { return main_x(d.values[0].protein_pos); })
+    .attr("y", function(d) {
+        const count = d._preCalc.pathogenic;
+        return count ? main_y_metadomain((global_max_value/global_max_pathogenic)*count) : main_heightLandscape;
+    })
+    .attr("width", function(d) {
+        return calculatePositionWidth(d, 0, -0.6);
+    })
+    .attr("height", function(d) {
+        const count = d._preCalc.pathogenic;
+        return count ? main_heightLandscape - main_y_metadomain((global_max_value/global_max_pathogenic)*count) : 0;
+    })
+    .style("clip-path", "url(#clip)")
+    .style("fill", "red")
+    .on("click", function(event, d) {
+        createPositionalInformation(domain_metadomain_coverage, transcript_id, d)
+    })
+    .on("pointerenter", function(event, d) {
+        if (metadomain_graph_visible){
+            event.stopPropagation();
+            domain_details_position_tip.show(event, d);
+            d3.select(this).style("fill", "orange").raise();
+        }
+    })
+    .on("pointerleave", function(event, d) {
+        event.stopPropagation();
+        domain_details_position_tip.hide();
+        d3.select(this).style("fill", "red").lower();
+    });
+
+    // Draw not aligned barplots
+    meta_domain_landscape_canvas.selectAll(".bar3")  // Note: changed to .bar3
+    .data(data)
+    .enter()
+    .append("rect")
+    .attr("class", "not_aligned_position_plot")
+    .attr("x", function(d) { return main_x(d.values[0].protein_pos); })
+    .attr("y", function(d) {
+        return d._preCalc.notAligned ? main_y_metadomain((global_max_value/10)) : main_heightLandscape;
+    })
+    .attr("width", function(d) {
+        return calculatePositionWidth(d);
+    })
+    .attr("height", function(d) {
+        return d._preCalc.notAligned ? main_heightLandscape - main_y_metadomain(global_max_value/10) : 0;
+    })
+    .style("clip-path", "url(#clip)")
+    .style("fill", "black")
+    .on("pointerenter", function(event, d) {
+        if (metadomain_graph_visible){
+            event.stopPropagation();
+            domain_details_position_tip.show(event, d);
+            d3.select(this).style("fill", "orange").raise();
+        }
+    })
+    .on("pointerleave", function(event, d) {
+        event.stopPropagation();
+        domain_details_position_tip.hide();
+        d3.select(this).style("fill", "black").lower();
+    });
+}
+
+/*******************************************************************************
+ * Drawing user interface component
+ ******************************************************************************/
+
+// Draw the tolerance graph
+function createToleranceGraph(dataGroup) {
+    // append focus view
+    var focus = main_svg.append("g")
+        .attr("class", "focus")
+        .attr("id", "tolerance_graph")
+        .attr("transform", `translate(${main_marginLandscape.left}, ${main_marginLandscape.top})`);
+
+    // Batch create all paths first, then gradients
+    var paths = focus.selectAll(".area")
+        .data(dataGroup)
+        .enter()
+        .append("path")
+        .datum(d => d.values)
+        .attr("class", "area")
+        .attr("d", toleranceArea);
+
+    // Create all gradients
+    dataGroup.forEach(function(d) {
+        // create a linear gradient, specific for this position
+        var lineargradient = main_svg.append("linearGradient")
+            .attr("id", "area-gradient_" + d.values[0].protein_pos + "-" + d.values[1].protein_pos)
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%");
+
+        // calculate the offset start score
+        lineargradient.append("stop")
+            .attr("class", "start")
+            .attr("offset", "0%")
+            .attr("stop-color", tolerance_color(d.values[0].sw_dn_ds));
+
+        // calculate the offset stop score
+        lineargradient.append("stop")
+            .attr("class", "end")
+            .attr("offset", "100%")
+            .attr("stop-color", tolerance_color(d.values[1].sw_dn_ds));
+    });
+
+    // color the area under the curve in contrast to the tolerance score
+    paths.style("fill", function(d, i) {
+        return "url(#area-gradient_" + d[0].protein_pos + "-" + d[1].protein_pos + ")";
+    });
+
+    // add tolerance line
+    focus.append('path').datum(dataGroup)
+        .attr('class', 'line')
+        .attr('id', 'toleranceLine')
+        .attr('fill', 'none')
+        .attr("stroke", "black")
+        .attr('stroke-width', "0.5px")
+        .style("clip-path", "url(#clip)")
+        .attr('d', toleranceLine);
+
+    // append yAxis for focus view
+    focus.append("g").attr("class", "axis axis--y").call(main_yAxis);
+}
+
+// Draw the axis and labels
+function createSchematicProtein(domain_metadomain_coverage, groupedTolerance, transcript_id) {
+    // Add the Axis
+    var focusAxis = main_svg.append("g")
+        .attr("class", "focusAxis")
+        .attr("id", "tolerance_axis");
+
+    // Pre-calculate widths to avoid repeated calculations
+    const positionData = groupedTolerance.map(d => {
+        const x = main_x(d.values[0].protein_pos - 0.5);
+        const width = calculatePositionWidth(d);
+
+        return {
+            ...d,
+            _x: x,
+            _width: width,
+            _textX: main_x(d.values[0].protein_pos)
+        };
+    });
+
+    // Store min/max positions for display range
+    window.actualMinProteinPos = positionData[0].values[0].protein_pos;
+    window.actualMaxProteinPos = positionData[positionData.length - 1].values[0].protein_pos;
+
+    // Call the tooltips
+    main_svg.call(positionTip);
+
+    // Create all groups at once
+    var focusAxiselements = focusAxis.selectAll("g")
+        .data(positionData)
+        .enter()
+        .append("g")
+        .attr("class", "focusAxisElement")
+        .attr("transform", "translate(" + main_marginPositionInfo.left + "," + main_marginPositionInfo.top + ")")
+        .style("fill", "none");
+
+    // Batch append all background rectangles
+    focusAxiselements.append("rect")
+        .attr("class", "toleranceAxisTickBackground")
+        .attr("x", d => d._x)
+        .attr("y", 0)
+        .attr("width", d => d._width)
+        .attr("height", main_heightMarginPositionInfo)
+        .style("fill", "white")
+        .style("clip-path", "url(#clip)");
+
+    // Batch append all text elements
+    focusAxiselements.append("text")
+        .attr("class", "toleranceAxisTickLabel")
+        .attr("id", d => "toleranceAxisText_" + d.values[0].protein_pos)
+        .attr("x", d => d._textX)
+        .attr("y", main_heightMarginPositionInfo / 2)
+        .attr("dy", ".35em")
+        .style("pointer-events", "none")
+        .style("user-select", "none")
+        .attr("text-anchor", "middle")
+        .style("fill", "black")
+        .style("clip-path", "url(#clip)")
+        .text(d => d.values[0].ref_aa);
+
+    // Batch append all interactive rectangles
+    focusAxiselements.append("rect")
+        .attr("class", "toleranceAxisTick")
+        .attr("id", d => "toleranceAxisRect_" + d.values[0].protein_pos)
+		.attr("data-transcript-id", transcript_id)
+		.attr("data-domain-coverage", JSON.stringify(domain_metadomain_coverage))
+        .attr("x", d => d._x)
+        .attr("y", 0)
+        .attr("width", d => d._width)
+        .attr("height", main_heightMarginPositionInfo)
+        .style("fill-opacity", 0.2)
+        .style("fill", "grey")
+        .style("clip-path", "url(#clip)");
+
+    // Use event delegation for better performance
+    focusAxiselements.selectAll(".toleranceAxisTick")
+        .on("pointerenter", function(event, d) {
+            event.stopPropagation();
+            if (!d.values[0].selected) {
+                d3.select(this).style("fill", "orange").style("fill-opacity", 0.5);
+            }
+            positionTip.show(event, d);
+            d3.select(this).style("cursor", "pointer");
+        })
+        .on("pointerleave", function(event, d) {
+            event.stopPropagation();
+            if (!d.values[0].selected) {
+                d3.select(this).style("fill", draw_position_schematic_protein(d, this));
+            }
+            positionTip.hide();
+            d3.select(this).style("cursor", "default");
+        })
+        .on("click", function(event, d) {
+            if (!d.values[0].selected) {
+                d3.select(this).style("fill", "green").style("fill-opacity", 0.7);
+                d.values[0].selected = true;
+
+                addRowToPositionalInformationTable(domain_metadomain_coverage, d, transcript_id);
+                selected_positions += 1;
+                $("#position_information_table").removeClass('is-hidden');
+                document.getElementById("selected_positions_explanation").innerHTML =
+                    'Click on one of the selected positions in the table to view more information';
+
+                syncDashboardUrlState();
+            } else {
+                d3.select(this).style("fill", "orange").style("fill-opacity", 0.5);
+                d.values[0].selected = false;
+                d3.select("#positional_table_info_" + d.values[0].protein_pos).remove();
+
+                selected_positions -= 1;
+                if (selected_positions <= 0) {
+                    $("#position_information_table").addClass('is-hidden');
+                    document.getElementById("selected_positions_explanation").innerHTML =
+                        'Click on one of positions in the schematic protein to obtain more information';
+                }
+
+                syncDashboardUrlState();
+            }
+        });
+}
+
+
+
+
+// Draw the domain annotation
+function annotateDomains(protDomain, tolerance_data, domain_metadomain_coverage) {
+    // Get unique domain IDs and assign colors
+    const uniqueDomainIDs = [...new Set(protDomain.map(d => d.ID))];
+    domainColorScale.domain(uniqueDomainIDs);
+
+    // Pre-calculate domain positions and colors for better performance
+    const domainData = protDomain.map(d => ({
+        ...d,
+        _x: main_x(d.start - 0.5),
+        _width: main_x(d.stop + 0.5) - main_x(d.start - 0.5),
+        _color: domainColorScale(d.ID)  // Assign color based on domain ID
+    }));
+
+    // Append domain view
+    var domains = main_svg.append("g")
+        .attr("class", "domains")
+        .attr("id", "domain_annotation")
+        .attr("transform", `translate(${main_marginAnnotations.left}, ${main_marginAnnotations.top})`);
+
+    // Add text to the ui element
+    main_svg.append("text")
+        .attr("text-anchor", "left")
+        .attr("x", 0)
+        .attr("y", main_marginAnnotations.top + (main_heightAnnotations * (3/5)))
+        .attr("dy", 0)
+        .attr("class", "label")
+        .text("Protein")
+        .style("pointer-events", "none")
+        .style("user-select", "none");
+
+    // Call the tooltips
+    main_svg.call(domainTip);
+
+    // Fill the ui element with all domains at once
+    domains.selectAll(".pfamDomains")
+        .data(domainData)
+        .enter()
+        .append("rect")
+        .attr("class", "pfamDomains")
+        .attr("x", d => d._x)
+        .attr("y", 0)
+        .attr("width", d => d._width)
+        .attr("height", main_heightAnnotations)
+        .attr("rx", 10)
+        .attr("ry", 10)
+        .style("opacity", 0.7)  // Increased opacity slightly for better color visibility
+        .style("fill", d => d._color)  // Use pre-calculated color
+        .style("stroke", "black")
+        .style("stroke-width", 1)
+        .style("clip-path", "url(#clip)")
+        .on("pointerenter", function(event, d) {
+            event.stopPropagation();
+            domainTip.show(event, d);
+            d3.select(this)
+                .style("fill", "yellow")
+                .style("opacity", 0.9)
+                .style("cursor", "pointer")
+                .raise();
+        })
+        .on("pointerleave", function(event, d) {
+            event.stopPropagation();
+            domainTip.hide();
+            d3.select(this)
+                .style("fill", d._color)
+                .style("opacity", 0.7)
+                .style("cursor", "default")
+                .lower();
+        })
+        .on("click", function(event, d) {
+                // Activate the overlay
+                $("#domain_information_overlay").addClass('is-active');
+
+                // Get gene details once
+                const geneDetails = document.getElementById("geneDetails").innerHTML;
+
+                // Build HTML content to match original output (with empty label tags)
+                let titleHTML = '';
+                titleHTML += '<label class="label" >';
+                titleHTML += '</label>';  // Close it immediately to match original behavior
+                titleHTML += d.Name + ' (' + d.ID + '), p.' + d.start + ' - p.' + d.stop;
+
+                let contentHTML = '';
+                contentHTML += '<label class="label" >';
+                contentHTML += '</label>';  // Close it immediately to match original behavior
+                contentHTML += 'Domain: ' + d.Name + ' (<a href="https://www.ebi.ac.uk/interpro/entry/pfam/' + d.ID + '" target="_blank">' + d.ID + '</a>), located at p.' + d.start + ' - p.' + d.stop;
+                contentHTML += ' in ';
+                contentHTML += geneDetails + '.<br>';
+
+                if (d.metadomain) {
+                    contentHTML += 'This domain has ' + domain_metadomain_coverage[d.ID] + ' homologous occurrences throughout the human genome.';
+                }
+
+                // Update DOM once for each element
+                document.getElementById("domain_information_overlay_title").innerHTML = titleHTML;
+                document.getElementById("domain_information_overlay_content").innerHTML = contentHTML;
+        });
+}
+
+// Draw exon blocks
+function createExonVisualization(groupedTolerance) {
+    // Extract exon information from the data
+    const exonData = [];
+    const exonMap = new Map();
+
+    groupedTolerance.forEach(d => {
+        const exonInfo = d.values[0].exon_numbers;
+        if (exonInfo) {
+            const exonNumbers = d.values[0].exon_numbers.split(', ').map(num => parseInt(num.trim()));
+            const uniqueExons = [...new Set(exonNumbers)]
+
+            // Extract cDNA triplet positions (assuming format like "c.123-456")
+            const cdnaMatch = d.values[0].cdna_pos.match(/c\.(\d+)-(\d+)/);
+            if (cdnaMatch) {
+                const cdnaStart = parseInt(cdnaMatch[1]);
+                const cdnaEnd = parseInt(cdnaMatch[2]);
+                // Calculate the middle position (assuming it's cdnaStart + 1)
+                const cdnaMiddle = cdnaStart + 1;
+                const cdnaPositions = [cdnaStart, cdnaMiddle, cdnaEnd];
+
+                uniqueExons.forEach(exonNum => {
+                    // Determine which cDNA positions belong to this exon
+                    const exonCdnaPositions = [];
+                    exonNumbers.forEach((baseExon, index) => {
+                        if (baseExon === exonNum) {
+                            exonCdnaPositions.push(cdnaPositions[index]);
+                        }
+                    });
+
+                    const minCdna = Math.min(...exonCdnaPositions);
+                    const maxCdna = Math.max(...exonCdnaPositions);
+
+                    if (!exonMap.has(exonNum)) {
+                        exonMap.set(exonNum, {
+                            exon: exonNum,
+                            start: d.values[0].protein_pos,
+                            end: d.values[0].protein_pos,
+                            cdna_start: minCdna,
+                            cdna_end: maxCdna,
+                            positions: [d.values[0].protein_pos]
+                        });
+                    } else {
+                        const existing = exonMap.get(exonNum);
+                        existing.start = Math.min(existing.start, d.values[0].protein_pos);
+                        existing.end = Math.max(existing.end, d.values[0].protein_pos);
+                        existing.cdna_start = Math.min(existing.cdna_start, minCdna);
+                        existing.cdna_end = Math.max(existing.cdna_end, maxCdna);
+                        existing.positions.push(d.values[0].protein_pos);
+                    }
+                });
+            }
+        }
+    });
+
+    // Convert map to array and sort by exon number
+    const sortedExons = Array.from(exonMap.values()).sort((a, b) => a.exon - b.exon);
+
+    // Set the domain for the global color scale
+    exonColorScale.domain(sortedExons.map(d => d.exon));
+
+    // Create exon visualization group
+    const exonViz = main_svg.append("g")
+        .attr("class", "exon-visualization")
+        .attr("id", "exon_blocks")
+        .attr("transform", `translate(${main_marginExons.left}, ${main_marginExons.top})`);
+
+    // Call the tooltip
+    main_svg.call(exonTip);
+
+    // Create groups for each exon (contains both rect and text)
+    const exonGroups = exonViz.selectAll(".exon-group")
+        .data(sortedExons)
+        .enter()
+        .append("g")
+        .attr("class", "exon-group");
+
+    // Add rectangles to groups
+    exonGroups.append("rect")
+        .attr("class", "exon-block")
+        .attr("x", d => main_x(d.start - 0.5))
+        .attr("y", 5)
+        .attr("width", d => main_x(d.end + 0.5) - main_x(d.start - 0.5))
+        .attr("height", main_heightExons - 10)
+        .attr("rx", 3)
+        .attr("ry", 3)
+        .style("fill", d => exonColorScale(d.exon))  // Use the color scale here
+        .style("stroke", "black")
+        .style("stroke-width", 1)
+        .style("opacity", 0.8)
+        .style("clip-path", "url(#clip)");
+
+    // Add labels to groups
+    exonGroups.append("text")
+        .attr("class", "exon-label")
+        .attr("x", d => main_x((d.start + d.end) / 2))
+        .attr("y", main_heightExons / 2)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "middle")
+        .style("font-size", "12px")
+        .style("font-weight", "bold")
+        .style("fill", "black")  // Changed to black
+        .style("pointer-events", "none")
+        .style("user-select", "none")
+        .text(d => d.exon)
+        .style("clip-path", "url(#clip)");
+
+    // Attach events to the groups (affects both rect and text together)
+    exonGroups
+        .on("pointerenter", function(event, d) {
+            event.stopPropagation();
+            if (exons_visible) {
+                exonTip.show(event, d);
+            }
+            d3.select(this)
+                .select(".exon-block")
+                .style("opacity", 1)
+                .style("stroke-width", 2);
+            d3.select(this).raise();
+        })
+        .on("pointerleave", function(event, d) {
+            event.stopPropagation();
+            exonTip.hide();
+            d3.select(this)
+                .select(".exon-block")
+                .style("opacity", 0.8)
+                .style("stroke-width", 1);
+        });
+
+    // Add section label
+    main_svg.append("text")
+        .attr("text-anchor", "left")
+        .attr("x", 0)
+        .attr("y", main_marginExons.top + (main_heightExons / 2))
+        .attr("dy", 0)
+        .attr("class", "label")
+        .attr("id", "exon_section_label")  // Add ID for easier selection
+        .text("Exons")
+        .style("pointer-events", "none")
+        .style("user-select", "none");
+
+    // Add initial visibility state
+    if (!exons_visible) {
+        d3.select("#exon_blocks").style("opacity", 0);
+        d3.select("#exon_section_label").style("opacity", 0);
+    }
+}
+
+// Draw the context area for zooming
+function addContextZoomView(domain_data, number_of_positions) {
+    // Pre-calculate domain positions for better performance
+    const contextDomainData = domain_data.map(d => ({
+        ...d,
+        _x: main_x(d.start - 0.5),
+        _width: main_x(d.stop + 0.5) - main_x(d.start - 0.5)
+    }));
+
+    // Append context view
+    var context = main_svg.append("g")
+        .attr("class", "context")
+        .attr("id", "zoom_landscape")
+        .attr("transform", `translate(${main_marginContext.left}, ${main_marginContext.top})`);
+
+    // Append context area background (static values, no need for functions)
+    context.append("rect")
+        .attr("x", main_x(0))
+        .attr("y", 20)
+        .attr("width", main_x2(number_of_positions))
+        .attr("height", main_heightContext - 40)
+        .attr("rx", 10)
+        .attr("ry", 10)
+        .style("fill", "grey")
+        .style("clip-path", "url(#clip)");
+
+    // Append each domain efficiently
+    context.selectAll(".context-domain")  // Use specific class to avoid conflicts
+        .data(contextDomainData)
+        .enter()
+        .append("rect")
+        .attr("class", "context-domain")
+        .attr("x", d => d._x)
+        .attr("y", 10)
+        .attr("width", d => d._width)
+        .attr("height", main_heightContext - 20)
+        .attr("rx", 10)
+        .attr("ry", 10)
+        .style("fill", "grey")
+        .style("clip-path", "url(#clip)");
+
+    // Append xAxis for context view
+    context.append("g")
+        .attr("class", "axis axis--x")
+        .attr("transform", `translate(0, ${main_heightContext + main_marginContext.top})`)
+        .call(main_xAxis);
+
+    // Append brush for zooming
+    context.append("g")
+        .attr("class", "brush")
+        .attr("id", "brush_for_zooming")
+        .call(brush)
+        .call(brush.move);
+
+    // Add zoom label (two lines)
+    main_svg.append("text")
+        .attr("text-anchor", "left")
+        .attr("id", "schematic_protein_zoom_text_line1")
+        .attr("x", 0)
+        .attr("y", main_marginContext.top + (main_heightContext * (3/5)) - 7)
+        .attr("dy", 0)
+        .attr("class", "label")
+        .text("Zoom")
+        .style("pointer-events", "none")
+        .style("user-select", "none");
+
+    main_svg.append("text")
+        .attr("text-anchor", "left")
+        .attr("id", "schematic_protein_zoom_text_line2")
+        .attr("x", 0)
+        .attr("y", main_marginContext.top + (main_heightContext * (3/5)) + 7)
+        .attr("dy", 0)
+        .attr("class", "label")
+        .text("Here")
+        .style("pointer-events", "none")
+        .style("user-select", "none");
+}
+
+// Draw the legend for the Tolerance graph
+function createToleranceGraphLegend() {
+	// append gradient to defs
+	var legendGradient = main_svg.select('.defs')
+		.append("linearGradient")
+		.attr("id", "legendGradient")
+		.attr("x1", "0%")
+		.attr("y1", "100%")
+		.attr("x2", "0%")
+		.attr("y2", "0%");
+
+	// set legend of the tolerance score
+	legendGradient.selectAll("stop").data(toleranceColorGradient).enter()
+		.append("stop")
+		.attr("offset", function(d) {
+		    return d.offset;
+		})
+		.attr("stop-color", function(d) {
+		    return d.color;
+		});
+
+	// append heatmap legend
+	main_svg.append("rect")
+		.attr("id", "legendGradientRect")
+		.attr("width", main_widthLegend)
+		.attr("height", main_heightLandscape)
+		.attr("transform", `translate(${main_marginLegend.left}, ${main_marginLegend.top})`)
+		.style("fill", "url(#legendGradient)");
+
+	// append legend text
+	main_svg.append("text")
+		.attr("text-anchor", "middle")
+		.attr("x", -50)
+		.attr("y", 15)
+		.attr("dy", 0)
+		.attr("class", "label legendGradientText")
+		.attr("transform", "rotate(-90)")
+		.text("Tolerant")
+		.style('pointer-events', 'none')
+		.style('user-select', 'none');
+
+	// append legend text
+	main_svg.append("text")
+		.attr("text-anchor", "middle")
+		.attr("x", -150)
+		.attr("y", 15)
+		.attr("dy", 0)
+		.attr("class", "label legendGradientText")
+		.attr("transform", "rotate(-90)")
+		.text("Neutral")
+		.style('pointer-events', 'none')
+		.style('user-select', 'none');
+
+	// append legend text
+	main_svg.append("text")
+		.attr("text-anchor", "middle")
+		.attr("x", -250)
+		.attr("y", 15)
+		.attr("dy", 0)
+		.attr("class", "label legendGradientText")
+		.attr("transform", "rotate(-90)")
+		.text("Intolerant")
+		.style('pointer-events', 'none')
+		.style('user-select', 'none');
+}
+
+//Draw the legend for the MetaDomain landscape
+function createMetaDomainLegend() {
+    const legendData = [
+        { y: 20, color: "green", text: ["gnomAD", "missense in", "homologues"] },
+        { y: 105, color: "red", text: ["ClinVar", "missense in", "homologues"] },
+        { y: 190, color: "black", text: ["no alignment"] }
+    ];
+
+    // Create all rectangles at once
+    main_svg.selectAll(".legendMetaDomainRect")
+        .data(legendData)
+        .enter()
+        .append("rect")
+        .attr("class", "label legendMetaDomainRect")
+        .attr("width", 70)
+        .attr("height", 20)
+        .attr("x", 0)
+        .attr("y", d => d.y)
+        .attr("dy", 35)
+        .style("fill", d => d.color);
+
+    // Create all text elements at once
+    legendData.forEach(item => {
+        const textGroup = main_svg.selectAll(`.legendText-${item.y}`)
+            .data(item.text)
+            .enter()
+            .append("text")
+            .attr("class", "label legendMetaDomainText")
+            .attr("x", 0)
+            .attr("y", (d, i) => item.y + (i * 15))
+            .attr("dy", 35)
+            .text(d => d)
+            .style("font-size", "12px")
+            .style("pointer-events", "none")
+            .style("user-select", "none");
+    });
+}
+
+/*******************************************************************************
+ * Interactive behaviour functions
+ ******************************************************************************/
+
+// Allows toggling between the tolerance landscape and metadomain landscape
+function toggleToleranceLandscapeOrMetadomainLandscape() {
+    // Cache selections
+    const tolerance_graph = d3.select("#tolerance_graph");
+    const tolerance_legend = d3.select("#legendGradientRect");
+    const tolerance_legend_text = d3.selectAll(".legendGradientText");
+    const metadomain_graph = d3.select("#metadomain_graph");
+    const meta_legend = d3.selectAll(".legendMetaDomainRect");
+    const meta_legend_text = d3.selectAll(".legendMetaDomainText");
+
+    const selectedValue = $('input[name=landscape_checkbox]:checked', '#checkbox_for_landscape').val();
+
+    if (selectedValue === "metadomain_landscape") {
+        tolerance_graph.style("opacity", 0);
+        tolerance_legend.style("opacity", 0);
+        tolerance_legend_text.style("opacity", 0);
+        metadomain_graph.style("opacity", 1);
+        meta_legend_text.style("opacity", 1);
+        meta_legend.style("opacity", 1);
+        metadomain_graph_visible = true;
+    } else if (selectedValue === "tolerance_landscape") {
+        tolerance_graph.style("opacity", 1);
+        tolerance_legend.style("opacity", 1);
+        tolerance_legend_text.style("opacity", 1);
+        metadomain_graph.style("opacity", 0);
+        meta_legend_text.style("opacity", 0);
+        meta_legend.style("opacity", 0);
+        metadomain_graph_visible = false;
+    }
+}
+
+function draw_position_schematic_protein(d, element){
+	var pathogenic_missense_variant_count = 0;
+	var likely_pathogenic_missense_variant_count = 0;
+
+	// count any variants at this position
+	if (d.values[0].ClinVar != null){
+		if (clinvar_variants_visible){
+			pathogenic_missense_variant_count += countClinVarVariants(d.values[0].ClinVar, false);
+			likely_pathogenic_missense_variant_count += countClinVarVariants(d.values[0].ClinVar, true);
+		}
+	}
+
+	// count variants linked via meta-domain relationships
+	if (d.values[0].domains != null){
+		meta_domain_ids.forEach(domain_id => {
+			if (d.values[0].hasOwnProperty('domains') && d.values[0].domains[domain_id] != null){
+				if (homologous_clinvar_variants_visible){
+					pathogenic_missense_variant_count += pathogenicCountFor(d.values[0].domains[domain_id], true);
+					likely_pathogenic_missense_variant_count += likelyPathogenicCountFor(d.values[0].domains[domain_id], true);
+				}
+			}
+		});
+	}
+
+	// priortize if selected
+    if (d.values[0].selected) {
+    	d3.select(element).style("fill-opacity", 0.7);
+		return 'green';
+    }
+    
+    // if containing pathogenic variants, display it as red
+	if (pathogenic_missense_variant_count > 0){
+		d3.select(element).style("fill-opacity", 0.7);
+		return 'red';
+	}
+	
+	// if containing likely pathogenic variants, display it as orange
+	if (likely_pathogenic_missense_variant_count > 0){
+		d3.select(element).style("fill-opacity", 0.7);
+		return 'orange';
+	}
+	
+	d3.select(element).style("fill-opacity", 0.2);
+	return "grey";
+}
+
+function toggleExonVisualization(exon_checkbox) {
+	const exonViz = d3.select("#exon_blocks");
+	const exonLabel = d3.select("#exon_section_label");
+
+	exons_visible = !exon_checkbox.checked;
+
+	if (exons_visible) {
+		exonViz.style("opacity", 1);
+		exonLabel.style("opacity", 1);
+	} else {
+		exonViz.style("opacity", 0);
+		exonLabel.style("opacity", 0);
+	}
+}
+
+function setClinvarSource(source){
+	var focusAxis = d3.select("#tolerance_axis");
+
+	clinvar_variants_visible = (source === 'in_protein');
+	homologous_clinvar_variants_visible = (source === 'in_homologues');
+
+	focusAxis.selectAll(".toleranceAxisTick").style("fill", function(d, i) {
+			return draw_position_schematic_protein(d, this);
+	});
+}
+
+// Rescale the landscape for zooming or brushing purposes
+function rescaleLandscape() {
+    // The actual visible area is determined by main_x.range(), not the margins
+    const xRange = main_x.range();
+    const leftEdgePixel = xRange[0];   // Should be 40
+    const rightEdgePixel = xRange[1];  // Should be 1160
+
+    // Invert these to get the protein positions
+	const calculatedMinPos = Math.floor(main_x.invert(leftEdgePixel) + 0.5);
+	const visibleMinPos = Math.max(calculatedMinPos, window.actualMinProteinPos);
+
+    const calculatedMaxPos = Math.ceil(main_x.invert(rightEdgePixel) + 0.5 - 0.25);
+    const visibleMaxPos = Math.min(calculatedMaxPos, window.actualMaxProteinPos);
+
+    d3.select("#position_range_left")
+        .text("p." + visibleMinPos);
+
+    d3.select("#position_range_right")
+        .text("p." + visibleMaxPos);
+
+    // Tolerance graph updates
+    const focus = d3.select("#tolerance_graph");
+    focus.selectAll(".area").attr("d", toleranceArea);
+    focus.select(".line").attr("d", toleranceLine);
+    focus.select(".axis--x").call(main_xAxis).selectAll("text").remove();
+
+    // Metadomain landscape updates
+    const metadomain_landscape = d3.select("#metadomain_graph");
+
+    // Batch update normal variants
+    metadomain_landscape.selectAll(".normal_missense_variant_count")
+        .attr("x", d => main_x(d.values[0].protein_pos - 0.45))
+        .attr("width", d => calculatePositionWidth(d, 0, -0.6));
+
+    // Batch update pathogenic variants
+    metadomain_landscape.selectAll(".pathogenic_missense_variant_count")
+        .attr("x", d => main_x(d.values[0].protein_pos + 0.05))
+        .attr("width", d => calculatePositionWidth(d, 0, -0.6));
+
+    // Batch update not aligned plots
+    metadomain_landscape.selectAll(".not_aligned_position_plot")
+        .attr("x", d => main_x(d.values[0].protein_pos - 0.5))
+        .attr("width", d => calculatePositionWidth(d));
+
+    // Focus axis updates
+    const focusAxis = d3.select("#tolerance_axis");
+
+    // Update both tick and background with same calculations
+    const axisElements = focusAxis.selectAll(".toleranceAxisTick, .toleranceAxisTickBackground");
+    axisElements
+        .attr("x", d => main_x(d.values[0].protein_pos - 0.5))
+        .attr("width", d => calculatePositionWidth(d));
+
+    // Update labels with optimized opacity calculation
+    focusAxis.selectAll(".toleranceAxisTickLabel")
+        .attr("x", d => main_x(d.values[0].protein_pos))
+        .attr("text-anchor", "middle")
+        .style("opacity", function(d) {
+            const textwidth = 13;
+            const rect = document.getElementById(`toleranceAxisRect_${d.values[0].protein_pos}`);
+            if (!rect) return 1;
+
+            const rectwidth = rect.width.animVal.value;
+            const ratio = textwidth / rectwidth;
+
+            if (ratio >= 0.75) return 0;
+            if (ratio >= 0.9) return 0.1;
+            if (ratio >= 1.0) return 0.4;
+            if (ratio >= 1.25) return 0.5;
+            if (ratio >= 1.5) return 0.7;
+            return 1;
+        });
+
+    // Domain updates
+    const domains = d3.select("#domain_annotation");
+    domains.select(".axis--x").call(main_xAxis);
+    domains.selectAll(".pfamDomains")
+        .attr("x", d => main_x(d.start - 0.5))
+        .attr("width", d => main_x(d.stop + 1) - main_x(d.start));
+
+    domains.selectAll(".clinvar")
+        .attr("x1", d => main_x(d.protein_pos))
+        .attr("x2", d => main_x(d.protein_pos));
+
+    // Exon visualization updates
+    const exonViz = d3.select("#exon_blocks");
+
+    exonViz.selectAll(".exon-group").each(function(d) {
+        const group = d3.select(this);
+
+        // Update rectangle position and width
+        group.select(".exon-block")
+            .attr("x", main_x(d.start - 0.5))
+            .attr("width", main_x(d.end + 0.5) - main_x(d.start - 0.5));
+
+        // Update label position to visible center
+        const currentDomain = main_x.domain();
+        const visibleStart = Math.max(d.start, currentDomain[0]);
+        const visibleEnd = Math.min(d.end, currentDomain[1]);
+        const visibleCenter = (visibleStart + visibleEnd) / 2;
+
+        group.select(".exon-label")
+            .attr("x", main_x(visibleCenter));
+    });
+}
+
+//This function resets the zooming
+function resetZoom(){
+	d3.select("#brush_for_zooming").call(brush.move, null);
+}
+
+/*******************************************************************************
+ * Static interface functions
+ ******************************************************************************/
+
+// the color coding for specific tolerance scores
+// color #f29e2e indicates the average dn/ds tolerance score over all genes
+const toleranceThresholds = [0.175, 0.35, 0.525, 0.7, 0.875, 1.025, 1.2, 1.375];
+
+function tolerance_color(score) {
+    // Binary search for better performance with many calls
+    let left = 0;
+    let right = toleranceThresholds.length - 1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (score <= toleranceThresholds[mid]) {
+            if (mid === 0 || score > toleranceThresholds[mid - 1]) {
+                return toleranceColorGradient[mid].color;
+            }
+            right = mid - 1;
+        } else {
+            left = mid + 1;
+        }
+    }
+    return toleranceColorGradient[8].color;
+}
+
+//the color coding for specific tolerance scores
+//color #f29e2e indicates the average dn/ds tolerance score over all genes
+function tolerance_rating(score) {
+	if (score <= 0.175) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">highly intolerant</label>';
+	} else if (score <= 0.35) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">intolerant</label>' ;
+	} else if (score <= 0.525) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">intolerant</label>' ;
+	} else if (score <= 0.7) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">slightly intolerant</label>' ;
+	} else if (score <= 0.875) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">neutral</label>' ;
+	} else if (score <= 1.025) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">slightly tolerant</label>' ;
+	} else if (score <= 1.2) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">tolerant</label>' ;
+	} else if (score <= 1.375) {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">tolerant</label>' ;
+	} else {
+		return '<label style="background-color:'+tolerance_color(score)+';color:black">highly tolerant</label>' ;
+	}
+}

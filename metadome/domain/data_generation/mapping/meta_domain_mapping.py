@@ -3,8 +3,8 @@ from metadome.domain.wrappers.hmmer import FoundNoPfamHMMException,\
     map_sequence_to_aligned_sequence, convert_pfam_fasta_alignment_to_strict_fasta,\
     create_alignment_of_sequences_according_to_PFAM_HMM, interpret_hmm_alignment_file, convert_pfam_fasta_alignment_to_strict_sequence
 from metadome.domain.data_generation.mapping.Protein2ProteinMapping import createAlignedSequenceMapping    
-from metadome.domain.repositories import MappingRepository, SequenceRepository, InterproRepository, ProteinRepository,\
-    GeneRepository
+from metadome.domain.repositories import MappingRepository, SequenceRepository, InterproRepository, ProteinRepository, \
+    GeneRepository, MetaDomainRepository
 from metadome.default_settings import METADOMAIN_DIR, METADOMAIN_ALIGNMENT_FILE_NAME
 from metadome.domain.models.entities.codon import Codon, MalformedCodonException
 import numpy as np
@@ -58,14 +58,151 @@ def generate_pfam_alignments(pfam_id):
     time_step = time.clock()
     _log.info("Finished the mappings for '"+str(len(domain_of_interest_occurrences)) +"' '"+pfam_id+"' domain occurrences in "+str(time_step-start_time)+" seconds")   
 
-def generate_pfam_aligned_codons(pfam_id):
+def retrieve_pfam_aligned_codons(pfam_id, genome_build):
     """
-    Generates a list of dictionaries (meta_codons_per_consensus_pos)
+    Queries the database to generate a list of dictionaries (meta_codons_per_consensus_pos)
+    wherein all aligned codons per domain consensus positions are located
+    Also provides the consensus_length of the domain and the n_instances
+    """
+    _log.info("Started a meta-domain based on the alignment of all '" + pfam_id + "' Pfam domains in the human genome")
+    start_time = time.perf_counter()
+
+    # the consensus length
+    consensus_length = 0
+    # the meta_domain that is to be returned
+    meta_codons_per_consensus_pos = {}
+    # the mapping of the protein {protein_id: {protein_posistion: consensus_position}}
+    consensus_pos_per_protein = {}
+    # the amount of domain occurrences found
+    n_instances = 0
+
+    # Try and retrieve the meta-domain position mappings
+    meta_domain_results = MetaDomainRepository.retrieve_all_mappings_for_meta_domain(pfam_id, genome_build)
+
+    if not len(meta_domain_results) == 0:
+        # Calculate consensus length and count unique interpro domains
+        consensus_positions = set()
+        unique_interpro_ids = set()
+
+        # Dict for gene ids to transcription ids
+        gene_ids_to_transcription_ids = {}
+
+        # Dict for protein_id to uniprot_ac
+        protein_id_to_uniprot_ac = {}
+
+        # Dict for mappings per uniprot ac, all mappings for a multiple Protein objects as {protein_id: [ Mapping ]}
+        protein_mappings = {}
+
+        # Dict to convert uniprot_acs to protein ids
+        uniprot_acs_to_ids = {}
+
+        # the consensus length
+        consensus_length = None
+
+        # first pass over results to retrieve consensus length and unique interpro ids and
+        for mapping, gene, mdm, mdp, protein in meta_domain_results:
+            if consensus_length is None:
+                consensus_length = mdp.consensus_length
+            elif consensus_length != mdp.consensus_length:
+                raise MalformedMappingsForAlignedCodonsPosition("Inconsistent consensus lengths found for domain '"+str(pfam_id)+"': '"+str(consensus_length)+"' and '"+str(mdp.consensus_length)+"'")
+
+            consensus_positions.add(mdp.consensus_position)
+            if mdm.interpro_id:
+                unique_interpro_ids.add(mdm.interpro_id)
+
+            # retrieve the transcription id for this gene_id
+            if not mapping.gene_id in gene_ids_to_transcription_ids.keys():
+                gene_ids_to_transcription_ids[mapping.gene_id] = gene.gencode_transcription_id
+
+            # retrieve the uniprot_ac for this protein_id
+            if not mapping.protein_id in protein_id_to_uniprot_ac.keys():
+                protein_id_to_uniprot_ac[mapping.protein_id] = protein.uniprot_ac
+
+            # retrieve the position in the domain consensus
+            domain_consensus_pos = mdp.consensus_position
+
+            # retrieve the uniprot position of the meta-domain position
+            uniprot_pos = mapping.uniprot_position
+
+            # Add the consensus pos to the protein
+            if not protein.uniprot_ac in consensus_pos_per_protein.keys():
+                consensus_pos_per_protein[protein.uniprot_ac] = {}
+            if not uniprot_pos in consensus_pos_per_protein[protein.uniprot_ac].keys():
+                consensus_pos_per_protein[protein.uniprot_ac][uniprot_pos] = []
+            consensus_pos_per_protein[protein.uniprot_ac][uniprot_pos].append(domain_consensus_pos)
+
+            # Add the mapping to the protein_mappings
+            if not mapping.protein_id in protein_mappings.keys():
+                protein_mappings[mapping.protein_id] = []
+            protein_mappings[mapping.protein_id].append(mapping)
+
+            # Add the uniprot_ac to protein_id mapping
+            if not protein.uniprot_ac in uniprot_acs_to_ids.keys():
+                uniprot_acs_to_ids[protein.uniprot_ac] = mapping.protein_id
+
+        # the amount of domain occurrences found
+        n_instances = len(unique_interpro_ids)
+
+        # create all aligned codons
+        for uniprot_ac in consensus_pos_per_protein.keys():
+            for uniprot_pos in consensus_pos_per_protein[uniprot_ac].keys():
+                for domain_consensus_pos in consensus_pos_per_protein[uniprot_ac][uniprot_pos]:
+                    # Retrieve the mapping for the corresponding uniprot_position
+                    mappings_for_uniprot_pos = [x for x in protein_mappings[uniprot_acs_to_ids[uniprot_ac]] if x.uniprot_position == uniprot_pos]
+
+                    # Seperate the mappings per gene_id
+                    mapping_per_gene_id = {}
+                    for mapping in mappings_for_uniprot_pos:
+                        if not mapping.gene_id in mapping_per_gene_id.keys():
+                            mapping_per_gene_id[mapping.gene_id] = []
+                        mapping_per_gene_id[mapping.gene_id].append(mapping)
+
+                    for gene_id in mapping_per_gene_id.keys():
+                        # Obtain the mappings for this position
+                        mappings = mapping_per_gene_id[gene_id]
+
+                        # Group mappings by genomic position to handle duplicate entries
+                        position_mappings = {}
+                        for mapping in mappings:
+                            position = mapping.chromosome_position
+                            if position not in position_mappings:
+                                position_mappings[position] = mapping
+
+                        unique_mappings = list(position_mappings.values())
+
+                        try:
+                            # create a codon
+                            codon = Codon.initializeFromMapping(unique_mappings, gene_ids_to_transcription_ids[gene_id], uniprot_ac)
+
+                            # Add the codon to the consensus positions
+                            if not domain_consensus_pos in meta_codons_per_consensus_pos.keys():
+                                meta_codons_per_consensus_pos[domain_consensus_pos] = []
+
+                            meta_codons_per_consensus_pos[domain_consensus_pos].append(codon)
+                        except MalformedCodonException as e:
+                            logging.info("All mappings used to create the codon: "+str([str(m) for m in unique_mappings]))
+                            raise MalformedMappingsForAlignedCodonsPosition(
+                                "Encountered a malformed codon mapping for domain '"
+                                + str(pfam_id) + "' in gene '" + str(gene_id)
+                                + "', at uniprot_position '" + str(uniprot_pos)
+                                + "':" + str(e))
+    else:
+        _log.info("No mappings found for domain '" + str(pfam_id) + "' in genome build '" + str(genome_build) + "'")
+
+    time_step = time.perf_counter()
+    _log.info("Finished the alignment of mappings for '" + str(
+        n_instances) + "' instances '" + pfam_id + "' domain occurrences in " + str(
+        time_step - start_time) + " seconds")
+    return meta_codons_per_consensus_pos, consensus_length, n_instances
+
+def generate_pfam_aligned_codons(pfam_id): #@todo mark for deletion, requires digging through code to revise to new prebuilding
+    """
+    Utilizes the Pfam HMMER alignment files to generate a list of dictionaries (meta_codons_per_consensus_pos)
     wherein all aligned codons per domain consensus positions are located
     Also provides the consensus_length of the domain and the n_instances
     """
     _log.info("Started a meta-domain based on the alignment of all '"+pfam_id+"' Pfam domains in the human genome")
-    start_time = time.clock()
+    start_time = time.perf_counter()
      
     # the consensus length 
     consensus_length = 0
@@ -174,9 +311,9 @@ def generate_pfam_aligned_codons(pfam_id):
                         except MalformedCodonException as e:
                             raise MalformedMappingsForAlignedCodonsPosition("Encountered a malformed codon mapping for domain '"
                                                                          +str(pfam_id)+"' in gene '"+str(gene_id)
-                                                                         +"', at amino_acid_position '"+str(uniprot_pos)
+                                                                         +"', at uniprot_position '"+str(uniprot_pos)
                                                                          +"':" + str(e))
    
-    time_step = time.clock()
+    time_step = time.perf_counter()
     _log.info("Finished the alignment of mappings for '"+str(n_instances) +"' instances '"+pfam_id+"' domain occurrences in "+str(time_step-start_time)+" seconds")
     return meta_codons_per_consensus_pos, consensus_length, n_instances

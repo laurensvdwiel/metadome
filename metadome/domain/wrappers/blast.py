@@ -1,3 +1,5 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  Reached only via mapping_generator -> database_creation -> install.py, which no longer exists.
 import logging
 import tempfile
 import subprocess

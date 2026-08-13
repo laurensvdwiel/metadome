@@ -10,7 +10,7 @@ def retrieve_background_variant_counts(mappings_per_chromosome):
     
     for chrom_pos in mappings_per_chromosome.keys():
         codon = mappings_per_chromosome[chrom_pos]['base_pair_representation']
-        residue_position = mappings_per_chromosome[chrom_pos]['amino_acid_position']
+        residue_position = mappings_per_chromosome[chrom_pos]['uniprot_position']
     
         if not residue_position in variant_type_counts.keys():
             variant_type_counts[residue_position] = dict()
@@ -36,7 +36,7 @@ def retrieve_variant_type_counts(mappings_per_chromosome, annotated_region):
     for chrom_pos in annotated_region.keys():
         codon = mappings_per_chromosome[chrom_pos]['base_pair_representation']
         codon_pos = mappings_per_chromosome[chrom_pos]['codon_base_pair_position']
-        residue_position = mappings_per_chromosome[chrom_pos]['amino_acid_position']
+        residue_position = mappings_per_chromosome[chrom_pos]['uniprot_position']
         
         for annotation_entry in annotated_region[chrom_pos]:
             if mappings_per_chromosome[chrom_pos]['base_pair'] != annotation_entry['REF']:

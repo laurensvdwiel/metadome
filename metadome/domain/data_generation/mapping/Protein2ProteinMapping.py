@@ -4,6 +4,10 @@ from metadome.domain.wrappers.clustal import clustalw_pairwiseAlignment
 
 _log = logging.getLogger(__name__)
 
+
+# TODO(dead-data-generation): createMappingOfAASequenceToAASequence is unreachable;
+#  its only importer is Gene2ProteinMapping. The clustal import at the top of this file exists
+#  solely for this method.
 def createMappingOfAASequenceToAASequence(primary_sequence, secondary_sequence):
     """Annotates a blast result with the atomic sequence and a mapping of the translated
      sequence based on the gene to the atomic sequence (e.g. the measured structure)"""
@@ -14,6 +18,9 @@ def createMappingOfAASequenceToAASequence(primary_sequence, secondary_sequence):
     
     return {'mapping':mapping_seq1_seq2, 'primary_sequence':seq1, 'secondary_sequence':seq2}
 
+# TODO(dead-data-generation): map_single_residue is unreachable;
+#  its only importer is Gene2ProteinMapping. The clustal import at the top of this file exists
+#  solely for this method.
 def map_single_residue(aligned_mapping, cur_protein_position, alternate_position_mapping=None):
     """Maps a single residue for a previously mapped sequence at a given position"""
     # check if the number is in the mapping

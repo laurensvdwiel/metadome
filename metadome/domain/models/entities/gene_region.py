@@ -1,6 +1,11 @@
 from metadome.domain.repositories import MappingRepository, ProteinRepository, InterproRepository
 from metadome.domain.services.helper_functions import convertListOfIntegerToRanges
 from metadome.domain.models.entities.codon import Codon
+import enum
+
+class GenomeBuild(enum.Enum):
+    GRCh37 = 'GRCh37'
+    GRCh38 = 'GRCh38'
 
 class FailedToConstructGeneRegion(Exception):
     pass
@@ -20,7 +25,13 @@ class GeneRegion(object):
     name                      description
     chr                       str containing the chromosome number in form 'chr...'
     gene_name                 str containing the gene name of the region
-    gencode_transcription_id  str containing the trancription id
+    gencode_transcription_id  str containing the transcription id
+    gencode_version           str containing the gencode version
+    gencode_basic             bool indicating if this is a gencode basic transcript
+    genome_build_full         str containing the genome build
+    genome_build              GenomeBuild enum containing the genome build
+    refseq_transcript_id      str containing the refseq transcript id
+    mane_transcript_type      str containing the mane transcript type
     strand                    str containing the strand
     protein_region_start      int of start of the region 
     protein_region_stop       int of stop of the region
@@ -57,7 +68,7 @@ class GeneRegion(object):
             mappings_per_chromosome[chromosome_position] = {}
             mappings_per_chromosome[chromosome_position]['base_pair_representation'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].codon
             mappings_per_chromosome[chromosome_position]['codon_base_pair_position'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].codon_base_pair_position
-            mappings_per_chromosome[chromosome_position]['amino_acid_position'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].amino_acid_position
+            mappings_per_chromosome[chromosome_position]['uniprot_position'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].uniprot_position
             mappings_per_chromosome[chromosome_position]['base_pair'] = self.mappings_per_cDNA[self.chromosome_pos_to_cDNA[chromosome_position]].base_pair
             mappings_per_chromosome[chromosome_position]['gencode_transcription_id'] = self.gencode_transcription_id
         return mappings_per_chromosome
@@ -72,6 +83,12 @@ class GeneRegion(object):
         self.gene_name = str()
         self.gene_id = str()
         self.gencode_transcription_id = str()
+        self.gencode_version = str()
+        self.gencode_basic = bool()
+        self.genome_build_full = str()
+        self.genome_build = None
+        self.refseq_transcript_id = str()
+        self.mane_transcript_type = str()
         self.strand = str()
         self.protein_region_start = int()
         self.protein_region_stop = int()
@@ -94,8 +111,21 @@ class GeneRegion(object):
         self.protein_region_start = 0
         self.protein_region_stop = _gene.sequence_length            
         self.gencode_transcription_id = _gene.gencode_transcription_id
+        self.gencode_version = _gene.gencode_version
+        self.gencode_basic = _gene.gencode_basic
+        self.genome_build_full = _gene.genome_build
+        self.refseq_transcript_id = _gene.refseq_transcript_id if not _gene.refseq_transcript_id is None else str()
+        self.mane_transcript_type = _gene.mane_transcript_type if not _gene.mane_transcript_type is None else str()
         self.protein_region_length = self.protein_region_stop - self.protein_region_start
         self.strand = _gene.strand
+
+        # set the genome build enum
+        if self.genome_build_full.upper()[:6] == 'GRCH37':
+            self.genome_build = GenomeBuild.GRCh37
+        elif self.genome_build_full.upper()[:6] == 'GRCH38':
+            self.genome_build = GenomeBuild.GRCh38
+        else:
+            raise Exception("No valid genome build found for gene '"+str(self.gene_name)+"', found '"+str(self.genome_build_full)+"'")
         
         # retrieve the protein id
         _protein = ProteinRepository.retrieve_protein(_gene.protein_id)

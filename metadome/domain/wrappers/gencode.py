@@ -1,3 +1,5 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  Reached only through database_creation and install.py, which no longer exists.
 import logging
 from metadome.default_settings import GENCODE_HG_TRANSLATION_FILE,\
     GENCODE_SWISSPROT_FILE, GENCODE_HG_TRANSCRIPTION_FILE,\

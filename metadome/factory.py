@@ -2,6 +2,7 @@ import logging
 
 from flask import Flask
 import flask_jsglue
+import flask_caching
 from metadome.domain.services.mail.mail import mail
 from metadome.default_settings import MAIL_SERVER
 from celery import Celery
@@ -67,6 +68,13 @@ def create_app(settings=None):
 
     # Database
     from metadome.database import db
+    from metadome.domain.models.gene import Gene
+    from metadome.domain.models.protein import Protein
+    from metadome.domain.models.mapping import Mapping
+    from metadome.domain.models.interpro import Interpro
+    from metadome.domain.models.meta_domain_position import MetaDomainPosition
+    from metadome.domain.models.meta_domain_mapping import MetaDomainMapping
+
     db.init_app(app)
     with app.app_context():
         db.create_all()
@@ -74,6 +82,15 @@ def create_app(settings=None):
     from flask_jsglue import JSGlue
     flask_jsglue.JSGLUE_JS_PATH = '/metadome/static/js/JSGlue.js'
     jsglue = JSGlue(app)
+
+    from flask_caching import Cache
+    cache = Cache()
+    cache.init_app(app)
+    # Store reference if you want to access via current_app
+    app.cache = cache
+
+    _log.info(f"Flask-Caching configured with CACHE_TYPE={app.config.get('CACHE_TYPE')} "
+              f"CACHE_REDIS_URL={app.config.get('CACHE_REDIS_URL')}")
 
     return app
 

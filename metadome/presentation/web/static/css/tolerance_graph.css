@@ -48,3 +48,8 @@
 .bar:hover {
 	fill: yellow;
 }
+
+#landscape_svg.updating {
+    opacity: 0.8;
+    transition: opacity 0.1s;
+}

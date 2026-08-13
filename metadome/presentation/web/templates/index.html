@@ -1,87 +1,88 @@
 {% extends "base.html" %} {% block content %}
-  <!-- IE warning screen -->
-  <div class="modal" id="IE_warning_overlay">
-    <div class="modal-background" onclick='$("#IE_warning_overlay").removeClass("is-active");'></div>
-    <div class="modal-card">
-    <header class="modal-card-head">
-      <p class="modal-card-title">Unsupported browser warning</p>
-      <button class="delete" aria-label="close" onclick='$("#IE_warning_overlay").removeClass("is-active");'></button>
-    </header>
-    <section class="modal-card-body">
-      We have detected you are using a browser that the MetaDome web server does not support.
-      We recommend using <a href="https://www.google.com/chrome/">Google Chrome</a> or 
-      <a href="https://www.mozilla.org/en-US/firefox/new/">Firefox</a> to access all features of our web server.
-    </section>
-	</div>
-  </div>
-<!-- Staring definition of site content -->
-<section class="section">
-  <div class="box">
+    <!-- Starting definition of site content -->
     <section class="section">
-      <div class='content is-medium'>
-        <h1 class="title" style="color: #00AFDC;">Welcome to MetaDome</h1>
-        <p>
-         MetaDome analyses the mutation tolerance at each position in a human protein. 
-         It uses data from <a href="http://gnomad.broadinstitute.org/">gnomAD</a> and 
-         <a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">ClinVar</a>. 
-         MetaDome enhances the analysis of your gene of interest by parallel analysis 
-         of all homologous domains in the whole human genome.
-        </p>
-        <p>
-          Input your gene name and pick your transcript and MetaDome will collect and
-          combine available information to produce a tolerance landscape, annotate 
-          <a href="https://pfam.xfam.org/" target="_blank">Pfam</a> domains and 
-          pathogenic <a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank">
-          ClinVar</a> variants, and provide meta-domain variant annotation.
-          Complete with results, ability to edit and download all the information.
-        </p>
-        <p>
-	      You can edit, print, and download the results. MetaDome usage is free, but we 
-	      hope you faithfully cite <a href="{{ url_for('web.about') }}#cite_us">our articles</a>.
-        </p>
-        
-      </div>
+        <div class="box">
+            <section class="section has-text-centered">
+                <img src="{{ url_for('static', filename='img/metadome_logo_2.png') }}">
+                <!-- Start a tolerance landscape -->
+                <form method="get" action="{{ url_for('web.frontpage_search') }}">
+                    <div class="columns is-centered is-vcentered is-variable is-2">
+                        <div class="column is-full-mobile is-narrow-tablet is-narrow-desktop">
+                            <div class="select is-large is-fullwidth">
+                                <select name="genome_build">
+                                    {% for gb in navbar_genome_builds %}
+                                        <option value="{{ gb }}"
+                                                {% if navbar_selected_genome_build == gb %}selected{% endif %}>{{ gb }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="column is-full-mobile is-two-thirds-tablet is-half-desktop">
+                            <input class="input is-large"
+                                   id="frontpageQuery"
+                                   type="text"
+                                   name="query"
+                                   placeholder="Gene name or chr1:12345 / chr1 12345"
+                                   required>
+                        </div>
+
+                        <div class="column is-full-mobile is-narrow-tablet is-narrow-desktop">
+                            <button class="button is-link is-large is-fullwidth" type="submit">
+                                Analyse
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <p class="help has-text-centered mt-3">
+                    Enter a gene name or a genomic position such as <code class="html">chrX:123</code> or <code
+                        class="html">chrX 123</code>.
+                </p>
+
+                <p class="label mt-4" style="color: #00AFDC;">or</p>
+
+                <div class="control has-text-centered">
+                    <button class="button is-info is-outlined is-large"
+                            onclick='location.href="{{ url_for("web.dashboard_tour") }}"'>
+                        Start the tour
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <section class="section">
+            <div class='content is-medium'>
+                <p>
+                    Enter a gene name or genomic position to generate a comprehensive tolerance landscape that
+                    integrates
+                    <a data-external-link-group="External.resources"
+                       data-external-link-key="gnomad"
+                       href="#"
+                       target="_blank">gnomAD</a> and
+                    <a data-external-link-group="External.resources"
+                       data-external-link-key="clinvar"
+                       href="#"
+                       target="_blank">ClinVar</a> data
+                    to analyze mutation tolerance across homologous <a data-external-link-group="External.resources"
+                                                                       data-external-link-key="pfam"
+                                                                       href="#"
+                                                                       target="_blank">Pfam</a>
+                    domains within the human genome.
+                </p>
+                <p>
+                    You can edit, print, and download the results. MetaDome usage is free, but we
+                    hope you faithfully cite <a href="{{ url_for('web.about') }}#cite_us">our articles</a>.
+                </p>
+                <p><small><i>
+                    MetaDome 2.0 (2026) adds support for the GRCh38 reference assembly alongside GRCh37, updated GENCODE, Pfam,
+                    gnomAD and ClinVar releases. We recommend using this version, but the previous version
+                    <a data-external-link-group="MetaDome"
+                       data-external-link-key="legacy"
+                       href="#"
+                       target="_blank">MetaDome 1.0.1 (2019)</a> is still available for legacy support.
+                </i></small></p>
+            </div>
+        </section>
     </section>
-    <section class="section has-text-centered">
-    <!-- Start a tolerance landscape -->
-      <div class="control is-expanded has-text-centered">
-        <button class="button is-info is-large" onclick='location.href="{{ url_for("web.dashboard") }}"'>
-          Start analysis</button>
-        <p class="label" style="color: #00AFDC;"> or </p>
-        <button class="button is-info is-outlined is-large" onclick='location.href="{{ url_for("web.dashboard") }}?tour=true"'>
-          Start the tour</button>
-      </div>
-    </section>
-  </div>
- </section>
-
-<script>
-// Check which browser is used 
-// Opera 8.0+
-var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
-
-// Firefox 1.0+
-var isFirefox = typeof InstallTrigger !== 'undefined';
-
-// Safari 3.0+ "[object HTMLElementConstructor]" 
-var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || safari.pushNotification);
-
-// Internet Explorer 6-11
-var isIE = /*@cc_on!@*/false || !!document.documentMode;
-
-// Edge 20+
-var isEdge = !isIE && !!window.StyleMedia;
-
-//Chrome 1 - 71
-var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
-
-// Blink engine detection
-var isBlink = (isChrome || isOpera) && !!window.CSS;
-
-// Warn users if they are using something other than Chrome or Firefox
-if (!(isChrome || isFirefox)){
-	$("#IE_warning_overlay").addClass("is-active");
-}
-</script>
-
 {% endblock %} {% block js %} {% endblock %}

@@ -9,6 +9,7 @@ class Interpro(db.Model):
     Fields
     id                        identifier
     ext_db_id                 External domain database identifier code
+    ext_db_version            External database version
     name                      Name of the Interpro domain
     domain_length             Length of the Interpro domain
     interpro_id               Interpro identifier
@@ -25,6 +26,7 @@ class Interpro(db.Model):
     # Fields
     id = db.Column(db.Integer, primary_key=True)
     ext_db_id = db.Column(db.String, nullable=False)
+    ext_db_version = db.Column(db.String, nullable=False)
     region_name = db.Column(db.String)
     interpro_id = db.Column(db.String(12))
     uniprot_start = db.Column(db.Integer, nullable=False)
@@ -33,18 +35,22 @@ class Interpro(db.Model):
     
     # Relationships
     protein = db.relationship("Protein", back_populates="interpro_domains")
+    meta_domain_mappings = db.relationship("MetaDomainMapping",
+                                               back_populates="interpro_domain")
     
     # Constraints
-    __table_args__ = (db.UniqueConstraint('protein_id', 'ext_db_id', 'uniprot_start', 'uniprot_stop', name='_unique_protein_region'),
-                     )
+    __table_args__ = (db.UniqueConstraint('protein_id', 'ext_db_id', 'ext_db_version', 'uniprot_start', 'uniprot_stop', name='_unique_protein_region'),
+                      db.Index('idx_interpro_ext_db_id', 'ext_db_id'),
+                      )
     
-    def __init__(self, _interpro_id, _ext_db_id, _region_name, _start_pos, _end_pos):
+    def __init__(self, _interpro_id, _ext_db_id, _ext_db_version, _region_name, _start_pos, _end_pos):
         self.interpro_id = _interpro_id
         self.ext_db_id = _ext_db_id
+        self.ext_db_version = _ext_db_version
         self.region_name = _region_name
         self.uniprot_start = _start_pos
         self.uniprot_stop = _end_pos
     
     def __repr__(self):
-        return "<Interpro(ext_db_id='%s', region_name='%s', interpro_id='%s', uniprot_start='%s', uniprot_stop='%s')>" % (
-                            self.ext_db_id, self.region_name, self.interpro_id, self.uniprot_start, self.uniprot_stop)
+        return "<Interpro(ext_db_id='%s', ext_db_version='%s', region_name='%s', interpro_id='%s', uniprot_start='%s', uniprot_stop='%s')>" % (
+                            self.ext_db_id, self.ext_db_version, self.region_name, self.interpro_id, self.uniprot_start, self.uniprot_stop)

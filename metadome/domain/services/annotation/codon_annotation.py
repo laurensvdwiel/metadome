@@ -1,15 +1,31 @@
+from metadome.domain.models.entities.gene_region import GenomeBuild
 from metadome.domain.services.annotation.annotation import annotateSNVs
-from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant
-from metadome.domain.services.annotation.gene_region_annotators import annotateTranscriptWithGnomADData,\
-    annotateTranscriptWithClinvarData
+from metadome.domain.models.entities.single_nucleotide_variant import SingleNucleotideVariant, VariantSource
+from metadome.domain.services.annotation.gene_region_annotators import GRCh37_annotateTranscriptWithGnomADData, \
+    GRCh37_annotateTranscriptWithClinvarData, GRCh38_annotateTranscriptWithClinvarData, \
+    GRCh38_annotateTranscriptWithGnomADData, interpret_clinvar_clinsig
 
-def annotate_ClinVar_SNVs_for_codons(codons):
+def annotate_ClinVar_SNVs_for_codons(codons, genome_build):
     """Annotate provided codons with ClinVar SNVs"""
-    return annotate_SNVs_for_codons(annotateTranscriptFunction=annotateTranscriptWithClinvarData, codons=codons, variant_source='ClinVar')
+    if genome_build == GenomeBuild.GRCh37:
+        clinvar_annotation_function = GRCh37_annotateTranscriptWithClinvarData
+    elif genome_build == GenomeBuild.GRCh38:
+        clinvar_annotation_function = GRCh38_annotateTranscriptWithClinvarData
+    else:
+        raise Exception("Could not determine ClinVar annotation function based on genome build '" + str(
+            genome_build.value) + "'")
+    return annotate_SNVs_for_codons(annotateTranscriptFunction=clinvar_annotation_function, codons=codons, variant_source=VariantSource.clinvar)
 
-def annotate_gnomAD_SNVs_for_codons(codons):
+def annotate_gnomAD_SNVs_for_codons(codons, genome_build):
     """Annotate provided codons with gnomAD SNVs"""
-    return annotate_SNVs_for_codons(annotateTranscriptFunction=annotateTranscriptWithGnomADData, codons=codons, variant_source='gnomAD')
+    if genome_build == GenomeBuild.GRCh37:
+        gnomad_annotation_function = GRCh37_annotateTranscriptWithGnomADData
+    elif genome_build == GenomeBuild.GRCh38:
+        gnomad_annotation_function = GRCh38_annotateTranscriptWithGnomADData
+    else:
+        raise Exception("Could not determine gnomAD annotation function based on genome build '" + str(
+            genome_build.value) + "'")
+    return annotate_SNVs_for_codons(annotateTranscriptFunction=gnomad_annotation_function, codons=codons, variant_source=VariantSource.gnomad)
 
 def annotate_SNVs_for_codons(annotateTranscriptFunction, codons, variant_source):
     """Annotate provided codons with SNVs from the provided variant source and transcript annotation function"""
@@ -52,12 +68,12 @@ def annotate_SNVs_for_codons(annotateTranscriptFunction, codons, variant_source)
     return SNVs
 
 def extract_variant_source_info(variant_entry, variant_annotation, variant_source):
-    if variant_source == 'gnomAD':
+    if variant_source is VariantSource.gnomad:
         return extract_gnomAD_variant_info(variant_entry, variant_annotation)
-    elif variant_source == 'ClinVar':
+    elif variant_source is VariantSource.clinvar:
         return extract_ClinVar_variant_info(variant_entry, variant_annotation)
     else:
-        raise NotImplementedError("Variant source '"+str(variant_source)+"' is not supported for additional info")
+        raise NotImplementedError("Variant source '" + str(variant_source) + "' is not supported for additional info")
 
 def extract_gnomAD_variant_info(variant_entry, variant_annotation):
     # append gnomAD specific information
@@ -66,8 +82,9 @@ def extract_gnomAD_variant_info(variant_entry, variant_annotation):
     
     return variant_entry
 
-def extract_ClinVar_variant_info(variant_entry, variant_annotation):    
+def extract_ClinVar_variant_info(variant_entry, variant_annotation):
     # append ClinVar specific information
     variant_entry['clinvar_ID'] = variant_annotation['ID']
-    
+    variant_entry['clinvar_clinsig'] = interpret_clinvar_clinsig(variant_annotation).value
+
     return variant_entry

@@ -1,0 +1,17 @@
+{
+     "permissions": {
+       "deny": [
+         "Read(./.env)",
+         "Read(./.env.*)",
+         "Read(./metadome/flask_app_credentials.py)",
+         "Read(./**/.env)",
+         "Read(./**/.env.*)",
+         "Read(./secrets/**)",
+         "Read(./**/credentials*)",
+         "Read(./**/*.pem)",
+         "Read(./**/*.key)",
+         "Bash(cat .env*)",
+         "Bash(cat **/.env*)"
+       ]
+     }
+   }

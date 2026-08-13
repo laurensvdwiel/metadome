@@ -1,3 +1,6 @@
+# TODO(dead-data-generation): unreachable at runtime.
+#  The only entry point into this module was install.py, which no longer exists.
+#  Mappings now arrive prebuilt through populate_database.sh.
 from metadome.domain.data_generation.mapping.Protein2ProteinMapping import \
     createMappingOfAASequenceToAASequence, map_single_residue
 from metadome.domain.models.mapping import Mapping
@@ -76,8 +79,6 @@ def createMappingOfGeneTranscriptionToTranslationToProtein(gene_transcription, m
                 strand = strand,
                 codon = codon,
                 codon_base_pair_position = codon_base_pair_position,
-                amino_acid_residue = amino_acid_residue,
-                amino_acid_position = aa_pos,
                 uniprot_position = uniprot_position,
                 uniprot_residue = uniprot_residue,
                 chromosome = str(cd.seqid),

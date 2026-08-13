@@ -1,0 +1,22 @@
+table metaDomainClinVar
+"MetaDome: pathogenic missense ClinVar variation projected through Pfam domain alignments. Each feature is a codon inside a Pfam domain that has at least one Pathogenic or Likely pathogenic ClinVar missense variant at the evolutionarily equivalent position in a homologous protein domain at another genomic location."
+    (
+    string  chrom;              "Reference sequence chromosome"
+    uint    chromStart;         "Start position of the codon"
+    uint    chromEnd;           "End position of the codon"
+    string  name;               "UniProt accession/position : Pfam ID : domain consensus position"
+    uint    score;              "Homologous missense P+LP count, scaled to 0-1000 for shading"
+    char[1] strand;             "Strand of the reading frame"
+    uint    thickStart;         "Start of thick drawing (same as chromStart)"
+    uint    thickEnd;           "End of thick drawing (same as chromEnd)"
+    uint    itemRgb;            "Red where Pathogenic dominates, orange where Likely pathogenic does"
+    string  uniprot_ac;         "UniProtKB/Swiss-Prot accession, isoform-suffixed where applicable"
+    uint    uniprot_pos;        "Residue position, 1-based from the initiator methionine"
+    string  pfam_id;            "Pfam domain accession"
+    uint    consensus_pos;      "Position in the Pfam domain consensus; equal positions across genes are evolutionarily equivalent"
+    uint    homolog_missense_P_count;   "Pathogenic ClinVar missense variants at this consensus position in homologous domains elsewhere"
+    uint    homolog_missense_LP_count;  "Likely pathogenic ClinVar missense variants at this consensus position in homologous domains elsewhere"
+    lstring clinvar_P_accessions;       "ClinVar accessions counted in homolog_missense_P_count, comma-separated. Counts are of distinct SNVs, so this list can be shorter than the count"
+    lstring clinvar_LP_accessions;      "ClinVar accessions counted in homolog_missense_LP_count, comma-separated"
+    lstring metadome_url;       "Link to this genomic position in MetaDome"
+    )

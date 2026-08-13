@@ -1,14 +1,23 @@
 from metadome.domain.services.annotation.annotation import annotateSNVs
-from metadome.domain.services.annotation.gene_region_annotators import annotateTranscriptWithGnomADData    
+from metadome.domain.services.annotation.gene_region_annotators import GRCh37_annotateTranscriptWithGnomADData, \
+    GRCh38_annotateTranscriptWithGnomADData
 from metadome.domain.metrics.GeneticTolerance import background_corrected_mosy_score
 from metadome.domain.services.computation.codon_computations import retrieve_variant_type_counts
 from metadome.domain.services.helper_functions import create_sliding_window
+from metadome.domain.models.entities.gene_region import GenomeBuild
 
 def compute_tolerance_landscape(gene_region, sliding_window_size, min_frequency=0.0):
+    # Based on genome build, select the correct gnomAD annotation function
+    if gene_region.genome_build == GenomeBuild.GRCh37:
+        gnomad_annotation_function = GRCh37_annotateTranscriptWithGnomADData
+    elif gene_region.genome_build == GenomeBuild.GRCh38:
+        gnomad_annotation_function = GRCh38_annotateTranscriptWithGnomADData
+    else:
+        raise Exception("Could not determine gnomAD annotation function based on genome build '" + str(gene_region.genome_build.value) + "'")
     # Annotate gnomad information
-    full_gnomad_annotations = annotateSNVs(annotateTranscriptWithGnomADData, 
+    full_gnomad_annotations = annotateSNVs(gnomad_annotation_function,
                                          mappings_per_chr_pos=gene_region.retrieve_mappings_per_chromosome(),
-                                         strand=gene_region.strand, 
+                                         strand=gene_region.strand,
                                          chromosome=gene_region.chr,
                                          regions=gene_region.regions)
     filtered_gnomad_annotations = dict()

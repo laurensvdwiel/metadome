@@ -1,0 +1,10 @@
+FROM python:3.13-slim
+
+# Plotting dependencies for clinvar_analysis_plots.py. They are not part of the
+# application, so they are not in requirements.txt.
+RUN pip install --no-cache-dir \
+        pandas==2.2.3 \
+        seaborn==0.13.2 \
+        matplotlib==3.9.2
+
+WORKDIR /work
