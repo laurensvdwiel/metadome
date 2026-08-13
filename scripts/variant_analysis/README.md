@@ -58,15 +58,13 @@ live here.
   
 ### Coordinates
   
-The release tracks are 1-based inclusive on both ends: `chr1 878710 878712` is
-the three bases `878710` to `878712`. `bedtools` reads column 2 as 0-based
-half-open, so the script decrements it before intersecting. Without that shift
-every variant on a codon's first base is silently missed.
+The release tracks are 0-based half-open BED, so `bedtools` reads them directly
+and no conversion is applied.
   
 The script verifies this held. A codon's own ClinVar records are excluded from
 its homologous counts when the release is built, so a variant must never appear
 among its own accessions. The reported `self-contamination` count must be zero;
-anything else means the coordinate conversion is wrong and the output should be
+anything else means the intersects are misaligned and the output should be
 discarded.
 
 ## `plot_clinvar_analysis.py`

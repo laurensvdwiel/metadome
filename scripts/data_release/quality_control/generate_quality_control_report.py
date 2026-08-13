@@ -160,11 +160,10 @@ def residue_view(path, delimiter, workdir, label):
 
 
 def read_track(path):
-    """Yield (key, dn_ds, coverage) from a shipped tolerance track.
+    """Yield (key, dn_ds, coverage) from a released tolerance track.
 
-    Positions become integers because run_sort orders them numerically; string
-    keys here would walk the two streams in a different order than they were
-    sorted in, and the merge join would miss genuine matches.
+    The track is 0-based half-open BED file; the final dataset is
+    1-based, so the start is shifted back here to compare the two.
     """
     handle = gzip.open(path, "rt", encoding="utf-8") if path.endswith(".gz") \
         else open(path, encoding="utf-8")
@@ -172,10 +171,10 @@ def read_track(path):
         for line in handle:
             if line.startswith("#"):
                 continue
-            chrom, start, stop, strand, info = line.rstrip("\n").split("\t")
-            fields = dict(part.split(":", 1) for part in info.split(","))
-            yield (chrom, int(start), int(stop), strand), \
-                float(fields["sw_dn_ds"]), float(fields["sw_coverage"])
+            fields = line.rstrip("\n").split("\t")
+            chrom, start, stop, strand = fields[0], fields[1], fields[2], fields[5]
+            yield (chrom, int(start) + 1, int(stop), strand), \
+                float(fields[6]), float(fields[7])
 
 
 def read_codons(path):
@@ -232,6 +231,8 @@ def main():
     parser.add_argument("--cross-build-name")
     parser.add_argument("--workdir", default=".")
     parser.add_argument("--report", help="Markdown output; stdout when omitted")
+    parser.add_argument("--previous-track",
+                        help="tolerance track from an earlier release; enables check D")
     args = parser.parse_args()
 
     lines = ["# MetaDome data release quality control",
@@ -252,6 +253,26 @@ def main():
         lines.append("| v1.0.1 table | `{}` |".format(os.path.basename(args.v1_table)))
     if args.cross_build_dataset:
         lines.append("| cross-build dataset | `{}` |".format(os.path.basename(args.cross_build_dataset)))
+    if args.previous_track:
+        against = compare(read_track(args.previous_track),
+                          read_track(args.tolerance_track), DNDS_TOLERANCE)
+        union = against["shared"] + against["left_only"] + against["right_only"]
+        lines.append("## Comparison with an earlier release")
+        lines.append("")
+        lines.append("| statistic | value |")
+        lines.append("| --- | --- |")
+        lines.append("| codons in `{}` | {} |".format(
+            os.path.basename(args.previous_track),
+            against["shared"] + against["left_only"]))
+        lines.append("| codons in this release | {} |".format(
+            against["shared"] + against["right_only"]))
+        lines.append("| shared | {} ({} of all codons in either) |".format(
+            against["shared"], percent(against["shared"], union)))
+        lines.append("| earlier release only | {} |".format(against["left_only"]))
+        lines.append("| this release only | {} |".format(against["right_only"]))
+        lines.append("| shared codons with dn/ds equal to within {} | {} ({}) |".format(
+            DNDS_TOLERANCE, against["agree"], percent(against["agree"], against["shared"])))
+        lines.append("")
     lines.append("")
 
     codons, stats = codon_view(args.final_dataset, "\t", args.workdir, "v2")

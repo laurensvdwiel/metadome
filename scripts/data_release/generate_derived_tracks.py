@@ -7,7 +7,7 @@ they always describe the same data.
     metadomain-clinvar    pathogenic ClinVar projected through Pfam alignments
     pfam-domain-coverage  every codon aligning to a Pfam domain consensus position
 
-Genomic positions are 1-based inclusive. Where transcripts overlap a codon and
+Genomic positions are 0-based half-open. Where transcripts overlap a codon and
 their tolerance scores disagree, the median is used.
 """
 
@@ -114,7 +114,7 @@ def header_block(prefix, filename, genome_build, role, sources, notes=()):
     lines.append(BASE_URL)
     lines.append("")
     lines.extend(notes)
-    lines.append("Genomic positions are 1-based inclusive.")
+    lines.append("Genomic positions are 0-based half-open.")
     lines.append("")
     return "".join(("# " + line).rstrip() + "\n" for line in lines)
 
@@ -189,14 +189,16 @@ def build_tolerance_bed(final_dataset, destination, header):
             stats["dnds_mismatch"] += 1
         if len({g[7] for g in group}) > 1:
             stats["gene_overlap"] += 1
-        info = "sw_dn_ds:{},sw_coverage:{}".format(median(dnds), median(coverage))
-        out.writerow([group[0][0], group[0][1], group[0][2], group[0][3], info])
+        dn_ds, cov = median(dnds), median(coverage)
+        out.writerow([group[0][0], int(group[0][1]) - 1, group[0][2],
+                      ".", 0, group[0][3], repr(dn_ds), repr(cov)])
 
     with open(sorted_path, newline="", encoding="utf-8") as src, \
             open(destination, "w", newline="", encoding="utf-8") as out:
         out.write(header)
         writer = csv.writer(out, delimiter="\t", lineterminator="\n")
-        writer.writerow(["#chrom", "pos_start", "pos_stop", "strand", "info"])
+        writer.writerow(["#chrom", "chromStart", "chromEnd", "name", "score",
+                         "strand", "sw_dn_ds", "sw_coverage"])
         current_key, group = None, []
         for row in csv.reader(src, delimiter="\t"):
             stats["rows"] += 1
@@ -236,13 +238,14 @@ def build_domain_tracks(final_dataset, genome_build, clinvar_path, coverage_path
                 continue
 
             chrom, start, stop = row["chrom"], row["pos_start"], row["pos_stop"]
+            start0 = int(start) - 1
             strand, consensus = row["strand"], row["consensus_pos"]
             accession, protein_pos = row["protein_ac"], row["protein_pos"]
             name = "{}/{}:{}:{}".format(accession, protein_pos, domain, consensus)
             url = metadome_url(genome_build, chrom, start)
 
             coverage_writer.writerow([
-                chrom, start, stop, name, 0, strand,
+                chrom, start0, stop, name, 0, strand,
                 accession, protein_pos, domain, consensus, url,
             ])
             coverage_rows += 1
@@ -253,9 +256,9 @@ def build_domain_tracks(final_dataset, genome_build, clinvar_path, coverage_path
                 continue
 
             clinvar_writer.writerow([
-                chrom, start, stop, name,
+                chrom, start0, stop, name,
                 min(1000, (pathogenic + likely) * 10),
-                strand, start, stop,
+                strand, start0, stop,
                 COLOUR_PATHOGENIC if pathogenic >= likely else COLOUR_LIKELY_PATHOGENIC,
                 accession, protein_pos, domain, consensus,
                 pathogenic, likely,
@@ -314,6 +317,10 @@ def main():
         print("  (median applied where transcripts disagree)")
         print("  this release     : {}".format(ZENODO_CURRENT))
         print("  previous release : {}".format(ZENODO_PREVIOUS))
+        print("\nConvert with bedToBigBed (the comment header must be stripped):")
+        print("  grep -v '^#' {} \\".format(destination))
+        print("    | bedToBigBed -type=bed6+2 -as=tolerance_landscape.as -tab \\")
+        print("        stdin <chrom.sizes> {}".format(destination.replace(".bed", ".bb")))
 
     if not args.skip_domains:
         clinvar_path = stem + "_derived-track-metadomain-clinvar.bed"

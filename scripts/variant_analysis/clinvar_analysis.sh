@@ -113,22 +113,18 @@ bcftools view -v snps -i "INFO/CLNSIG=\"${CLNSIG}\" && INFO/MC~\"missense_varian
   | bcftools query -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\t%INFO/CLNSIG\t%INFO/CLNREVSTAT\t%INFO/CLNHGVS\n' \
   | awk -F'\t' -v p="$CHR_PREFIX" 'BEGIN{OFS="\t"}{print p$1, $2-1, $2, $3, $4, $5, $6, $7, $8}' \
   | sort -k1,1 -k2,2n > "$WORK/vus.bed"
-  
+
 # ---------------------------------------------------------------------------
-# 2. Release tracks to 0-based half-open.
+# 2. Release tracks, decompressed and sorted.
 #
-# The tracks are 1-based inclusive on both ends: "chr1 878710 878712" is the
-# three bases 878710-878712. bedtools reads column 2 as 0-based, so without
-# this shift every variant on a codon's first base is missed.
+# The tracks are 0-based half-open BED.
 # ---------------------------------------------------------------------------
-echo "converting track coordinates ..."
-gzip -dc "$COVERAGE" | grep -v '^#' \
-  | awk -F'\t' 'BEGIN{OFS="\t"}{$2=$2-1; print}' | sort -k1,1 -k2,2n > "$WORK/coverage.bed"
-gzip -dc "$EVIDENCE" | grep -v '^#' \
-  | awk -F'\t' 'BEGIN{OFS="\t"}{$2=$2-1; print}' | sort -k1,1 -k2,2n > "$WORK/evidence.bed"
-  
+echo "preparing release tracks ..."
+gzip -dc "$COVERAGE" | grep -v '^#' | sort -k1,1 -k2,2n > "$WORK/coverage.bed"
+gzip -dc "$EVIDENCE" | grep -v '^#' | sort -k1,1 -k2,2n > "$WORK/evidence.bed"
+
 # ---------------------------------------------------------------------------
-# 3. Two independent intersects.
+# 3a. Two independent intersects.
 #
 # Coverage gives every variant inside a Pfam domain, which is the denominator.
 # Evidence gives those with pathogenic missense variation at the equivalent
